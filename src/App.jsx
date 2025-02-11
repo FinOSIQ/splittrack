@@ -4,6 +4,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import HeaderProfile from './Components/HeaderProfile'
 import ProfileView from './Views/ProfileView'
+import CreateGroupModal from './Components/CreateGroup'
 
 function App() {
 
@@ -11,7 +12,7 @@ function App() {
   return (
     <div className='w-screen mx-0 px-0'>
  
-      <ProfileView/>
+      <CreateGroupModal/>
     </div>
   )
 }

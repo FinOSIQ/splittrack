@@ -95,6 +95,7 @@ export default function ProfileView() {
                     </div>
                 </section>
             </div>
+            
         </>
     );
 }
