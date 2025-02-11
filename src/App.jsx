@@ -4,6 +4,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import HeaderProfile from './Components/HeaderProfile'
 import ProfileView from './Views/ProfileView'
+import GroupView from './Views/GroupView'
 
 function App() {
 
