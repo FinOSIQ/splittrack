@@ -4,15 +4,20 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import HeaderProfile from './Components/HeaderProfile'
 import ProfileView from './Views/ProfileView'
+
+import CreateGroupModal from './Components/CreateGroup'
+import GroupCard from './Components/GroupCard'
+import Home from './Views/Home
 import GroupView from './Views/GroupView'
+
 
 function App() {
 
 
   return (
-    <div className='w-screen mx-0 px-0'>
+    <div className='w-screen mx-0 px-0 '>
  
-      <ProfileView/>
+
     </div>
   )
 }
