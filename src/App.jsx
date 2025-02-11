@@ -7,7 +7,7 @@ import ProfileView from './Views/ProfileView'
 
 import CreateGroupModal from './Components/CreateGroup'
 import GroupCard from './Components/GroupCard'
-import Home from './Views/Home
+import Home from './Views/Home'
 import GroupView from './Views/GroupView'
 
 
