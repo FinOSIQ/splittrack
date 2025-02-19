@@ -1,7 +1,24 @@
 import React from 'react';
 import HeaderProfile from '../Components/HeaderProfile';
+import { useFormik } from 'formik';
+import { profileSchema } from '../utils/validationSchemas';
 
 export default function ProfileView() {
+
+        const { values, errors, touched, handleBlur, handleChange, handleSubmit, isSubmitting } = useFormik({
+            initialValues: {
+                fullName: '',
+                email: '',
+                phoneNumber: '',
+            },
+            validationSchema: profileSchema,
+            onSubmit: (values) => {
+                console.log(values);
+                
+            }
+
+        })
+    
     return (
         <>
             <HeaderProfile />
@@ -9,15 +26,36 @@ export default function ProfileView() {
                 <div className="text-[#424141] text-xl font-medium font-['Poppins'] leading-[24.94px] my-2">Personal Details</div>
                 <section className="bg-white">
                     <div className="w-full py-8 max-w-screen lg:py-10">
-                        <form action="#">
+                    
+                    {/* Form inititation */}
+                        <form onSubmit={handleSubmit} >
+
                             <div className="w-full grid gap-2 sm:grid-cols-2 sm:gap-4"> {/* Reduced gap here */}
                                 <div className="w-11/12"> {/* Adjusted width for consistent layout */}
                                     <label htmlFor="full-name" className="block mb-2 text-sm font-normal font-['poppins'] opacity-85 text-gray-900">Full Name</label>
-                                    <input type="text" name="full-name" id="full-name" className="border border-gray-300 w-full bg-[#f9f9f9] text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block p-2.5" placeholder="Enter full name" required />
+                                    <input
+                                        type="text"
+                                        name="fullName"
+                                        id="fullName"
+                                        value={values.fullName}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        className="border border-gray-300 w-full bg-[#f9f9f9] text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block p-2.5"
+                                        placeholder="Enter full name"
+                                        required />
                                 </div>
                                 <div className="w-11/12">
                                     <label htmlFor="email" className="block mb-2 text-sm font-normal font-['poppins'] opacity-85 text-gray-900">Email</label>
-                                    <input type="email" name="email" id="email" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Enter email address" required />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        id="email"
+                                        value={values.email}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                                        placeholder="Enter email address"
+                                        required />
                                 </div>
                                 <div className="w-11/12">
                                     <label htmlFor="gender" className="block mb-2 text-sm font-normal font-['poppins'] opacity-85 text-gray-900">Gender</label>
@@ -44,16 +82,32 @@ export default function ProfileView() {
                                 </div>
                                 <div className="w-11/12">
                                     <label htmlFor="phone-number" className="block mb-2 text-sm font-normal font-['poppins'] opacity-85 text-gray-900">Phone Number</label>
-                                    <input type="tel" name="phone-number" id="phone-number" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Enter phone number" required />
+                                    <input
+                                        type="tel"
+                                        name="phoneNumber"
+                                        id="phoneNumber"
+                                        value={values.phoneNumber}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                                        placeholder="Enter phone number"
+                                        required />
                                 </div>
                                 <div className="w-11/12">
                                     <label htmlFor="currency" className="block mb-2 text-sm font-normal font-['poppins'] opacity-85 text-gray-900">Currency</label>
-                                    <input type="text" name="currency" id="currency" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Enter currency" required />
+                                    <input
+                                        type="text"
+                                        name="currency"
+                                        id="currency"
+                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                                        placeholder="Enter currency"
+                                        required />
                                 </div>
                             </div>
                             <button type="submit" className="inline-flex items-center px-5 py-2.5 mt-4 sm:mt-6 text-sm font-medium text-center text-white bg-primary-700 rounded-lg focus:ring-4 focus:ring-primary-200 hover:bg-primary-800">
                                 Submit
                             </button>
+            
                         </form>
 
                         <div className="text-[#424141] text-xl font-medium font-['Poppins'] leading-[24.94px] mb-4">My Bank Details</div>
@@ -95,7 +149,7 @@ export default function ProfileView() {
                     </div>
                 </section>
             </div>
-            
+
         </>
     );
 }

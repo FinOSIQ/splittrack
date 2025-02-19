@@ -17,7 +17,7 @@ function App() {
   return (
     <div className='w-screen mx-0 px-0 '>
  
-
+    <ProfileView/>
     </div>
   )
 }
