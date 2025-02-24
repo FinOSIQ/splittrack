@@ -1,23 +1,81 @@
 import React from 'react';
 import HeaderProfile from '../Components/HeaderProfile';
+import { useFormik } from 'formik';
+import { profileSchema } from '../utils/validationSchemas';
+import { Avatar, Button } from '@material-tailwind/react';
 
 export default function ProfileView() {
+
+    const { values, errors, touched, handleBlur, handleChange, handleSubmit, isSubmitting } = useFormik({
+        initialValues: {
+            fullName: '',
+            email: '',
+            phoneNumber: '',
+        },
+        validationSchema: profileSchema,
+        onSubmit: (values) => {
+            console.log(values);
+
+        }
+
+    })
+
     return (
         <>
             <HeaderProfile />
-            <div className="h-screen bg-white rounded-md mx-5 px-0">
+            {/*<div className="flex flex-col items-center mt-6  p-6 rounded-lg ">
+                <div className="relative group w-fit">
+                    <Avatar
+                        src="https://www.gravatar.com/avatar/2c7d99fe281ecd3bcd65ab915bac6dd5?s=250"
+                        size="xxl"
+                        color="lightBlue"
+                        className="rounded-full border-4 border-white shadow-md"
+                    />
+
+        
+                    <div className="absolute inset-0 bg-gray-700 bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <span className="text-white text-sm font-medium">Edit</span>
+                    </div>
+                </div>
+
+
+            </div>*/}
+
+            <div className="h-screen bg-white rounded-md mx-5 px-0 mt-4">
                 <div className="text-[#424141] text-xl font-medium font-['Poppins'] leading-[24.94px] my-2">Personal Details</div>
                 <section className="bg-white">
                     <div className="w-full py-8 max-w-screen lg:py-10">
-                        <form action="#">
-                            <div className="w-full grid gap-2 sm:grid-cols-2 sm:gap-4"> {/* Reduced gap here */}
-                                <div className="w-11/12"> {/* Adjusted width for consistent layout */}
+
+                        {/* Form inititation */}
+                        <form onSubmit={handleSubmit} className="w-full">
+                            <div className="w-full grid gap-2 sm:grid-cols-2 sm:gap-4">
+                                <div className="w-11/12">
                                     <label htmlFor="full-name" className="block mb-2 text-sm font-normal font-['poppins'] opacity-85 text-gray-900">Full Name</label>
-                                    <input type="text" name="full-name" id="full-name" className="border border-gray-300 w-full bg-[#f9f9f9] text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block p-2.5" placeholder="Enter full name" required />
+                                    <input
+                                        type="text"
+                                        name="fullName"
+                                        id="fullName"
+                                        value={values.fullName}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        className="border border-gray-300 w-full bg-[#f9f9f9] text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block p-2.5"
+                                        placeholder="Enter full name"
+                                        required
+                                    />
                                 </div>
                                 <div className="w-11/12">
                                     <label htmlFor="email" className="block mb-2 text-sm font-normal font-['poppins'] opacity-85 text-gray-900">Email</label>
-                                    <input type="email" name="email" id="email" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Enter email address" required />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        id="email"
+                                        value={values.email}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                                        placeholder="Enter email address"
+                                        required
+                                    />
                                 </div>
                                 <div className="w-11/12">
                                     <label htmlFor="gender" className="block mb-2 text-sm font-normal font-['poppins'] opacity-85 text-gray-900">Gender</label>
@@ -40,24 +98,52 @@ export default function ProfileView() {
                                             Other
                                         </option>
                                     </select>
-
                                 </div>
                                 <div className="w-11/12">
                                     <label htmlFor="phone-number" className="block mb-2 text-sm font-normal font-['poppins'] opacity-85 text-gray-900">Phone Number</label>
-                                    <input type="tel" name="phone-number" id="phone-number" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Enter phone number" required />
+                                    <input
+                                        type="tel"
+                                        name="phoneNumber"
+                                        id="phoneNumber"
+                                        value={values.phoneNumber}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                                        placeholder="Enter phone number"
+                                        required
+                                    />
                                 </div>
                                 <div className="w-11/12">
                                     <label htmlFor="currency" className="block mb-2 text-sm font-normal font-['poppins'] opacity-85 text-gray-900">Currency</label>
-                                    <input type="text" name="currency" id="currency" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Enter currency" required />
+                                    <input
+                                        type="text"
+                                        name="currency"
+                                        id="currency"
+                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                                        placeholder="Enter currency"
+                                        required
+                                    />
                                 </div>
                             </div>
-                            <button type="submit" className="inline-flex items-center px-5 py-2.5 mt-4 sm:mt-6 text-sm font-medium text-center text-white bg-primary-700 rounded-lg focus:ring-4 focus:ring-primary-200 hover:bg-primary-800">
-                                Submit
-                            </button>
+
+                            {/* Align button to bottom-right corner of the form */}
+                            <div className="w-full flex justify-end mt-12 mb-8 lg:pr-16 md:pr-8 pr-7">
+                                <Button
+                                    variant="outlined"
+                                    color="gray"
+                                    ripple={true}
+                                    className="flex items-center gap-2 px-6 py-2 border-gray-500 font-medium font-['Poppins'] leading-[24.94px] text-gray-600 transition-all 
+                                       hover:border-[#4182f9] hover:text-[#4182f9] hover:bg-[#4182f9]/10"
+                                >
+                                    Save Details
+                                </Button>
+
+                            </div>
                         </form>
 
+
                         <div className="text-[#424141] text-xl font-medium font-['Poppins'] leading-[24.94px] mb-4">My Bank Details</div>
-                        <div className="flex flex-row gap-4 mt-6 ml-2">
+                        <div className="flex flex-row gap-4 mt-7 ml-4">
                             <div className="w-12 h-12 bg-[#4182f9] bg-opacity-10 rounded-full flex items-center justify-center">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -95,7 +181,7 @@ export default function ProfileView() {
                     </div>
                 </section>
             </div>
-            
+
         </>
     );
 }
