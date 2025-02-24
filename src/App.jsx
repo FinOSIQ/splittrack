@@ -13,8 +13,7 @@ import GroupView from './Views/GroupView'
 function App() {
 
   return (
-    
-      <div className='w-screen mx-0 px-0'>
+ <div className='w-screen mx-0 px-0'>
         
         <Router>  
           <Routes>
@@ -24,7 +23,6 @@ function App() {
           </Routes>
         </Router>
       </div>
-    
   )
 }
 
