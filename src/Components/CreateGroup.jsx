@@ -5,9 +5,7 @@ export default function CreateGroupModal() {
     const [groupName, setGroupName] = useState("");
     const [friendInput, setFriendInput] = useState("");
     const [friends, setFriends] = useState([
-        "Sonal Attanayake",
-        "Shehan Rajapak...",
-        "Saradi Dassanay...",
+        
     ]);
 
     const handleAddFriend = (e) => {
@@ -28,7 +26,7 @@ export default function CreateGroupModal() {
                 onClick={() => setIsOpen(true)}
                 className="bg-blue-500 text-white px-4 py-2 rounded-md"
             >
-                Open Modal
+                Create Group
             </button>
 
             {isOpen && (

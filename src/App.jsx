@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import './App.css'
 import HeaderProfile from './Components/HeaderProfile'
 import ProfileView from './Views/ProfileView'
@@ -13,12 +12,17 @@ import GroupView from './Views/GroupView'
 
 function App() {
 
-
   return (
-    <div className='w-screen mx-0 px-0 '>
- 
-    <ProfileView/>
-    </div>
+ <div className='w-screen mx-0 px-0'>
+        
+        <Router>  
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/profile" element={<ProfileView />} />
+            <Route path="/group" element={<GroupView />} />
+          </Routes>
+        </Router>
+      </div>
   )
 }
 
