@@ -8,6 +8,7 @@ import CreateGroupModal from './Components/CreateGroup'
 import GroupCard from './Components/GroupCard'
 import Home from './Views/Home'
 import GroupView from './Views/GroupView'
+import FriendView from './Views/FriendView';
 
 
 function App() {
