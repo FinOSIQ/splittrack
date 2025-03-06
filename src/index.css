@@ -8,3 +8,30 @@
   padding: 0; /* Remove padding */
   margin: 0; /* Remove margin */
 }
+
+html, body {
+  overflow-x: hidden;
+}
+
+
+@layer utilities {
+  .scrollable-div {
+    @apply overflow-y-auto;
+  }
+
+  .scrollable-div::-webkit-scrollbar {
+    @apply w-2 h-12;
+  }
+
+  .scrollable-div::-webkit-scrollbar-track {
+    @apply rounded-full bg-[#f1f5f9];
+  }
+
+  .scrollable-div::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-[#cbd5e1];
+  }
+
+  .scrollable-div::-webkit-scrollbar-thumb:hover {
+    @apply bg-[#94a3b8];
+  }
+}

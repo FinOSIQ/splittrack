@@ -9,6 +9,8 @@ import GroupCard from './Components/GroupCard'
 import Home from './Views/Home'
 import GroupView from './Views/GroupView'
 import ExpenseView from './Views/ExpenseView';
+import AllFriends from './Views/AllFriends';
+
 
 
 function App() {
@@ -22,6 +24,7 @@ function App() {
             <Route path="/profile" element={<ProfileView />} />
             <Route path="/group" element={<GroupView />} />
             <Route path="/expense" element={<ExpenseView />} />
+             <Route path="/friends" element={<AllFriends/>} />
           </Routes>
         </Router>
       </div>
