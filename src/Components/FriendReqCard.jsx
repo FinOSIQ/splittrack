@@ -2,10 +2,10 @@
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
 
 
-export default function FriendReqCard({ img, name, email }) {
+export default function FriendReqCard({ img, name, email,style }) {
     return (
 
-        <div className="flex items-center justify-between p-2 mx-2 pb-3  border-b border-gray-200">
+        <div className={`flex items-center justify-between p-2 mx-2 pb-3  border-b border-gray-200 ${style}`}>
             {/* Left Section: Avatar & Info */}
             <div className="flex items-center space-x-4">
                 {/* Avatar */}
