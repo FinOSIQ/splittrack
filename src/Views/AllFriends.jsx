@@ -41,15 +41,13 @@ export default function AllFriends() {
     return (
         <>
 
-
-           
             <HeaderProfile />
-            <div className="h-screen flex flex-row bg-white rounded-md mx-5 px-0 mt-4 overflow-x-hidden overflow-y-hidden">
+            <div className="h-screen flex flex-row bg-white rounded-md md:mx-5 -mt-8  px-0 md:mt-4 overflow-x-hidden overflow-y-hidden">
 
                 {/* 65% column */}
-                <div className="xl:w-[70%] lg:w-[60%] w-full px-3">
+                <div className="xl:w-[70%] lg:w-[60%] w-full  md:px-3 px-1 xl:h-[78vh] lg:h-[76vh]">
                     <div className="h-full rounded-2xl p-4 overflow-hidden">
-                        <div className="text-[#040b2b] text-2xl font-bold font-inter mx-6 mt-1">Friends</div>
+                        <div className="text-[#040b2b] text-2xl font-bold font-inter mx-6 mt-1 hidden lg:block">Friends</div>
 
                         <div className="flex border-b border-gray-300 lg:hidden">
                             <button
@@ -66,21 +64,25 @@ export default function AllFriends() {
                             </button>
                         </div>
                         <div>
-                            {/* ✅ Updated Search Bar */}
-                            <div className=" ml-5 bg-[#f1f2f9] rounded-lg flex items-center px-4 border border-gray-300 focus-within:border-blue-500 mt-6 h-8">
-                                {/* Search Icon */}
-                                <svg className="w-4 h-4 mt-0.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35"></path>
-                                    <circle cx="10" cy="10" r="7"></circle>
-                                </svg>
 
-                                {/* Input Field */}
-                                <input
-                                    type="text"
-                                    placeholder="Search Friends"
-                                    className="w-full bg-transparent outline-none text-gray-900 placeholder-gray-500 text-sm pl-2"
-                                />
-                            </div>
+
+                            {/* ✅ Updated Search Bar */}
+                            {activeTab === "friends" && (
+                                <div className=" ml-5 bg-[#f1f2f9] rounded-lg flex items-center px-4 border border-gray-300 focus-within:border-blue-500 mt-6 h-8">
+                                    {/* Search Icon */}
+                                    <svg className="w-4 h-4 mt-0.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35"></path>
+                                        <circle cx="10" cy="10" r="7"></circle>
+                                    </svg>
+
+                                    <input
+                                        type="text"
+                                        placeholder="Search Friends"
+                                        className="w-full bg-transparent outline-none text-gray-900 placeholder-gray-500 text-sm pl-2"
+                                    />
+                                </div>
+                            )}
+
                             <div className="my-4 ml-2 overflow-y-auto max-h-[75vh] [&::-webkit-scrollbar]:w-2 scrollable-div">
                                 <div ref={contentRef}>
                                     {activeTab === "friends" && (
@@ -131,13 +133,13 @@ export default function AllFriends() {
                 </div>
 
                 {/* 35% column */}
-                <div className="xl:w-[30%] lg:w-[40%] px-3 pb-10 hidden lg:block">
+                <div className="xl:w-[30%] lg:w-[40%] px-3 pb-10 hidden lg:block xl:h-[85vh] lg:h-[84vh]">
                     <div className="h-full bg-[#f1f2f9] rounded-2xl p-4 overflow-hidden">
                         <div className="text-[#040b2b] text-2xl font-bold font-inter mx-6 mt-1">Friend Requests</div>
 
                         <div className="mx-1 my-4 py-3 bg-white rounded-[32px] pr-3">
                             {/* ✅ Set max height relative to parent */}
-                            <div className="p-4 space-y-4 h-[calc(100%-40px)] max-h-[530px] overflow-y-auto scrollable-div">
+                            <div className="p-4 space-y-4 xl:h-[calc(64vh)] lg:h-[61vh] max-h-[530px] overflow-y-auto scrollable-div">
 
                                 <FriendReqCard img="https://placehold.co/60x61" name="John Doe" email="shehan@gmail.com" style='-mt-4' />
                                 <FriendReqCard img="https://placehold.co/60x61" name="John Doe" email="shehan@gmail.com" />
