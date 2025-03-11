@@ -27,42 +27,61 @@ export default function AddExpensePopup() {
             </button>
 
             <div className="">
-                <div className=" text-center mt-8 text-[#040b2b] text-[32px] font-semibold font-['Poppins'] leading-[41.57px]">
+                <div className=" text-left mt-16 text-[#040b2b] text-[32px] font-semibold font-['Poppins'] leading-[41.57px]">
                     Add an Expense
                 </div>
-                
-                <div className="flex w-72 flex-col gap-6 text-center mx-auto mt-4 -mb-4">
-                    <Input variant="standard" label="" placeholder="With: Enter Group, Names, Emails..."/>
+
+                <div className="flex w-72 flex-col gap-6 text-left mt-0 -mb-4">
+
+                    <Input variant="static" label="" placeholder="With: Enter Group, Names, Emails..."/>
                 </div>
 
-                <hr className=" w-11/12 mx-auto"/>
-
-
-                <div data-svg-wrapper className="left-[101px] top-[277px] absolute">
-                    <svg
-                    width="179"
-                    height="33"
-                    viewBox="0 0 179 33"
+                <div data-svg-wrapper className="mt-24 flex items-center space-x-4">
+                  <svg
+                    width="38"
+                    height="38"
+                    viewBox="0 0 38 38"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
-                    >
-                    <rect x="0.000976562" width="179" height="33" rx="12" fill="#F1F2F9" />
-                    </svg>
+                  >
+                    <path
+                      d="M3.1676 3.95825H34.8343M12.6676 12.6666H25.3343M12.6676 20.5833H25.3343M5.81179 3.95825V22.9108C5.81179 24.4624 6.54012 25.9349 7.79096 26.8691L16.0401 33.0441C17.7976 34.3582 20.2201 34.3582 21.9776 33.0441L30.2268 26.8691C31.4776 25.9349 32.2059 24.4624 32.2059 22.9108V3.95825H5.81179Z"
+                      stroke="#040B2B"
+                      strokeWidth="1.5"
+                      strokeMiterlimit="10"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+
+                  {/* Vertical Line */}
+                  <div className="h-6 border-l border-gray-400"></div>
+
+                  <Input variant="standard" label="Name" placeholder="Dinner, Lunch, etc.."/>
                 </div>
-              <div data-svg-wrapper className="left-[101px] top-[332px] absolute">
-                <svg
-                  width="179"
-                  height="33"
-                  viewBox="0 0 179 33"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <rect x="0.000976562" width="179" height="33" rx="12" fill="#F1F2F9" />
-                </svg>
-              </div>
-              <div className="w-[163px] left-[111px] top-[281px] absolute text-[#61677d] text-base font-normal font-['Poppins'] leading-[24.94px]">
-                Enter Description
-              </div>
+
+                <div data-svg-wrapper className="mt-8 flex items-center space-x-4">
+                  <svg
+                    width="36"
+                    height="36"
+                    viewBox="0 0 38 38"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                  <path
+                    d="M13.7314 22.689C13.7314 24.7315 15.2989 26.3782 17.2464 26.3782H21.2206C22.9147 26.3782 24.2922 24.9373 24.2922 23.164C24.2922 21.2323 23.4531 20.5515 22.2022 20.1082L15.8214 17.8915C14.5706 17.4482 13.7314 16.7673 13.7314 14.8357C13.7314 13.0623 15.1089 11.6215 16.8031 11.6215H20.7772C22.7247 11.6215 24.2922 13.2682 24.2922 15.3107M19.0009 9.50008V28.5001M34.8343 19.0001C34.8343 27.7446 27.7454 34.8334 19.0009 34.8334C10.2564 34.8334 3.1676 27.7446 3.1676 19.0001C3.1676 10.2556 10.2564 3.16675 19.0009 3.16675C27.7454 3.16675 34.8343 10.2556 34.8343 19.0001Z"
+                    stroke="#292D32"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  </svg>
+                  <div className="h-6 border-l border-gray-400"></div>
+
+                  <Input variant="standard" label="Amount" placeholder="0.00"/>
+                </div>
+
+
+
               <div data-svg-wrapper className="left-[20px] top-[510px] absolute">
                 <svg
                   width="32"
@@ -80,45 +99,9 @@ export default function AddExpensePopup() {
                   />
                 </svg>
               </div>
-              <div data-svg-wrapper className="left-[39px] top-[329px] absolute">
-                <svg
-                  width="38"
-                  height="38"
-                  viewBox="0 0 38 38"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M13.7314 22.689C13.7314 24.7315 15.2989 26.3782 17.2464 26.3782H21.2206C22.9147 26.3782 24.2922 24.9373 24.2922 23.164C24.2922 21.2323 23.4531 20.5515 22.2022 20.1082L15.8214 17.8915C14.5706 17.4482 13.7314 16.7673 13.7314 14.8357C13.7314 13.0623 15.1089 11.6215 16.8031 11.6215H20.7772C22.7247 11.6215 24.2922 13.2682 24.2922 15.3107M19.0009 9.50008V28.5001M34.8343 19.0001C34.8343 27.7446 27.7454 34.8334 19.0009 34.8334C10.2564 34.8334 3.1676 27.7446 3.1676 19.0001C3.1676 10.2556 10.2564 3.16675 19.0009 3.16675C27.7454 3.16675 34.8343 10.2556 34.8343 19.0001Z"
-                    stroke="#292D32"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <div data-svg-wrapper className="left-[39px] top-[275px] absolute">
-                <svg
-                  width="38"
-                  height="38"
-                  viewBox="0 0 38 38"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M3.1676 3.95825H34.8343M12.6676 12.6666H25.3343M12.6676 20.5833H25.3343M5.81179 3.95825V22.9108C5.81179 24.4624 6.54012 25.9349 7.79096 26.8691L16.0401 33.0441C17.7976 34.3582 20.2201 34.3582 21.9776 33.0441L30.2268 26.8691C31.4776 25.9349 32.2059 24.4624 32.2059 22.9108V3.95825H5.81179Z"
-                    stroke="#040B2B"
-                    strokeWidth="1.5"
-                    strokeMiterlimit="10"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
-              <div className="w-[38px] h-[0px] left-[86px] top-[312px] absolute origin-top-left -rotate-90 border border-[#040b2b]"></div>
-              <div className="w-[38px] h-[0px] left-[86px] top-[367px] absolute origin-top-left -rotate-90 border border-[#040b2b]"></div>
-              <div className="w-[163px] left-[111px] top-[336px] absolute text-[#61677d] text-base font-normal font-['Poppins'] leading-[24.94px]">
-                0.00
-              </div>
+
+
+
               <div className="w-[102px] h-[26px] left-[109px] top-[391px] absolute">
                 <div className="w-[102px] h-[20.80px] left-0 top-[3.12px] absolute bg-[#d9d9d9] rounded-xl" />
                 <div className="w-[16.64px] h-[0px] left-[57px] top-[5.20px] absolute origin-top-left rotate-90 border border-[#61677d]"></div>
