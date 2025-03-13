@@ -5,7 +5,7 @@ import HeaderProfile from '../Components/HeaderProfile.jsx';
 
 
 const GroupView = () => {
-    const [activeTab, setActiveTab] = useState('expenses');
+    const [activeTab, setActiveTab] = useState('settleup');
     
 
     return (
@@ -30,11 +30,11 @@ const GroupView = () => {
 
                     <div className="flex items-center justify-between">
                         <div>
-                            <div className="flex items-center">
-                                <img src="src/images/group.png" alt="Group" className="w-[85px] h-[80px] right-[200]" />
+                        <div className="flex items-center mt-[-60px]">
+                                <img src="src/images/profile.png" alt="Profile" className="w-[85px] h-[80px] right-[200]" />
                                 <div>
                                     <div className="w-[329.67px] text-[#040b2b] text-[30px] font-normal font-['Inter'] " >
-                                        Software Group
+                                        Sonal Attanayake
                                     </div>
 
                                     <div className="w-[139.39px] text-[#5c5470] text-l font-normal font-['Inter']">
@@ -42,14 +42,7 @@ const GroupView = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="w-[221.26px] mt-2">
-                                <span className="text-[#5c5470] text-l font-normal font-['Poppins']">
-                                    Sonal Attanayake<br />Shehan Rajapaksha<br />
-                                </span>
-                                <span className="text-[#5c5470] text-l font-light font-['Poppins']">
-                                    +2 more
-                                </span>
-                            </div>
+                            
                         </div>
                         <div className="ml-2 text-right w-[280px] mt-24">
                             <span className="text-[#040B2B] text-xl font-semibold font-['Inter']">
@@ -66,16 +59,16 @@ const GroupView = () => {
 
                     <div className="mt-4 flex space-x-20" style={{ marginTop: '2rem' }}>
                         <button
+                            onClick={() => setActiveTab('settleup')}
+                            className={`px-28 py-3 rounded-2xl ${activeTab === 'settleup' ? 'bg-[#040B2B] text-white' : 'bg-gray-200'}`}
+                        >
+                            Settle Up
+                        </button>
+                        <button
                             onClick={() => setActiveTab('expenses')}
                             className={`px-28 py-3 rounded-2xl ${activeTab === 'expenses' ? 'bg-[#040B2B] text-white' : 'bg-gray-200'}`}
                         >
                             Expenses
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('balance')}
-                            className={`px-28 py-3 rounded-2xl ${activeTab === 'balance' ? 'bg-[#040B2B] text-white' : 'bg-gray-200'}`}
-                        >
-                            Balance
                         </button>
                         <button
                             onClick={() => setActiveTab('report')}
@@ -88,7 +81,7 @@ const GroupView = () => {
                     </div>
                 </div>
 
-                {activeTab === 'expenses' && (
+                {activeTab === 'settleup' && (
                     <div className="space-y-8 w-full">
                         {/* December 2024 (Latest Month on Top) */}
                         <div>
