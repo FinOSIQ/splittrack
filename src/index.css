@@ -1,9 +1,6 @@
-
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 
 
 #root {
@@ -12,9 +9,9 @@
 }
 
 html, body {
-  overflow: hidden;
+  overflow: x-hidden;
+  /* font-family: poppins, sans-serif; */
 }
-
 
 @layer utilities {
   .scrollable-div {

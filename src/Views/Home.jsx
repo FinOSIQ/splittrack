@@ -5,6 +5,8 @@ import CreateGroupModal from '../Components/CreateGroup';
 import YourBalanceCard from '../Components/YourBalanceCard';
 import AddExpensePopup from '../Components/AddExpensePopup';
 import { Input } from "@material-tailwind/react";
+import DatePicker from '../Components/DatePicker';
+import DatePickerTest from '../Components/DatePickerTest';
 
 
 const Home = () => {
@@ -14,8 +16,7 @@ const Home = () => {
     <HeaderProfile />
         <YourBalanceCard />
         <AddExpensePopup />
-        
-        
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
             <GroupCard />
             <GroupCard />
