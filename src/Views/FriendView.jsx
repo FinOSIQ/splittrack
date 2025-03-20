@@ -19,7 +19,7 @@ const GroupView = () => {
 
 
 
-                <main className="flex-1 p-8 w-full max-w-[90vw] lg:max-w-[1400px] xl:max-w-[1600px] ml-24">
+                <main className="flex-1 p-8 w-full max-w-[90vw] lg:max-w-[1400px] xl:max-w-[1600px] ml-28">
 
                     
                 <div className="mb-8">
