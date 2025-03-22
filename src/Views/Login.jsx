@@ -5,7 +5,7 @@ import { useAuthContext } from "@asgardeo/auth-react"; // Import Asgardeo authen
 
 const SplitTrackScreen = () => {
 
-    const { state, signIn, signOut, getAccessToken } = useAuthContext();
+    const { state, signIn, signOut, getAccessToken, } = useAuthContext();
 
     useEffect(() => {
         if (state.isAuthenticated) {
@@ -38,9 +38,6 @@ const SplitTrackScreen = () => {
                 <div className="flex flex-col gap-4 w-full max-w-xs">
                     <button onClick={() => { signIn() }} className="bg-slate-900 text-white text-2xl font-medium font-['Poppins'] py-4 rounded-xl hover:bg-slate-800 transition">
                         Log In
-                    </button>
-                    <button onClick={() => { signIn() }} className="bg-slate-100 text-slate-900 text-2xl font-medium font-['Poppins'] py-4 rounded-xl hover:bg-slate-200 transition">
-                        Register
                     </button>
                 </div>
             </div>
