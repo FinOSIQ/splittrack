@@ -6,6 +6,9 @@ import YourBalanceCard from '../Components/YourBalanceCard';
 import AddExpensePopup from '../Components/AddExpensePopup';
 import { Input } from "@material-tailwind/react";
 import MobileOverlay from '../Components/MobileOverlay';
+import {QRCodeSVG} from 'qrcode.react';
+
+
 
 
 const Home = () => {
@@ -25,6 +28,7 @@ const Home = () => {
     return (
 
         <div>
+        {/* <QRCodeSVG value={'https://google.com'} size={200} /> */}
             <HeaderProfile />
             <YourBalanceCard />
             <AddExpensePopup />
