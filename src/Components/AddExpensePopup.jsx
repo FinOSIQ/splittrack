@@ -7,8 +7,8 @@ import expenseParticipants from "./ExpenseParticipants"; // Import your expense 
 export default function AddExpensePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
-  // New state to track the total expense amount.
-  const [totalExpense, setTotalExpense] = useState(10000);
+  // Initialize totalExpense as an empty string.
+  const [totalExpense, setTotalExpense] = useState("");
 
   // Log the expense participants on component mount
   useEffect(() => {
@@ -24,14 +24,15 @@ export default function AddExpensePopup() {
       splitShares: expenseParticipants.participants.map(() => "")
     },
     onSubmit: (values) => {
+      const expense = Number(totalExpense);
       let submissionData = { type: "", details: [] };
-  
+
       switch (selectedTab) {
         case 1: {
           // Split Equally
           submissionData.type = "equal";
           const countSelected = values.splitEqual.filter(Boolean).length;
-          const equalAmount = countSelected > 0 ? totalExpense / countSelected : 0;
+          const equalAmount = countSelected > 0 ? expense / countSelected : 0;
           submissionData.details = expenseParticipants.participants.map((name, idx) => ({
             name,
             amount: values.splitEqual[idx] ? equalAmount : 0
@@ -40,15 +41,15 @@ export default function AddExpensePopup() {
         }
         case 2: {
           // Split by Amounts
-          // Calculate the total entered amount.
           const totalEntered = expenseParticipants.participants.reduce(
             (acc, _name, idx) => acc + (parseFloat(values.splitAmounts[idx]) || 0),
             0
           );
-          // Check if any amount is left.
-          if (totalEntered < totalExpense) {
-            alert(`Please allocate the full amount. You still have LKR ${(totalExpense - totalEntered).toFixed(2)} left.`);
-            return; // Do not proceed with submission.
+          if (totalEntered < expense) {
+            alert(
+              `Please allocate the full amount. You still have LKR ${(expense - totalEntered).toFixed(2)} left.`
+            );
+            return;
           }
           submissionData.type = "amount";
           submissionData.details = expenseParticipants.participants.map((name, idx) => ({
@@ -59,28 +60,38 @@ export default function AddExpensePopup() {
         }
         case 3: {
           // Split by Percentages
+          const totalPercentage = expenseParticipants.participants.reduce(
+            (acc, _name, idx) => acc + (parseFloat(values.splitPercentages[idx]) || 0),
+            0
+          );
+          if (totalPercentage !== 100) {
+            alert(
+              `Please allocate 100% of the expense. Currently allocated: ${totalPercentage.toFixed(2)}%`
+            );
+            return;
+          }
           submissionData.type = "percentage";
           submissionData.details = expenseParticipants.participants.map((name, idx) => {
             const perc = parseFloat(values.splitPercentages[idx]) || 0;
             return {
               name,
-              amount: (totalExpense * perc) / 100
+              amount: (expense * perc) / 100
             };
           });
           break;
         }
         case 4: {
           // Split by Shares
-          submissionData.type = "share";
           const totalShares = values.splitShares.reduce(
             (acc, val) => acc + (parseFloat(val) || 0),
             0
           );
+          submissionData.type = "share";
           submissionData.details = expenseParticipants.participants.map((name, idx) => {
             const share = parseFloat(values.splitShares[idx]) || 0;
             return {
               name,
-              amount: totalShares > 0 ? (totalExpense * share) / totalShares : 0
+              amount: totalShares > 0 ? (expense * share) / totalShares : 0
             };
           });
           break;
@@ -89,10 +100,9 @@ export default function AddExpensePopup() {
           break;
       }
       console.log("Submission Data:", submissionData);
-      setIsOpen(false); // Only close the popup if submission is successful.
+      setIsOpen(false);
     }
   });
-  
 
   // STEP 1: Add Expense (without Formik)
   const renderStep1 = () => (
@@ -154,8 +164,7 @@ export default function AddExpensePopup() {
           variant="standard"
           label="Amount"
           placeholder="0.00"
-          // Update totalExpense state when the amount changes
-          onChange={(e) => setTotalExpense(parseFloat(e.target.value) || 0)}
+          onChange={(e) => setTotalExpense(e.target.value)}
         />
       </div>
 
@@ -216,7 +225,14 @@ export default function AddExpensePopup() {
         {/* Next Button */}
         <button
           type="button"
-          onClick={() => setStep(2)}
+          onClick={() => {
+            // Check if a valid amount was entered
+            if (!totalExpense || Number(totalExpense) <= 0) {
+              alert("Please enter a valid amount to continue.");
+              return;
+            }
+            setStep(2);
+          }}
           className="px-6 py-2 bg-[#040b2b] text-white rounded-lg flex items-center gap-2"
         >
           Next
@@ -275,14 +291,13 @@ export default function AddExpensePopup() {
               </div>
             ))}
           </div>
-          {/* Calculate the number of selected participants */}
           {(() => {
             const countSelected = formik.values.splitEqual.filter(Boolean).length;
-            const perPerson = countSelected > 0 ? totalExpense / countSelected : 0;
+            const perPerson = countSelected > 0 ? Number(totalExpense) / countSelected : 0;
             return (
               <div className="mt-4 text-center text-gray-800">
                 <div className="font-medium">
-                  LKR {totalExpense.toFixed(2)}/person ({countSelected}{" "}
+                  LKR {Number(totalExpense).toFixed(2)}/person ({countSelected}{" "}
                   {countSelected === 1 ? "person" : "people"})
                 </div>
                 <div className="mt-1">
@@ -302,7 +317,6 @@ export default function AddExpensePopup() {
       heading: "Split by Amounts",
       subheading: "Specify exactly how much each person owes.",
       content: (() => {
-        // Calculate the total entered amount from all fields.
         const totalEntered = expenseParticipants.participants.reduce(
           (acc, _name, i) => acc + (parseFloat(formik.values.splitAmounts[i]) || 0),
           0
@@ -312,7 +326,6 @@ export default function AddExpensePopup() {
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
               {expenseParticipants.participants.map((name, idx) => {
-                // Get the current value for this field.
                 const currentValue = parseFloat(formik.values.splitAmounts[idx]) || 0;
                 return (
                   <div key={idx} className="flex items-center gap-3">
@@ -339,15 +352,12 @@ export default function AddExpensePopup() {
                         variant="static"
                         label=""
                         placeholder="0.00"
-                        // Use Formik's value, but override onChange.
                         value={formik.values.splitAmounts[idx]}
                         onChange={(e) => {
                           const newVal = parseFloat(e.target.value) || 0;
-                          // Calculate total excluding the current field.
                           const currentTotalWithout = totalEntered - currentValue;
-                          if (currentTotalWithout + newVal > totalExpense) {
-                            // Optionally, you can show an error message here.
-                            return; // Do not update the field if it would exceed the total.
+                          if (currentTotalWithout + newVal > Number(totalExpense)) {
+                            return;
                           }
                           formik.setFieldValue(`splitAmounts[${idx}]`, e.target.value);
                         }}
@@ -359,10 +369,10 @@ export default function AddExpensePopup() {
             </div>
             <div className="mt-4 text-center text-gray-800">
               <span className="font-medium">
-                LKR {totalEntered.toFixed(2)} out of LKR {totalExpense.toFixed(2)}
+                LKR {totalEntered.toFixed(2)} out of LKR {Number(totalExpense).toFixed(2)}
               </span>
               <div className="text-red-600">
-                (LKR {(totalExpense - totalEntered).toFixed(2)} left)
+                (LKR {(Number(totalExpense) - totalEntered).toFixed(2)} left)
               </div>
             </div>
           </div>
@@ -375,7 +385,6 @@ export default function AddExpensePopup() {
       heading: "Split by Percentages",
       subheading: "Enter the percentage split that's fair for your expense.",
       content: (() => {
-        // Calculate the total percentage entered
         const totalPercentage = expenseParticipants.participants.reduce(
           (acc, _name, idx) => acc + (parseFloat(formik.values.splitPercentages[idx]) || 0),
           0
@@ -384,7 +393,6 @@ export default function AddExpensePopup() {
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
               {expenseParticipants.participants.map((name, idx) => {
-                // Current value for this field
                 const currentValue = parseFloat(formik.values.splitPercentages[idx]) || 0;
                 return (
                   <div key={idx} className="flex items-center gap-3">
@@ -411,15 +419,12 @@ export default function AddExpensePopup() {
                         variant="static"
                         label=""
                         placeholder="%"
-                        // Use Formik's value, but override onChange.
                         value={formik.values.splitPercentages[idx]}
                         onChange={(e) => {
                           const newVal = parseFloat(e.target.value) || 0;
-                          // Calculate the total percentage excluding this field
                           const totalWithout = totalPercentage - currentValue;
                           if (totalWithout + newVal > 100) {
-                            // Optionally, you could display an error message here.
-                            return; // Prevent the update if it would exceed 100%
+                            return;
                           }
                           formik.setFieldValue(`splitPercentages[${idx}]`, e.target.value);
                         }}
@@ -448,7 +453,6 @@ export default function AddExpensePopup() {
       subheading:
         "Great for time based or splitting across families. (2 nights => 2 shares)",
       content: (() => {
-        // Calculate the total number of shares entered
         const totalShares = expenseParticipants.participants.reduce(
           (acc, _name, idx) => acc + (parseFloat(formik.values.splitShares[idx]) || 0),
           0
@@ -472,7 +476,7 @@ export default function AddExpensePopup() {
                       <circle cx="12" cy="7" r="4" />
                       <path d="M5.5 20C5.5 16.9624 7.96243 14.5 11 14.5H13C16.0376 14.5 18.5 16.9624 18.5 20" />
                     </svg>
-                </div>
+                  </div>
                   <div className="flex-1">
                     <span className="font-medium">{name}</span>
                   </div>
@@ -494,7 +498,6 @@ export default function AddExpensePopup() {
         );
       })()
     }
-    
   ];
 
   const [selectedTab, setSelectedTab] = useState(tabs[0].id);
@@ -544,7 +547,6 @@ export default function AddExpensePopup() {
     );
   };
 
-  // Render content: if step 1, show non-formik content; if step 2, wrap it in a form.
   const renderStepContent = () => {
     if (step === 1) {
       return renderStep1();
