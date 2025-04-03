@@ -1,18 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import GroupCard from '../Components/GroupCard';
 import HeaderProfile from '../Components/HeaderProfile';
 import CreateGroupModal from '../Components/CreateGroup';
 import YourBalanceCard from '../Components/YourBalanceCard';
 import AddExpensePopup from '../Components/AddExpensePopup';
 import { Input } from "@material-tailwind/react";
+import MobileOverlay from '../Components/MobileOverlay';
 import DatePicker from '../Components/DatePicker';
 import DatePickerTest from '../Components/DatePickerTest';
 
 
+
 const Home = () => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkScreenSize = () => {
+            setIsMobile(window.matchMedia("(max-width: 768px)").matches);
+        };
+
+        checkScreenSize();
+        window.addEventListener("resize", checkScreenSize);
+
+        return () => window.removeEventListener("resize", checkScreenSize);
+    }, []);
+
     return (
-        
-    <div>
+      
+      
+      <div>
     <HeaderProfile />
         <YourBalanceCard />
         <AddExpensePopup />
@@ -25,9 +41,9 @@ const Home = () => {
             <GroupCard />
             <GroupCard />
             <GroupCard/>    
+
+{isMobile && <MobileOverlay />}
         </div>
-        {/* <CreateGroupModal /> */}
-    </div>
     );
 };
 
