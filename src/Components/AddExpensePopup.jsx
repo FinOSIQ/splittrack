@@ -7,28 +7,92 @@ import expenseParticipants from "./ExpenseParticipants"; // Import your expense 
 export default function AddExpensePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
+  // New state to track the total expense amount.
+  const [totalExpense, setTotalExpense] = useState(10000);
 
   // Log the expense participants on component mount
   useEffect(() => {
     console.log(expenseParticipants);
   }, []);
 
-  // Initialize Formik, which will only be used in Step 2.
-  // (If you want to include Step 1 fields, you could add them here.)
+  // Initialize Formik for the split options
   const formik = useFormik({
     initialValues: {
-      // You can optionally include step 1 fields here if needed.
-      // For this example, we only include the split fields.
       splitEqual: expenseParticipants.participants.map(() => true),
       splitAmounts: expenseParticipants.participants.map(() => ""),
       splitPercentages: expenseParticipants.participants.map(() => ""),
       splitShares: expenseParticipants.participants.map(() => "")
     },
     onSubmit: (values) => {
-      console.log("Form Values:", values);
-      setIsOpen(false);
+      let submissionData = { type: "", details: [] };
+  
+      switch (selectedTab) {
+        case 1: {
+          // Split Equally
+          submissionData.type = "equal";
+          const countSelected = values.splitEqual.filter(Boolean).length;
+          const equalAmount = countSelected > 0 ? totalExpense / countSelected : 0;
+          submissionData.details = expenseParticipants.participants.map((name, idx) => ({
+            name,
+            amount: values.splitEqual[idx] ? equalAmount : 0
+          }));
+          break;
+        }
+        case 2: {
+          // Split by Amounts
+          // Calculate the total entered amount.
+          const totalEntered = expenseParticipants.participants.reduce(
+            (acc, _name, idx) => acc + (parseFloat(values.splitAmounts[idx]) || 0),
+            0
+          );
+          // Check if any amount is left.
+          if (totalEntered < totalExpense) {
+            alert(`Please allocate the full amount. You still have LKR ${(totalExpense - totalEntered).toFixed(2)} left.`);
+            return; // Do not proceed with submission.
+          }
+          submissionData.type = "amount";
+          submissionData.details = expenseParticipants.participants.map((name, idx) => ({
+            name,
+            amount: parseFloat(values.splitAmounts[idx]) || 0
+          }));
+          break;
+        }
+        case 3: {
+          // Split by Percentages
+          submissionData.type = "percentage";
+          submissionData.details = expenseParticipants.participants.map((name, idx) => {
+            const perc = parseFloat(values.splitPercentages[idx]) || 0;
+            return {
+              name,
+              amount: (totalExpense * perc) / 100
+            };
+          });
+          break;
+        }
+        case 4: {
+          // Split by Shares
+          submissionData.type = "share";
+          const totalShares = values.splitShares.reduce(
+            (acc, val) => acc + (parseFloat(val) || 0),
+            0
+          );
+          submissionData.details = expenseParticipants.participants.map((name, idx) => {
+            const share = parseFloat(values.splitShares[idx]) || 0;
+            return {
+              name,
+              amount: totalShares > 0 ? (totalExpense * share) / totalShares : 0
+            };
+          });
+          break;
+        }
+        default:
+          break;
+      }
+      console.log("Submission Data:", submissionData);
+      setIsOpen(false); // Only close the popup if submission is successful.
     }
   });
+  
 
   // STEP 1: Add Expense (without Formik)
   const renderStep1 = () => (
@@ -65,11 +129,7 @@ export default function AddExpensePopup() {
           />
         </svg>
         <div className="h-6 border-l border-gray-400"></div>
-        <Input
-          variant="standard"
-          label="Name"
-          placeholder="Dinner, Lunch, etc.."
-        />
+        <Input variant="standard" label="Name" placeholder="Dinner, Lunch, etc.." />
       </div>
 
       {/* Amount */}
@@ -94,12 +154,13 @@ export default function AddExpensePopup() {
           variant="standard"
           label="Amount"
           placeholder="0.00"
+          // Update totalExpense state when the amount changes
+          onChange={(e) => setTotalExpense(parseFloat(e.target.value) || 0)}
         />
       </div>
 
       {/* Date */}
       <div className="flex justify-center -mt-16">
-        {/* DatePicker is rendered here, not wrapped in the form */}
         <DatePicker />
       </div>
 
@@ -214,104 +275,171 @@ export default function AddExpensePopup() {
               </div>
             ))}
           </div>
-          <div className="mt-4 text-center text-gray-800">
-            <span className="font-medium">LKR 10,000.00/person</span> (
-            {expenseParticipants.participants.length} people)
-          </div>
+          {/* Calculate the number of selected participants */}
+          {(() => {
+            const countSelected = formik.values.splitEqual.filter(Boolean).length;
+            const perPerson = countSelected > 0 ? totalExpense / countSelected : 0;
+            return (
+              <div className="mt-4 text-center text-gray-800">
+                <div className="font-medium">
+                  LKR {totalExpense.toFixed(2)}/person ({countSelected}{" "}
+                  {countSelected === 1 ? "person" : "people"})
+                </div>
+                <div className="mt-1">
+                  {countSelected > 0
+                    ? `LKR ${perPerson.toFixed(2)} per person`
+                    : "No one selected"}
+                </div>
+              </div>
+            );
+          })()}
         </div>
-      ),
+      )
     },
     {
       id: 2,
       label: "1.23",
       heading: "Split by Amounts",
       subheading: "Specify exactly how much each person owes.",
-      content: (
-        <div className="mt-4">
-          <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
-            {expenseParticipants.participants.map((name, idx) => (
-              <div key={idx} className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="7" r="4" />
-                    <path d="M5.5 20C5.5 16.9624 7.96243 14.5 11 14.5H13C16.0376 14.5 18.5 16.9624 18.5 20" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <span className="font-medium">{name}</span>
-                </div>
-                <div className="w-16">
-                  <Input
-                    variant="static"
-                    label=""
-                    placeholder="0.00"
-                    {...formik.getFieldProps(`splitAmounts[${idx}]`)}
-                  />
-                </div>
+      content: (() => {
+        // Calculate the total entered amount from all fields.
+        const totalEntered = expenseParticipants.participants.reduce(
+          (acc, _name, i) => acc + (parseFloat(formik.values.splitAmounts[i]) || 0),
+          0
+        );
+    
+        return (
+          <div className="mt-4">
+            <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
+              {expenseParticipants.participants.map((name, idx) => {
+                // Get the current value for this field.
+                const currentValue = parseFloat(formik.values.splitAmounts[idx]) || 0;
+                return (
+                  <div key={idx} className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="7" r="4" />
+                        <path d="M5.5 20C5.5 16.9624 7.96243 14.5 11 14.5H13C16.0376 14.5 18.5 16.9624 18.5 20" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-medium">{name}</span>
+                    </div>
+                    <div className="w-16">
+                      <Input
+                        variant="static"
+                        label=""
+                        placeholder="0.00"
+                        // Use Formik's value, but override onChange.
+                        value={formik.values.splitAmounts[idx]}
+                        onChange={(e) => {
+                          const newVal = parseFloat(e.target.value) || 0;
+                          // Calculate total excluding the current field.
+                          const currentTotalWithout = totalEntered - currentValue;
+                          if (currentTotalWithout + newVal > totalExpense) {
+                            // Optionally, you can show an error message here.
+                            return; // Do not update the field if it would exceed the total.
+                          }
+                          formik.setFieldValue(`splitAmounts[${idx}]`, e.target.value);
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 text-center text-gray-800">
+              <span className="font-medium">
+                LKR {totalEntered.toFixed(2)} out of LKR {totalExpense.toFixed(2)}
+              </span>
+              <div className="text-red-600">
+                (LKR {(totalExpense - totalEntered).toFixed(2)} left)
               </div>
-            ))}
+            </div>
           </div>
-          <div className="mt-4 text-center text-gray-800">
-            <span className="font-medium">LKR 0.00 out of LKR 10,000.00</span>
-            <div className="text-red-600">(LKR 10,000.00 left)</div>
-          </div>
-        </div>
-      ),
+        );
+      })()
     },
     {
       id: 3,
       label: "%",
       heading: "Split by Percentages",
       subheading: "Enter the percentage split that's fair for your expense.",
-      content: (
-        <div className="mt-4">
-          <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
-            {expenseParticipants.participants.map((name, idx) => (
-              <div key={idx} className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="7" r="4" />
-                    <path d="M5.5 20C5.5 16.9624 7.96243 14.5 11 14.5H13C16.0376 14.5 18.5 16.9624 18.5 20" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <span className="font-medium">{name}</span>
-                </div>
-                <div className="w-16">
-                  <Input
-                    variant="static"
-                    label=""
-                    placeholder="%"
-                    {...formik.getFieldProps(`splitPercentages[${idx}]`)}
-                  />
-                </div>
+      content: (() => {
+        // Calculate the total percentage entered
+        const totalPercentage = expenseParticipants.participants.reduce(
+          (acc, _name, idx) => acc + (parseFloat(formik.values.splitPercentages[idx]) || 0),
+          0
+        );
+        return (
+          <div className="mt-4">
+            <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
+              {expenseParticipants.participants.map((name, idx) => {
+                // Current value for this field
+                const currentValue = parseFloat(formik.values.splitPercentages[idx]) || 0;
+                return (
+                  <div key={idx} className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="7" r="4" />
+                        <path d="M5.5 20C5.5 16.9624 7.96243 14.5 11 14.5H13C16.0376 14.5 18.5 16.9624 18.5 20" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-medium">{name}</span>
+                    </div>
+                    <div className="w-16">
+                      <Input
+                        variant="static"
+                        label=""
+                        placeholder="%"
+                        // Use Formik's value, but override onChange.
+                        value={formik.values.splitPercentages[idx]}
+                        onChange={(e) => {
+                          const newVal = parseFloat(e.target.value) || 0;
+                          // Calculate the total percentage excluding this field
+                          const totalWithout = totalPercentage - currentValue;
+                          if (totalWithout + newVal > 100) {
+                            // Optionally, you could display an error message here.
+                            return; // Prevent the update if it would exceed 100%
+                          }
+                          formik.setFieldValue(`splitPercentages[${idx}]`, e.target.value);
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 text-center text-gray-800">
+              <span className="font-medium">
+                {totalPercentage.toFixed(2)}% out of 100%
+              </span>
+              <div className="text-red-600">
+                ({(100 - totalPercentage).toFixed(2)}% left)
               </div>
-            ))}
+            </div>
           </div>
-          <div className="mt-4 text-center text-gray-800">
-            <span className="font-medium">0% out of 100%</span>
-            <div className="text-red-600">(100% left)</div>
-          </div>
-        </div>
-      ),
+        );
+      })()
     },
     {
       id: 4,
@@ -319,62 +447,54 @@ export default function AddExpensePopup() {
       heading: "Split by Shares",
       subheading:
         "Great for time based or splitting across families. (2 nights => 2 shares)",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth="1.5"
-          stroke="currentColor"
-          className="size-6 mx-auto"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"
-          />
-        </svg>
-      ),
-      content: (
-        <div className="mt-4">
-          <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-3">
-            {expenseParticipants.participants.map((name, idx) => (
-              <div key={idx} className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="7" r="4" />
-                    <path d="M5.5 20C5.5 16.9624 7.96243 14.5 11 14.5H13C16.0376 14.5 18.5 16.9624 18.5 20" />
-                  </svg>
+      content: (() => {
+        // Calculate the total number of shares entered
+        const totalShares = expenseParticipants.participants.reduce(
+          (acc, _name, idx) => acc + (parseFloat(formik.values.splitShares[idx]) || 0),
+          0
+        );
+        return (
+          <div className="mt-4">
+            <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-3">
+              {expenseParticipants.participants.map((name, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="7" r="4" />
+                      <path d="M5.5 20C5.5 16.9624 7.96243 14.5 11 14.5H13C16.0376 14.5 18.5 16.9624 18.5 20" />
+                    </svg>
                 </div>
-                <div className="flex-1">
-                  <span className="font-medium">{name}</span>
+                  <div className="flex-1">
+                    <span className="font-medium">{name}</span>
+                  </div>
+                  <div className="w-16">
+                    <Input
+                      variant="static"
+                      label=""
+                      placeholder="0"
+                      {...formik.getFieldProps(`splitShares[${idx}]`)}
+                    />
+                  </div>
                 </div>
-                <div className="w-16">
-                  <Input
-                    variant="static"
-                    label=""
-                    placeholder="0"
-                    {...formik.getFieldProps(`splitShares[${idx}]`)}
-                  />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="mt-4 text-center text-gray-800">
+              <span className="font-medium">{totalShares} total shares</span>
+            </div>
           </div>
-          <div className="mt-4 text-center text-gray-800">
-            <span className="font-medium">0 total shares</span>
-          </div>
-        </div>
-      ),
-    },
+        );
+      })()
+    }
+    
   ];
 
   const [selectedTab, setSelectedTab] = useState(tabs[0].id);
@@ -424,8 +544,7 @@ export default function AddExpensePopup() {
     );
   };
 
-  // Render content: if step 1, show non-formik content;
-  // if step 2, wrap it in a form that calls formik.handleSubmit.
+  // Render content: if step 1, show non-formik content; if step 2, wrap it in a form.
   const renderStepContent = () => {
     if (step === 1) {
       return renderStep1();

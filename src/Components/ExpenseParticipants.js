@@ -9,7 +9,7 @@ const expenseParticipants = {
       "Kamal Perera",
       "Dilshan Perera",
       "Kumara Sangakkara",
-      "Mahela Jayawardena",
+      
     ]
   };
   
