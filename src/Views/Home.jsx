@@ -6,8 +6,10 @@ import YourBalanceCard from '../Components/YourBalanceCard';
 import AddExpensePopup from '../Components/AddExpensePopup';
 import { Input } from "@material-tailwind/react";
 import MobileOverlay from '../Components/MobileOverlay';
+import {QRCodeSVG} from 'qrcode.react';
 import DatePicker from '../Components/DatePicker';
 import DatePickerTest from '../Components/DatePickerTest';
+
 
 
 
@@ -26,9 +28,7 @@ const Home = () => {
     }, []);
 
     return (
-      
-      
-      <div>
+ <div>
     <HeaderProfile />
         <YourBalanceCard />
         <AddExpensePopup />

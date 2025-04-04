@@ -10,6 +10,7 @@ import Home from './Views/Home'
 import GroupView from './Views/GroupView'
 import ExpenseView from './Views/ExpenseView';
 import AllFriends from './Views/AllFriends';
+import OCRscanner from './Components/OCRscanner';
 
 
 
@@ -25,6 +26,7 @@ function App() {
             <Route path="/group" element={<GroupView />} />
             <Route path="/expense" element={<ExpenseView />} />
              <Route path="/friends" element={<AllFriends/>} />
+             <Route path="/ocr" element={<OCRscanner/>} />
           </Routes>
         </Router>
       </div>

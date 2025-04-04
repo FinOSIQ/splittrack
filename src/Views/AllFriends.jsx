@@ -4,7 +4,6 @@ import FriendReqCard from "../Components/FriendReqCard";
 import { useState, useRef, useEffect } from "react";
 import gsap from "gsap";
 import HeaderProfile from "../Components/HeaderProfile";
-import { Input } from "@material-tailwind/react";
 
 export default function AllFriends() {
     const [activeTab, setActiveTab] = useState("friends");
@@ -42,7 +41,7 @@ export default function AllFriends() {
         <>
 
             <HeaderProfile />
-            <div className="h-screen flex flex-row bg-white rounded-md md:mx-5 -mt-8  px-0 md:mt-4 overflow-x-hidden overflow-y-hidden">
+            <div className="h-[80vh] flex flex-row bg-white rounded-md md:mx-5 -mt-8  px-0 md:mt-4 overflow-x-hidden overflow-y-hidden">
 
                 {/* 65% column */}
                 <div className="xl:w-[70%] lg:w-[60%] w-full  md:px-3 px-1 xl:h-[78vh] lg:h-[76vh]">
