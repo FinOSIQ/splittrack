@@ -7,6 +7,8 @@ import AddExpensePopup from '../Components/AddExpensePopup';
 import { Input } from "@material-tailwind/react";
 import MobileOverlay from '../Components/MobileOverlay';
 import {QRCodeSVG} from 'qrcode.react';
+import DatePicker from '../Components/DatePicker';
+import DatePickerTest from '../Components/DatePickerTest';
 
 
 
@@ -26,29 +28,21 @@ const Home = () => {
     }, []);
 
     return (
+ <div>
+    <HeaderProfile />
+        <YourBalanceCard />
+        <AddExpensePopup />
 
-        <div>
-        {/* <QRCodeSVG value={'https://google.com'} size={200} /> */}
-            <HeaderProfile />
-            <YourBalanceCard />
-            <AddExpensePopup />
-            <div className="flex w-72 flex-col gap-6">
-                <Input variant="static" label="Static" placeholder="Static" />
-                <Input variant="standard" label="Standard" placeholder="Standard" />
-                <Input variant="outlined" label="Outlined" placeholder="Outlined" />
-            </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            <GroupCard />
+            <GroupCard />
+            <GroupCard/>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                <GroupCard />
-                <GroupCard />
-                <GroupCard />
+            <GroupCard />
+            <GroupCard />
+            <GroupCard/>    
 
-                <GroupCard />
-                <GroupCard />
-                <GroupCard />
-            </div>
-            {/* <CreateGroupModal /> */}
-            {isMobile && <MobileOverlay />}
+{isMobile && <MobileOverlay />}
         </div>
     );
 };
