@@ -1,13 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import LogoutButton from "./LogoutButton";
-
-
-
-
 import settleImg from '../images/settle.png';
 import cgroupImg from '../images/cgroup.png';
-import addExpenseImg from '../images/addexpense.png';
+// import addExpenseImg from '../images/addexpense.png';
 import addImg from '../images/add.png';
 import activityImg from '../images/activity.png';
 
@@ -30,7 +26,7 @@ const Navbar = () => {
           to="/addexpense"
           className="absolute left-[45px] top-[229px] w-[64px] h-[64px] bg-[#040b2b] text-white flex items-center justify-center rounded-full shadow-md border-2 border-white"
         >
-          <img src={addExpenseImg} alt="Add Expense" className="w-6 h-6 filter invert" />
+          {/* <img src={addExpenseImg} alt="Add Expense" className="w-6 h-6 filter invert" /> */}
 
         </Link>
 
