@@ -31,10 +31,13 @@ const Home = () => {
     return (
         <div>
         <NavBar />
-            <HeaderProfile />
+        <div className='flex-1'>
+        <HeaderProfile />
             <YourBalanceCard />
             <AddExpensePopup />
 
+        </div>
+            
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 <GroupCard />
                 <GroupCard />
