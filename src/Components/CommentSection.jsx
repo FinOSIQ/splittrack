@@ -20,7 +20,7 @@ export default function CommentSection() {
 
       <div className="w-full p-4 bg-white min-h-[100px] rounded-xl">
         {comments.length === 0 ? (
-          <p className="text-[#61677d] text-xm font-normal font-['Poppins'] leading-[24.94px] italic text-center">
+          <p className="text-[#61677d] text- font-normal font-['Poppins'] leading-[24.94px] italic text-center">
             No comments yet.
           </p>
         ) : (

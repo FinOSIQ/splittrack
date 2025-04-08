@@ -15,7 +15,7 @@ const FriendView = () => {
     
     return (
         <div className="flex min-h-screen bg-white">
-            {/* Sidebar Navbar */}
+           
             <Navbar />
 
 
@@ -99,7 +99,7 @@ const FriendView = () => {
                         <div className="space-y-8 w-full">
                             {/* December 2024 (Latest Month on Top) */}
                             <div>
-                                <div className=" text-[#040b2b] text-base font-medium font-['Poppins'] leading-[24.94px] mt-8">December 2024</div>
+                                <div className=" text-[#040b2b] text-base font-medium font-['Poppins']  mt-8">December 2024</div>
                                 <div className="mt-4 space-y-4">
 
                                     <OwedCard />

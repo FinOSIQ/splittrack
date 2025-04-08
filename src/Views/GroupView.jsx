@@ -43,19 +43,19 @@ const GroupView = () => {
                     <div className="w-full rounded-xl bg-[#f1f2f9] p-4">
 
                         
-                        <div className="bg-[#f1f2f9] p-2 flex flex-col -space-y-3">
+                        <div className="bg-[#f1f2f9] p-2 flex flex-col -space-y-2">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
                                     <img
                                         src="src/images/group.png"
                                         alt="Group"
-                                        className="w-[64px] h-[58px] top-[10px]"
+                                        className="w-[64px] h-[58px] "
                                     />
                                     <div>
-                                        <div className="w-[240.67px] text-[#040b2b] text-lg font-normal font-['Inter']">
+                                        <div className=" text-[#040b2b] text-lg font-normal font-['Inter']">
                                             Software Group
                                         </div>
-                                        <div className="w-[139.39px] text-[#5c5470] text-xs font-normal font-['Inter']">
+                                        <div className=" text-[#5c5470] text-xs font-normal font-['Inter']">
                                             10 Dec, 2023
                                         </div>
                                     </div>
@@ -64,7 +64,7 @@ const GroupView = () => {
 
                             {/* Member names list */}
                             <div className="flex justify-between">
-                                <div className="w-[160.26px] mt-2">
+                                <div className="mt-2">
                                     {visibleMembers.map((member, index) => (
 
                                         <span key={index} className="text-[#5c5470] text-xs font-normal font-['Poppins']">
@@ -82,8 +82,8 @@ const GroupView = () => {
                                     )}
                                 </div>
 
-                                {/* Owed amount section */}
-                                <div className="ml-1 text-right w-[280px] mt-2">
+                               
+                                <div className="ml-1 text-right  mt-2">
                                     <span className="text-[#040B2B] text-base font-semibold font-['Inter']">
                                         You Are Owed
                                         <br />
@@ -94,7 +94,7 @@ const GroupView = () => {
                                 </div>
                             </div>
 
-                            {/* Buttons section */}
+                            
                             <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6 w-full mt-2 gap-4 lg:gap-6">
                                 <button
                                     onClick={() => setActiveTab('expenses')}
@@ -121,7 +121,7 @@ const GroupView = () => {
                     </div>
                 </div>
 
-                {/* Modal */}
+                
                 {isModalOpen && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
                         <div className="bg-white p-6 rounded-lg w-[400px] shadow-lg">
@@ -153,9 +153,9 @@ const GroupView = () => {
                 <div className="bg-white p-4 mt-4 mx-2 sm:mx-4 md:mx-6 lg:mx-8">
                     {activeTab === 'expenses' && (
                         <div className="space-y-8 w-full">
-                            {/* December 2024 (Latest Month on Top) */}
+                            
                             <div>
-                                <div className="w-[252.51px] h-[37.41px] text-[#040b2b] text-base font-medium font-['Poppins'] leading-[24.94px] mt-8">December 2024</div>
+                                <div className="  text-[#040b2b] text-base font-medium font-['Poppins']  mt-8">December 2024</div>
                                 <div className="mt-4 space-y-4">
 
                                     <OwedCard />
@@ -164,7 +164,7 @@ const GroupView = () => {
                                 </div>
                             </div>
                             <div>
-                                <div className="w-[252.51px] h-[37.41px] text-[#040b2b] text-base font-medium font-['Poppins'] leading-[24.94px] mt-8">November 2024</div>
+                                <div className=" text-[#040b2b] text-base font-medium font-['Poppins'] leading-[24.94px] mt-8">November 2024</div>
                                 <div className="mt-4 space-y-4">
                                     <OwedCard />
                                     <OwedCard />
