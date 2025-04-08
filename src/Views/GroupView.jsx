@@ -5,6 +5,7 @@ import Navbar from '../Components/NavBar.jsx';
 import HeaderProfile from '../Components/HeaderProfile.jsx';
 import OwedCard from '../Components/OwedCard.jsx';
 import PaidCard from '../Components/PaidCard.jsx';
+import CommentSection from '../Components/CommentSection.jsx';
 
 
 const GroupView = () => {
@@ -74,7 +75,7 @@ const GroupView = () => {
                                     {remainingCount > 0 && (
                                         <span
                                             className="text-[#5c5470] text-xs font-light font-['Poppins'] cursor-pointer underline"
-                                            onClick={() => setIsModalOpen(true)} // Trigger modal open
+                                            onClick={() => setIsModalOpen(true)} 
                                         >
                                             +{remainingCount} more
                                         </span>
@@ -177,6 +178,7 @@ const GroupView = () => {
                         </div>
                     )}
                 </div>
+                <CommentSection/>
             </main>
         </div>
     );

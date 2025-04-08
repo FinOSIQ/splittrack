@@ -30,19 +30,19 @@ const FriendView = () => {
                     <div className="w-full rounded-xl bg-[#f1f2f9] p-4">
 
 
-                        <div className="bg-[#f1f2f9] p-2 flex flex-col space-y-4">
+                        <div className="bg-[#f1f2f9] p-2 flex flex-col space-y-8">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
                                     <img
                                         src="src/images/profile.png"
                                         alt="profile"
-                                        className="w-[64px] h-[58px] top-[10px]"
+                                        className="w-[64px] h-[58px] "
                                     />
                                     <div>
-                                        <div className="w-[240.67px] text-[#040b2b] text-lg font-normal font-['Inter']">
+                                        <div className="text-[#040b2b] text-lg font-normal font-['Inter']">
                                             Sonal Attanayake
                                         </div>
-                                        <div className="w-[139.39px] text-[#5c5470] text-xs font-normal font-['Inter']">
+                                        <div className=" text-[#5c5470] text-xs font-normal font-['Inter']">
                                             10 Dec, 2023
                                         </div>
                                     </div>
