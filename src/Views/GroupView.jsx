@@ -178,7 +178,7 @@ const GroupView = () => {
                         </div>
                     )}
                 </div>
-                <CommentSection/>
+                
             </main>
         </div>
     );
