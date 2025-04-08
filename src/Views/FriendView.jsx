@@ -49,7 +49,7 @@ const FriendView = () => {
                                 </div>
 
                                 {/* Owed amount section (Aligned across from profile) */}
-                                <div className="ml-1 text-right w-[280px] mt-2">
+                                <div className="ml-1 text-right mt-2">
                                     <span className="text-[#040B2B] text-base font-semibold font-['Inter']">
                                         You Are Owed
                                         <br />
@@ -99,7 +99,7 @@ const FriendView = () => {
                         <div className="space-y-8 w-full">
                             {/* December 2024 (Latest Month on Top) */}
                             <div>
-                                <div className="w-[252.51px] h-[37.41px] text-[#040b2b] text-base font-medium font-['Poppins'] leading-[24.94px] mt-8">December 2024</div>
+                                <div className=" text-[#040b2b] text-base font-medium font-['Poppins'] leading-[24.94px] mt-8">December 2024</div>
                                 <div className="mt-4 space-y-4">
 
                                     <OwedCard />
@@ -108,7 +108,7 @@ const FriendView = () => {
                                 </div>
                             </div>
                             <div>
-                                <div className="w-[252.51px] h-[37.41px] text-[#040b2b] text-base font-medium font-['Poppins'] leading-[24.94px] mt-8">November 2024</div>
+                                <div className=" text-[#040b2b] text-base font-medium font-['Poppins'] leading-[24.94px] mt-8">November 2024</div>
                                 <div className="mt-4 space-y-4">
                                     <OwedCard />
                                     <OwedCard />
