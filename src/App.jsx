@@ -10,6 +10,8 @@ import GroupCard from './Components/GroupCard'
 import Home from './Views/Home'
 import ExpenseView from './Views/ExpenseView';
 import AllFriends from './Views/AllFriends';
+import OCRscanner from './Components/OCRscanner';
+import FriendView from './Views/FriendView';
 
 import { authConfig } from "./authConfig"; // Import Asgardeo configuration
 
@@ -27,17 +29,25 @@ function App() {
 
         <Router>
           <Routes>
-          <Route path="/" element={<Login />} />
+            <Route path="/" element={<Login />} />
             <Route path="/home" element={<Home />} />
             <Route path="/profile" element={<ProfileView />} />
-            {/* <Route path="/group" element={<GroupView />} /> */}
 
-            {/* protected routes */}
+              {/* <Route path="/group" element={<GroupView />} /> */}
+
+              {/* protected routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/expense" element={<ExpenseView />} />
+                <Route path="/expense" element={<ExpenseView />} />
             </Route>
 
-            <Route path="/friends" element={<AllFriends />} />
+
+
+            <Route path="/group" element={<GroupView />} />
+            <Route path="/expense" element={<ExpenseView />} />
+             <Route path="/allfriends" element={<AllFriends/>} />
+             <Route path="/ocr" element={<OCRscanner/>} />
+             <Route path="/friend" element={<FriendView/>}  />
+
           </Routes>
         </Router>
       </div>
