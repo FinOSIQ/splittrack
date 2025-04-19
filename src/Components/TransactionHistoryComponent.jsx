@@ -7,7 +7,7 @@ export default function TransactionHistoryComponent({
 }) {
   return (
     <div className="relative bg-white rounded-2xl p-4 flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollable-div">
+      <div className="flex-1 space-y-4 pr-2  overflow-y-auto scrollable-div">
         {transactions.length > 0 ? (
           transactions.map(tx => <OwedCardSettleup key={tx.id} {...tx} />)
         ) : (

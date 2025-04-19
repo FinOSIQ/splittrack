@@ -14,6 +14,8 @@ export const friendsToPay = [
         { id: 103, dateMonth: 'Nov', dateDay: '22', image: 'https://placehold.co/74x67', title: 'Movie Night', description: 'You Paid LKR 3,200.00', amount: '3,200.00 LKR' },
         { id: 104, dateMonth: 'Nov', dateDay: '22', image: 'https://placehold.co/74x67', title: 'Movie Night', description: 'You Paid LKR 3,200.00', amount: '3,200.00 LKR' },
         { id: 105, dateMonth: 'Nov', dateDay: '22', image: 'https://placehold.co/74x67', title: 'Movie Night', description: 'You Paid LKR 3,200.00', amount: '3,200.00 LKR' },
+        { id: 106, dateMonth: 'Nov', dateDay: '22', image: 'https://placehold.co/74x67', title: 'Movie Night', description: 'You Paid LKR 3,200.00', amount: '3,200.00 LKR' },
+        { id: 107, dateMonth: 'Nov', dateDay: '22', image: 'https://placehold.co/74x67', title: 'Movie Night', description: 'You Paid LKR 3,200.00', amount: '3,200.00 LKR' },
 
     ],
     },
