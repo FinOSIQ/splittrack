@@ -15,6 +15,7 @@ import FriendView from './Views/FriendView';
 
 import { authConfig } from "./authConfig"; // Import Asgardeo configuration
 import PaidView from './Views/PaidView';
+import SettleUp from './Views/SettleUpView';
 
 function ProtectedRoute() {
   const { state } = useAuthContext();
@@ -47,6 +48,8 @@ function App() {
              <Route path="/allfriends" element={<AllFriends/>} />
              <Route path="/ocr" element={<OCRscanner/>} />
              <Route path="/friend" element={<FriendView/>}  />
+             <Route path="/settleup" element={<SettleUp/>}  />
+             
 
           </Routes>
         </Router>
