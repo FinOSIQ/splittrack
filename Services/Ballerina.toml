@@ -1,0 +1,22 @@
+[package]
+org = "sonalattanayake"
+name = "splittrack_backend"
+version = "0.1.0"
+distribution = "2201.11.0"
+
+[build-options]
+observabilityIncluded = true
+
+
+
+
+[[module]]
+name = "Module.interceptor"
+path = "Module.interceptor"
+
+[[platform.java21.dependency]]
+groupId = "io.ballerina.stdlib"
+artifactId = "persist.sql-native"
+version = "1.6.0"
+
+
