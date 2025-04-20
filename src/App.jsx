@@ -14,6 +14,7 @@ import OCRscanner from './Components/OCRscanner';
 import FriendView from './Views/FriendView';
 
 import { authConfig } from "./authConfig"; // Import Asgardeo configuration
+import PaidView from './Views/PaidView';
 
 function ProtectedRoute() {
   const { state } = useAuthContext();
@@ -32,6 +33,7 @@ function App() {
             <Route path="/" element={<Login />} />
             <Route path="/home" element={<Home />} />
             <Route path="/profile" element={<ProfileView />} />
+            <Route path="/paid" element={<PaidView />} />
 
               {/* <Route path="/group" element={<GroupView />} /> */}
 
@@ -41,8 +43,6 @@ function App() {
             </Route>
 
 
-
-            <Route path="/group" element={<GroupView />} />
             <Route path="/expense" element={<ExpenseView />} />
              <Route path="/allfriends" element={<AllFriends/>} />
              <Route path="/ocr" element={<OCRscanner/>} />
