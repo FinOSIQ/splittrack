@@ -1,19 +1,59 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useCallback } from "react";
 import { Input } from "@material-tailwind/react";
 import { useFormik } from "formik";
 import DatePicker from "./DatePicker";
 import expenseParticipants from "./ExpenseParticipants"; // Import your expense participants
+import { fetchSearchData } from "../utils/requests/expense";
+import axios from "axios";
 
 export default function AddExpensePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
   // Initialize totalExpense as an empty string.
   const [totalExpense, setTotalExpense] = useState("");
+  const [searchValue, setSearchValue] = useState("");  // Track the search value
+  const [userId, setUserId] = useState(1);  // Assuming userId is available, replace as needed
+
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchValue(value);  // Update search value immediately
+  };
+
+
 
   // Log the expense participants on component mount
   useEffect(() => {
     console.log(expenseParticipants);
   }, []);
+
+
+  useEffect(() => {
+    if (!searchValue) return;
+
+    const source = axios.CancelToken.source();
+ 
+
+    const fetchData = async () => {
+      
+      try {
+        const data = await fetchSearchData(searchValue, "groups,friends,users", "600fc673", source.token);
+        console.log(data);
+        
+      } catch (error) {
+        console.error("Error fetching search data:", error);
+      }
+     
+    };
+
+    fetchData();
+
+    // Cancel the previous request when the search value changes
+    return () => {
+      source.cancel("Request canceled due to new search input.");
+    };
+  }, [searchValue]);
 
   // Initialize Formik for the split options
   const formik = useFormik({
@@ -104,6 +144,10 @@ export default function AddExpensePopup() {
     }
   });
 
+
+
+
+
   // STEP 1: Add Expense (without Formik)
   const renderStep1 = () => (
     <div>
@@ -118,6 +162,8 @@ export default function AddExpensePopup() {
           variant="static"
           label=""
           placeholder="With: Enter Group, Names, Emails..."
+          value={searchValue}
+          onChange={handleSearchChange}  // Trigger search on change
         />
       </div>
 
@@ -321,7 +367,7 @@ export default function AddExpensePopup() {
           (acc, _name, i) => acc + (parseFloat(formik.values.splitAmounts[i]) || 0),
           0
         );
-    
+
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
@@ -518,9 +564,8 @@ export default function AddExpensePopup() {
               key={tab.id}
               type="button"
               onClick={() => setSelectedTab(tab.id)}
-              className={`flex-1 py-1 px-2 border border-gray-300 text-center rounded-lg transition-colors duration-200 ${
-                selectedTab === tab.id ? "bg-[#040b2b] text-white" : "hover:bg-gray-100"
-              }`}
+              className={`flex-1 py-1 px-2 border border-gray-300 text-center rounded-lg transition-colors duration-200 ${selectedTab === tab.id ? "bg-[#040b2b] text-white" : "hover:bg-gray-100"
+                }`}
             >
               {tab.icon ? tab.icon : <span className="font-bold text-sm">{tab.label}</span>}
             </button>
@@ -561,21 +606,39 @@ export default function AddExpensePopup() {
   };
 
   return (
-    <div className="flex justify-center items-center z-20">
+    <div className="relative w-[80px] h-[80px] bg-white rounded-full ml-3">
       <button
         onClick={() => {
           setIsOpen(true);
           setStep(1);
         }}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+        className="absolute left-2 top-1  w-[70px] h-[70px] bg-[#040b2b] text-white flex items-center justify-center rounded-full shadow-md border-2 border-white"
       >
-        Add Expense
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 2V22M2 12H22"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
 
+      {/* The Popup */}
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-96 bg-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
-            <button onClick={() => setIsOpen(false)} className="absolute top-3 right-3 text-gray-500">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-3 right-3 text-gray-500"
+            >
               ✖
             </button>
             {renderStepContent()}
@@ -583,5 +646,6 @@ export default function AddExpensePopup() {
         </div>
       )}
     </div>
+
   );
 }

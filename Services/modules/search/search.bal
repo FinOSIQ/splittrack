@@ -24,8 +24,22 @@ type SearchResponse record {
 };
 
 // Function returning `http:Service`
+
+
+
 public function getSearchService() returns http:Service {
-    return service object {
+
+    
+    return @http:ServiceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowMethods: ["GET", "POST", "OPTIONS","PUT", "DELETE"],
+            allowHeaders: ["Content-Type", "Authorization"],
+            allowCredentials: false,
+            maxAge: 3600
+        }
+    } 
+     service object {
         resource function get search(http:Caller caller, http:Request req) returns error? {
             // Get query parameters
             map<string[]> queryParams = req.getQueryParams();
