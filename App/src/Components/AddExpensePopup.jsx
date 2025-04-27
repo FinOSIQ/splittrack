@@ -5,6 +5,8 @@ import DatePicker from "./DatePicker";
 import expenseParticipants from "./ExpenseParticipants"; // Import your expense participants
 import { fetchSearchData } from "../utils/requests/expense";
 import axios from "axios";
+import OCRscanner from "./OCRscanner";
+import QrCodeScanner from "./QrCodeScanner";
 
 export default function AddExpensePopup() {
   const [isOpen, setIsOpen] = useState(false);
@@ -223,49 +225,11 @@ export default function AddExpensePopup() {
       <div className="flex items-center justify-between -mt-10">
         <div className="flex space-x-6">
           {/* OCR Scanner Button */}
-          <button type="button" className="p-0">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.66663 12.0001V8.66675C2.66663 5.34675 5.34663 2.66675 8.66663 2.66675H12M20 2.66675H23.3333C26.6533 2.66675 29.3333 5.34675 29.3333 8.66675V12.0001M29.3333 21.3334V23.3334C29.3333 26.6534 26.6533 29.3334 23.3333 29.3334H21.3333M12 29.3334H8.66663C5.34663 29.3334 2.66663 26.6534 2.66663 23.3334V20.0001M25.3333 16.0001H6.66663M22.6666 12.6667V19.3334C22.6666 22.0001 21.3333 23.3334 18.6666 23.3334H13.3333C10.6666 23.3334 9.33329 22.0001 9.33329 19.3334V12.6667C9.33329 10.0001 10.6666 8.66675 13.3333 8.66675H18.6666C21.3333 8.66675 22.6666 10.0001 22.6666 12.6667Z"
-                stroke="#040B2B"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          <OCRscanner/> 
+
 
           {/* QR Scanner Button */}
-          <button type="button" className="p-0">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M5 6.5C5 5.672 5.672 5 6.5 5H12.5C13.328 5 14 5.672 14 6.5V12.5C14 13.328 13.328 14 12.5 14H6.5C6.10218 14 5.72064 13.842 5.43934 13.5607C5.15804 13.2794 5 12.8978 5 12.5V6.5ZM5 19.5C5 18.672 5.672 18 6.5 18H12.5C13.328 18 14 18.672 14 19.5V25.5C14 26.328 13.328 27 12.5 27H6.5C6.10218 27 5.72064 26.842 5.43934 26.5607C5.15804 26.2794 5 25.8978 5 25.5V19.5ZM18 6.5C18 5.672 18.672 5 19.5 5H25.5C26.328 5 27 5.672 27 6.5V12.5C27 13.328 26.328 14 25.5 14H19.5C19.1022 14 18.7206 13.842 18.4393 13.5607C18.158 13.2794 18 12.8978 18 12.5V6.5Z"
-                stroke="black"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M9 9H10V10H9V9ZM9 22H10V23H9V22ZM22 9H23V10H22V9ZM18 18H19V19H18V18ZM18 26H19V27H18V26ZM26 18H27V19H26V18ZM26 26H27V27H26V26ZM22 22H23V23H22V22Z"
-                stroke="black"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          <QrCodeScanner/>
         </div>
 
         {/* Next Button */}
