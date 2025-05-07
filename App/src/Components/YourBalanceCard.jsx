@@ -1,8 +1,14 @@
 import React from 'react';
 
-const YourBalanceCard = () => {
+const YourBalanceCard = ({ balance, loading, error }) => {
+  // Format balance for display
+  const formatBalance = (amount) => {
+    return amount !== null
+      ? `${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} LKR`
+      : '0.00 LKR';
+  };
+
   return (
-    // use padding when use it
     <div className="px-0 py-4">
       <div
         className="
@@ -13,19 +19,25 @@ const YourBalanceCard = () => {
           bg-[radial-gradient(at_top_left,_#dddbff,_#040B2B)]
         "
       >
-        {/* Right-aligned content container */}
         <div className="ml-auto flex flex-col items-end space-y-2">
-          {/* Small label */}
           <div className="text-white text-sm font-normal font-['Poppins']">
             Your Balance
           </div>
 
-          {/* Big green amount */}
-          <div className="text-[#83fb62] text-2xl font-bold font-['Poppins']">
-            21,468.00 LKR
-          </div>
+          {loading ? (
+            <div className="text-[#83fb62] text-2xl font-bold font-['Poppins']">
+              Loading...
+            </div>
+          ) : error ? (
+            <div className="text-red-500 text-lg font-bold font-['Poppins']">
+              Error: {error}
+            </div>
+          ) : (
+            <div className="text-[#83fb62] text-2xl font-bold font-['Poppins']">
+              {formatBalance(balance)}
+            </div>
+          )}
 
-          {/* 'View More' button */}
           <div
             className="
               px-[15px] 
@@ -39,7 +51,7 @@ const YourBalanceCard = () => {
               overflow-hidden
             "
           >
-            <div className="text-center text-white text-xs  font-normal">
+            <div className="text-center text-white text-xs font-normal">
               View More
             </div>
           </div>
