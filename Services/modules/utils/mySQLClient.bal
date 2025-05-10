@@ -10,9 +10,9 @@ configurable string database =?;
 
 
 public final mysql:Client Client = check new(
-    host = "localhost",
-    user = "root",
-    password = "",
-    port = 3306,
-    database = "splittrack"
+    host = host,
+    user = user,
+    password = password,
+    port = port,
+    database = database
 );

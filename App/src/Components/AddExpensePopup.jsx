@@ -1,19 +1,61 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useCallback } from "react";
 import { Input } from "@material-tailwind/react";
 import { useFormik } from "formik";
 import DatePicker from "./DatePicker";
 import expenseParticipants from "./ExpenseParticipants"; // Import your expense participants
+import { fetchSearchData } from "../utils/requests/expense";
+import axios from "axios";
+import OCRscanner from "./OCRscanner";
+import QrCodeScanner from "./QrCodeScanner";
 
 export default function AddExpensePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
   // Initialize totalExpense as an empty string.
   const [totalExpense, setTotalExpense] = useState("");
+  const [searchValue, setSearchValue] = useState("");  // Track the search value
+  const [userId, setUserId] = useState(1);  // Assuming userId is available, replace as needed
+
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchValue(value);  // Update search value immediately
+  };
+
+
 
   // Log the expense participants on component mount
   useEffect(() => {
     console.log(expenseParticipants);
   }, []);
+
+
+  useEffect(() => {
+    if (!searchValue) return;
+
+    const source = axios.CancelToken.source();
+ 
+
+    const fetchData = async () => {
+      
+      try {
+        const data = await fetchSearchData(searchValue, "groups,friends,users", "600fc673", source.token);
+        console.log(data);
+        
+      } catch (error) {
+        console.error("Error fetching search data:", error);
+      }
+     
+    };
+
+    fetchData();
+
+    // Cancel the previous request when the search value changes
+    return () => {
+      source.cancel("Request canceled due to new search input.");
+    };
+  }, [searchValue]);
 
   // Initialize Formik for the split options
   const formik = useFormik({
@@ -104,6 +146,10 @@ export default function AddExpensePopup() {
     }
   });
 
+
+
+
+
   // STEP 1: Add Expense (without Formik)
   const renderStep1 = () => (
     <div>
@@ -118,6 +164,8 @@ export default function AddExpensePopup() {
           variant="static"
           label=""
           placeholder="With: Enter Group, Names, Emails..."
+          value={searchValue}
+          onChange={handleSearchChange}  // Trigger search on change
         />
       </div>
 
@@ -177,49 +225,11 @@ export default function AddExpensePopup() {
       <div className="flex items-center justify-between -mt-10">
         <div className="flex space-x-6">
           {/* OCR Scanner Button */}
-          <button type="button" className="p-0">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.66663 12.0001V8.66675C2.66663 5.34675 5.34663 2.66675 8.66663 2.66675H12M20 2.66675H23.3333C26.6533 2.66675 29.3333 5.34675 29.3333 8.66675V12.0001M29.3333 21.3334V23.3334C29.3333 26.6534 26.6533 29.3334 23.3333 29.3334H21.3333M12 29.3334H8.66663C5.34663 29.3334 2.66663 26.6534 2.66663 23.3334V20.0001M25.3333 16.0001H6.66663M22.6666 12.6667V19.3334C22.6666 22.0001 21.3333 23.3334 18.6666 23.3334H13.3333C10.6666 23.3334 9.33329 22.0001 9.33329 19.3334V12.6667C9.33329 10.0001 10.6666 8.66675 13.3333 8.66675H18.6666C21.3333 8.66675 22.6666 10.0001 22.6666 12.6667Z"
-                stroke="#040B2B"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          <OCRscanner/> 
+
 
           {/* QR Scanner Button */}
-          <button type="button" className="p-0">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M5 6.5C5 5.672 5.672 5 6.5 5H12.5C13.328 5 14 5.672 14 6.5V12.5C14 13.328 13.328 14 12.5 14H6.5C6.10218 14 5.72064 13.842 5.43934 13.5607C5.15804 13.2794 5 12.8978 5 12.5V6.5ZM5 19.5C5 18.672 5.672 18 6.5 18H12.5C13.328 18 14 18.672 14 19.5V25.5C14 26.328 13.328 27 12.5 27H6.5C6.10218 27 5.72064 26.842 5.43934 26.5607C5.15804 26.2794 5 25.8978 5 25.5V19.5ZM18 6.5C18 5.672 18.672 5 19.5 5H25.5C26.328 5 27 5.672 27 6.5V12.5C27 13.328 26.328 14 25.5 14H19.5C19.1022 14 18.7206 13.842 18.4393 13.5607C18.158 13.2794 18 12.8978 18 12.5V6.5Z"
-                stroke="black"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M9 9H10V10H9V9ZM9 22H10V23H9V22ZM22 9H23V10H22V9ZM18 18H19V19H18V18ZM18 26H19V27H18V26ZM26 18H27V19H26V18ZM26 26H27V27H26V26ZM22 22H23V23H22V22Z"
-                stroke="black"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          <QrCodeScanner/>
         </div>
 
         {/* Next Button */}
@@ -321,7 +331,7 @@ export default function AddExpensePopup() {
           (acc, _name, i) => acc + (parseFloat(formik.values.splitAmounts[i]) || 0),
           0
         );
-    
+
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
@@ -518,9 +528,8 @@ export default function AddExpensePopup() {
               key={tab.id}
               type="button"
               onClick={() => setSelectedTab(tab.id)}
-              className={`flex-1 py-1 px-2 border border-gray-300 text-center rounded-lg transition-colors duration-200 ${
-                selectedTab === tab.id ? "bg-[#040b2b] text-white" : "hover:bg-gray-100"
-              }`}
+              className={`flex-1 py-1 px-2 border border-gray-300 text-center rounded-lg transition-colors duration-200 ${selectedTab === tab.id ? "bg-[#040b2b] text-white" : "hover:bg-gray-100"
+                }`}
             >
               {tab.icon ? tab.icon : <span className="font-bold text-sm">{tab.label}</span>}
             </button>
@@ -561,21 +570,39 @@ export default function AddExpensePopup() {
   };
 
   return (
-    <div className="flex justify-center items-center z-20">
+    <div className="relative w-[80px] h-[80px] bg-white rounded-full ml-3">
       <button
         onClick={() => {
           setIsOpen(true);
           setStep(1);
         }}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+        className="absolute left-2 top-1  w-[70px] h-[70px] bg-[#040b2b] text-white flex items-center justify-center rounded-full shadow-md border-2 border-white"
       >
-        Add Expense
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 2V22M2 12H22"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
 
+      {/* The Popup */}
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-96 bg-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
-            <button onClick={() => setIsOpen(false)} className="absolute top-3 right-3 text-gray-500">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-3 right-3 text-gray-500"
+            >
               ✖
             </button>
             {renderStepContent()}
@@ -583,5 +610,6 @@ export default function AddExpensePopup() {
         </div>
       )}
     </div>
+
   );
 }

@@ -7,7 +7,7 @@ const apiKey = import.meta.env.VITE_AZURE_API_KEY;
 //Analyze the receipt image using the Azure Docment Intelligence API
 export const analyzeReceipt = async (imageData) => {
 
-    const apiUrl = 'https://splittrackocr.cognitiveservices.azure.com/documentintelligence/documentModels/prebuilt-receipt:analyze';
+    const apiUrl = `${import.meta.env.VITE_AZURE_API_ENDPOINT}`;
     const apiVersion = '2024-11-30';
   
 
