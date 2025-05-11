@@ -132,7 +132,7 @@ public function getExpenseService() returns http:Service {
             return;
         }
 
-        resource function delete expenses/[string expenseId](http:Caller caller, http:Request req) returns error? {
+        resource function delete expense/[string expenseId](http:Caller caller, http:Request req) returns error? {
             http:Response response = new;
 
             // boolean|error isValid = authInterceptor:authenticate(req);
@@ -164,6 +164,90 @@ public function getExpenseService() returns http:Service {
                     : http:STATUS_INTERNAL_SERVER_ERROR;
                 return utils:sendErrorResponse(caller, statusCode, "Failed to delete expense", e.message());
             }
+        }
+
+        resource function get expense/[string expenseId](http:Caller caller, http:Request req) returns error? {
+            db:ExpenseWithRelations|error expenseDetails = dbClient->/expenses/[expenseId]();
+            if expenseDetails is error {
+                // Check if the error is a "not found" error
+                if expenseDetails is persist:NotFoundError {
+                    _ = check utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Expense not found", "Expense with ID " + expenseId + " does not exist");
+                    return;
+                }
+                // Other database errors
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, expenseDetails.toString());
+            }
+            http:Response res = new;
+            json payload = {
+                "expense": expenseDetails
+            };
+            res.setJsonPayload(payload);
+            res.statusCode = http:STATUS_OK;
+            return caller->respond(res);
+        }
+
+        resource function put expenses/[string expenseId](http:Caller caller, http:Request req) returns error?|http:Response {
+            json payload = check req.getJsonPayload();
+
+            // Validate and extract name (optional)
+            json|error nameJson = payload.name;
+            string? name = ();
+            if nameJson is json && nameJson !is () {
+                name = nameJson.toString();
+            }
+
+            // Validate and extract expense_actual_amount (optional)
+            json|error actualAmountJson = payload.expense_actual_amount;
+            decimal? expense_actual_amount = ();
+            if actualAmountJson is json && actualAmountJson !is () {
+                decimal|error amount = decimal:fromString(actualAmountJson.toString());
+                if amount is error {
+                    return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Invalid 'expense_actual_amount' field", "Expected a valid decimal value");
+                }
+                expense_actual_amount = amount;
+            }
+
+            // Check if at least one field is provided
+            if name is () && expense_actual_amount is () {
+                return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "No valid fields provided", "At least one of 'name' or 'expense_actual_amount' must be provided");
+            }
+
+            // Check if expense exists
+            db:ExpenseWithRelations|error expenseCheck = dbClient->/expenses/[expenseId]();
+            if expenseCheck is error {
+                if expenseCheck is persist:NotFoundError {
+                    return utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Expense not found", "Expense with ID " + expenseId + " does not exist");
+                }
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, expenseCheck.toString());
+            }
+
+            transaction {
+                // Update expense fields if provided
+                db:ExpenseUpdate expenseUpdate = {};
+                if name is string {
+                    expenseUpdate.name = name;
+                }
+                if expense_actual_amount is decimal {
+                    expenseUpdate.expense_actual_amount = expense_actual_amount;
+                }
+
+                _ = check dbClient->/expenses/[expenseId].put(expenseUpdate);
+
+                check commit;
+            } on fail error e {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to update expense", e.message());
+            }
+
+            // Fetch updated expense details for response
+            db:ExpenseWithRelations|error updatedExpense = dbClient->/expenses/[expenseId]();
+            if updatedExpense is error {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, updatedExpense.toString());
+            }
+
+            http:Response res = new;
+            res.statusCode = http:STATUS_OK; // 200
+            res.setJsonPayload({"expense": updatedExpense});
+            return res;
         }
 
         resource function get groupExpenses(http:Caller caller, http:Request req, @http:Header string authorization, @http:Query string userId, @http:Payload UserIdPayload payload) returns http:Ok & readonly|error? {

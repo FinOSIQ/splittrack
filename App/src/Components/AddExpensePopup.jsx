@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Input } from "@material-tailwind/react";
 import { useFormik } from "formik";
 import DatePicker from "./DatePicker";
@@ -11,42 +11,40 @@ import QrCodeScanner from "./QrCodeScanner";
 export default function AddExpensePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
-  // Initialize totalExpense as an empty string.
   const [totalExpense, setTotalExpense] = useState("");
-  const [searchValue, setSearchValue] = useState("");  // Track the search value
-  const [userId, setUserId] = useState(1);  // Assuming userId is available, replace as needed
+  const [expenseName, setExpenseName] = useState("");
+  const [expenseDate, setExpenseDate] = useState(new Date()); // Add state for date
 
+  const [searchValue, setSearchValue] = useState("");
 
   // Handle search input change
   const handleSearchChange = (e) => {
     const value = e.target.value;
-    setSearchValue(value);  // Update search value immediately
+    setSearchValue(value);
   };
 
-
+  // Handle date change from DatePicker
+  const handleDateChange = (date) => {
+    setExpenseDate(date);
+  };
 
   // Log the expense participants on component mount
   useEffect(() => {
     console.log(expenseParticipants);
   }, []);
 
-
   useEffect(() => {
     if (!searchValue) return;
 
     const source = axios.CancelToken.source();
- 
 
     const fetchData = async () => {
-      
       try {
         const data = await fetchSearchData(searchValue, "groups,friends,users", "600fc673", source.token);
         console.log(data);
-        
       } catch (error) {
         console.error("Error fetching search data:", error);
       }
-     
     };
 
     fetchData();
@@ -67,59 +65,80 @@ export default function AddExpensePopup() {
     },
     onSubmit: (values) => {
       const expense = Number(totalExpense);
-      let submissionData = { type: "", details: [] };
+      let participantDetails = [];
 
+      // Determine and calculate the appropriate split
       switch (selectedTab) {
         case 1: {
           // Split Equally
-          submissionData.type = "equal";
           const countSelected = values.splitEqual.filter(Boolean).length;
           const equalAmount = countSelected > 0 ? expense / countSelected : 0;
-          submissionData.details = expenseParticipants.participants.map((name, idx) => ({
-            name,
-            amount: values.splitEqual[idx] ? equalAmount : 0
-          }));
+          
+          // Create participant array with selected participants
+          participantDetails = expenseParticipants.participants.map((participant, idx) => {
+            // Skip unselected participants
+            if (!values.splitEqual[idx]) return null;
+            
+            return {
+              participant_role: "member", 
+              owning_amount: parseFloat(equalAmount.toFixed(2)),
+              userUser_Id: participant.userId
+            };
+          }).filter(Boolean); // Remove null entries
           break;
         }
         case 2: {
           // Split by Amounts
           const totalEntered = expenseParticipants.participants.reduce(
-            (acc, _name, idx) => acc + (parseFloat(values.splitAmounts[idx]) || 0),
+            (acc, _participant, idx) => acc + (parseFloat(values.splitAmounts[idx]) || 0),
             0
           );
+          
           if (totalEntered < expense) {
             alert(
               `Please allocate the full amount. You still have LKR ${(expense - totalEntered).toFixed(2)} left.`
             );
             return;
           }
-          submissionData.type = "amount";
-          submissionData.details = expenseParticipants.participants.map((name, idx) => ({
-            name,
-            amount: parseFloat(values.splitAmounts[idx]) || 0
-          }));
+          
+          participantDetails = expenseParticipants.participants.map((participant, idx) => {
+            const amount = parseFloat(values.splitAmounts[idx]) || 0;
+            if (amount <= 0) return null; // Skip participants with zero amount
+            
+            return {
+              participant_role: "member", 
+              owning_amount: parseFloat(amount.toFixed(2)),
+              userUser_Id: participant.userId
+            };
+          }).filter(Boolean);
           break;
         }
         case 3: {
           // Split by Percentages
           const totalPercentage = expenseParticipants.participants.reduce(
-            (acc, _name, idx) => acc + (parseFloat(values.splitPercentages[idx]) || 0),
+            (acc, _participant, idx) => acc + (parseFloat(values.splitPercentages[idx]) || 0),
             0
           );
+          
           if (totalPercentage !== 100) {
             alert(
               `Please allocate 100% of the expense. Currently allocated: ${totalPercentage.toFixed(2)}%`
             );
             return;
           }
-          submissionData.type = "percentage";
-          submissionData.details = expenseParticipants.participants.map((name, idx) => {
+          
+          participantDetails = expenseParticipants.participants.map((participant, idx) => {
             const perc = parseFloat(values.splitPercentages[idx]) || 0;
+            if (perc <= 0) return null;
+            
+            const amount = (expense * perc) / 100;
+            
             return {
-              name,
-              amount: (expense * perc) / 100
+              participant_role: "member", 
+              owning_amount: parseFloat(amount.toFixed(2)),
+              userUser_Id: participant.userId
             };
-          });
+          }).filter(Boolean);
           break;
         }
         case 4: {
@@ -128,27 +147,49 @@ export default function AddExpensePopup() {
             (acc, val) => acc + (parseFloat(val) || 0),
             0
           );
-          submissionData.type = "share";
-          submissionData.details = expenseParticipants.participants.map((name, idx) => {
+          
+          if (totalShares <= 0) {
+            alert("Please allocate at least one share.");
+            return;
+          }
+          
+          participantDetails = expenseParticipants.participants.map((participant, idx) => {
             const share = parseFloat(values.splitShares[idx]) || 0;
+            if (share <= 0) return null;
+            
+            const amount = (expense * share) / totalShares;
+            
             return {
-              name,
-              amount: totalShares > 0 ? (expense * share) / totalShares : 0
+              participant_role: "member", 
+              owning_amount: parseFloat(amount.toFixed(2)),
+              userUser_Id: participant.userId
             };
-          });
+          }).filter(Boolean);
           break;
         }
         default:
           break;
       }
-      console.log("Submission Data:", submissionData);
+
+      // Create the final expense object
+      const expenseObject = {
+        expense_Id: null, // This will be assigned by the backend
+        name: expenseName,
+        expense_total_amount: parseFloat(expense.toFixed(2)),
+        expense_actual_amount: parseFloat(expense.toFixed(2)),
+        usergroupGroup_Id: null, // Assuming no group ID is specified initially
+        participant: participantDetails
+      };
+
+      console.log("Expense Object:", expenseObject);
+      
+      // Here you would send the expense object to your API
+      // For example:
+      // sendExpenseToAPI(expenseObject);
+      
       setIsOpen(false);
     }
   });
-
-
-
-
 
   // STEP 1: Add Expense (without Formik)
   const renderStep1 = () => (
@@ -158,18 +199,18 @@ export default function AddExpensePopup() {
         Add an Expense
       </div>
 
-      {/* "With" input */}
+      {/* Name input */}
       <div className="flex w-72 flex-col gap-6 text-left mt-0 -mb-4">
         <Input
-          variant="static"
-          label=""
-          placeholder="With: Enter Group, Names, Emails..."
-          value={searchValue}
-          onChange={handleSearchChange}  // Trigger search on change
+          variant="standard"
+          label="Name"
+          placeholder="Dinner, Lunch, etc.."
+          value={expenseName}
+          onChange={e => setExpenseName(e.target.value)}
         />
       </div>
 
-      {/* Name */}
+      {/* Name (duplicate? Check if this is intentional) */}
       <div className="mt-16 flex items-center space-x-4">
         <svg
           width="38"
@@ -187,7 +228,13 @@ export default function AddExpensePopup() {
           />
         </svg>
         <div className="h-6 border-l border-gray-400"></div>
-        <Input variant="standard" label="Name" placeholder="Dinner, Lunch, etc.." />
+        <Input 
+          variant="standard" 
+          label="Name" 
+          placeholder="Dinner, Lunch, etc.." 
+          value={expenseName}
+          onChange={e => setExpenseName(e.target.value)}
+        />
       </div>
 
       {/* Amount */}
@@ -212,24 +259,24 @@ export default function AddExpensePopup() {
           variant="standard"
           label="Amount"
           placeholder="0.00"
+          value={totalExpense}
           onChange={(e) => setTotalExpense(e.target.value)}
         />
       </div>
 
       {/* Date */}
       <div className="flex justify-center -mt-16">
-        <DatePicker />
+        <DatePicker onDateChange={handleDateChange} />
       </div>
 
       {/* OCR & QR Scanner and Next Button */}
       <div className="flex items-center justify-between -mt-10">
         <div className="flex space-x-6">
           {/* OCR Scanner Button */}
-          <OCRscanner/> 
-
+          <OCRscanner /> 
 
           {/* QR Scanner Button */}
-          <QrCodeScanner/>
+          <QrCodeScanner />
         </div>
 
         {/* Next Button */}
@@ -239,6 +286,10 @@ export default function AddExpensePopup() {
             // Check if a valid amount was entered
             if (!totalExpense || Number(totalExpense) <= 0) {
               alert("Please enter a valid amount to continue.");
+              return;
+            }
+            if (!expenseName.trim()) {
+              alert("Please enter an expense name to continue.");
               return;
             }
             setStep(2);
@@ -271,7 +322,7 @@ export default function AddExpensePopup() {
         <div className="mt-4">
           {/* People list with checkboxes */}
           <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-3">
-            {expenseParticipants.participants.map((name, idx) => (
+            {expenseParticipants.participants.map((participant, idx) => (
               <div key={idx} className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                   <svg
@@ -289,7 +340,7 @@ export default function AddExpensePopup() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <span className="font-normal">{name}</span>
+                  <span className="font-normal">{participant.name}</span>
                 </div>
                 <input
                   type="checkbox"
@@ -328,14 +379,14 @@ export default function AddExpensePopup() {
       subheading: "Specify exactly how much each person owes.",
       content: (() => {
         const totalEntered = expenseParticipants.participants.reduce(
-          (acc, _name, i) => acc + (parseFloat(formik.values.splitAmounts[i]) || 0),
+          (acc, _participant, i) => acc + (parseFloat(formik.values.splitAmounts[i]) || 0),
           0
         );
 
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
-              {expenseParticipants.participants.map((name, idx) => {
+              {expenseParticipants.participants.map((participant, idx) => {
                 const currentValue = parseFloat(formik.values.splitAmounts[idx]) || 0;
                 return (
                   <div key={idx} className="flex items-center gap-3">
@@ -355,7 +406,7 @@ export default function AddExpensePopup() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <span className="font-medium">{name}</span>
+                      <span className="font-medium">{participant.name}</span>
                     </div>
                     <div className="w-16">
                       <Input
@@ -396,13 +447,13 @@ export default function AddExpensePopup() {
       subheading: "Enter the percentage split that's fair for your expense.",
       content: (() => {
         const totalPercentage = expenseParticipants.participants.reduce(
-          (acc, _name, idx) => acc + (parseFloat(formik.values.splitPercentages[idx]) || 0),
+          (acc, _participant, idx) => acc + (parseFloat(formik.values.splitPercentages[idx]) || 0),
           0
         );
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
-              {expenseParticipants.participants.map((name, idx) => {
+              {expenseParticipants.participants.map((participant, idx) => {
                 const currentValue = parseFloat(formik.values.splitPercentages[idx]) || 0;
                 return (
                   <div key={idx} className="flex items-center gap-3">
@@ -422,7 +473,7 @@ export default function AddExpensePopup() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <span className="font-medium">{name}</span>
+                      <span className="font-medium">{participant.name}</span>
                     </div>
                     <div className="w-16">
                       <Input
@@ -458,19 +509,19 @@ export default function AddExpensePopup() {
     },
     {
       id: 4,
-      label: "",
+      label: "1/3",
       heading: "Split by Shares",
       subheading:
         "Great for time based or splitting across families. (2 nights => 2 shares)",
       content: (() => {
         const totalShares = expenseParticipants.participants.reduce(
-          (acc, _name, idx) => acc + (parseFloat(formik.values.splitShares[idx]) || 0),
+          (acc, _participant, idx) => acc + (parseFloat(formik.values.splitShares[idx]) || 0),
           0
         );
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-3">
-              {expenseParticipants.participants.map((name, idx) => (
+              {expenseParticipants.participants.map((participant, idx) => (
                 <div key={idx} className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                     <svg
@@ -488,7 +539,7 @@ export default function AddExpensePopup() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <span className="font-medium">{name}</span>
+                    <span className="font-medium">{participant.name}</span>
                   </div>
                   <div className="w-16">
                     <Input
@@ -610,6 +661,5 @@ export default function AddExpensePopup() {
         </div>
       )}
     </div>
-
   );
 }
