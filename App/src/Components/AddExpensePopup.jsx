@@ -7,6 +7,9 @@ import { fetchSearchData } from "../utils/requests/expense";
 import axios from "axios";
 import OCRscanner from "./OCRscanner";
 import QrCodeScanner from "./QrCodeScanner";
+import SearchResults from "./SearchResults";
+import { se } from "date-fns/locale";
+
 
 export default function AddExpensePopup() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,7 +18,10 @@ export default function AddExpensePopup() {
   const [expenseName, setExpenseName] = useState("");
   const [expenseDate, setExpenseDate] = useState(new Date()); // Add state for date
 
+
   const [searchValue, setSearchValue] = useState("");
+  const [searchResults, setSearchResults] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]);
 
   // Handle search input change
   const handleSearchChange = (e) => {
@@ -28,20 +34,51 @@ export default function AddExpensePopup() {
     setExpenseDate(date);
   };
 
+  const handleSearchItemClick = (item, type) => {
+    console.log(`Selected ${type}:`, item);
+
+    // Create a new item with type and details
+    const newSelectedItem = {
+      id: item.user_id || null, // Use item id or generate one
+      type,
+      name: item.first_name || item.email || item.username || "Unknown",
+      avatar: item.avatar || null,
+    };
+
+    // Add to selected items (avoiding duplicates)
+    setSelectedItems(prev => {
+      // Check if item already exists
+      const exists = prev.some(existingItem =>
+        existingItem.id === newSelectedItem.id && existingItem.type === newSelectedItem.type
+      );
+
+      if (exists) return prev;
+      return [...prev, newSelectedItem];
+    });
+
+    // Clear search
+    setSearchValue("");
+    setSearchResults(null);
+  };
+
   // Log the expense participants on component mount
   useEffect(() => {
     console.log(expenseParticipants);
   }, []);
 
   useEffect(() => {
-    if (!searchValue) return;
+    if (!searchValue) {
+      setSearchResults(null);
+      return;
+    }
 
     const source = axios.CancelToken.source();
 
     const fetchData = async () => {
       try {
-        const data = await fetchSearchData(searchValue, "groups,friends,users", "600fc673", source.token);
-        console.log(data);
+        const Searchdata = await fetchSearchData(searchValue, "groups,friends,users", "600fc673", source.token);
+        console.log(Searchdata);
+        setSearchResults(Searchdata);
       } catch (error) {
         console.error("Error fetching search data:", error);
       }
@@ -58,7 +95,7 @@ export default function AddExpensePopup() {
   // Initialize Formik for the split options
   const formik = useFormik({
     initialValues: {
-      splitEqual: expenseParticipants.participants.map(() => true),
+      splitEqual: selectedItems.map(() => true),
       splitAmounts: expenseParticipants.participants.map(() => ""),
       splitPercentages: expenseParticipants.participants.map(() => ""),
       splitShares: expenseParticipants.participants.map(() => "")
@@ -73,68 +110,68 @@ export default function AddExpensePopup() {
           // Split Equally
           const countSelected = values.splitEqual.filter(Boolean).length;
           const equalAmount = countSelected > 0 ? expense / countSelected : 0;
-          
+
           // Create participant array with selected participants
-          participantDetails = expenseParticipants.participants.map((participant, idx) => {
+          participantDetails = selectedItems.map((participant, idx) => {
             // Skip unselected participants
             if (!values.splitEqual[idx]) return null;
-            
+
             return {
-              participant_role: "member", 
+              participant_role: "member",
               owning_amount: parseFloat(equalAmount.toFixed(2)),
-              userUser_Id: participant.userId
+              userUser_Id: participant.id
             };
           }).filter(Boolean); // Remove null entries
           break;
         }
         case 2: {
           // Split by Amounts
-          const totalEntered = expenseParticipants.participants.reduce(
+          const totalEntered = selectedItems.reduce(
             (acc, _participant, idx) => acc + (parseFloat(values.splitAmounts[idx]) || 0),
             0
           );
-          
+
           if (totalEntered < expense) {
             alert(
               `Please allocate the full amount. You still have LKR ${(expense - totalEntered).toFixed(2)} left.`
             );
             return;
           }
-          
-          participantDetails = expenseParticipants.participants.map((participant, idx) => {
+
+          participantDetails = selectedItems.map((participant, idx) => {
             const amount = parseFloat(values.splitAmounts[idx]) || 0;
             if (amount <= 0) return null; // Skip participants with zero amount
-            
+
             return {
-              participant_role: "member", 
+              participant_role: "member",
               owning_amount: parseFloat(amount.toFixed(2)),
-              userUser_Id: participant.userId
+              userUser_Id: participant.id
             };
           }).filter(Boolean);
           break;
         }
         case 3: {
           // Split by Percentages
-          const totalPercentage = expenseParticipants.participants.reduce(
+          const totalPercentage = selectedItems.reduce(
             (acc, _participant, idx) => acc + (parseFloat(values.splitPercentages[idx]) || 0),
             0
           );
-          
+
           if (totalPercentage !== 100) {
             alert(
               `Please allocate 100% of the expense. Currently allocated: ${totalPercentage.toFixed(2)}%`
             );
             return;
           }
-          
-          participantDetails = expenseParticipants.participants.map((participant, idx) => {
+
+          participantDetails = selectedItems.map((participant, idx) => {
             const perc = parseFloat(values.splitPercentages[idx]) || 0;
             if (perc <= 0) return null;
-            
+
             const amount = (expense * perc) / 100;
-            
+
             return {
-              participant_role: "member", 
+              participant_role: "member",
               owning_amount: parseFloat(amount.toFixed(2)),
               userUser_Id: participant.userId
             };
@@ -147,20 +184,20 @@ export default function AddExpensePopup() {
             (acc, val) => acc + (parseFloat(val) || 0),
             0
           );
-          
+
           if (totalShares <= 0) {
             alert("Please allocate at least one share.");
             return;
           }
-          
-          participantDetails = expenseParticipants.participants.map((participant, idx) => {
+
+          participantDetails = selectedItems.map((participant, idx) => {
             const share = parseFloat(values.splitShares[idx]) || 0;
             if (share <= 0) return null;
-            
+
             const amount = (expense * share) / totalShares;
-            
+
             return {
-              participant_role: "member", 
+              participant_role: "member",
               owning_amount: parseFloat(amount.toFixed(2)),
               userUser_Id: participant.userId
             };
@@ -182,32 +219,90 @@ export default function AddExpensePopup() {
       };
 
       console.log("Expense Object:", expenseObject);
-      
+
       // Here you would send the expense object to your API
       // For example:
       // sendExpenseToAPI(expenseObject);
-      
+
       setIsOpen(false);
     }
   });
 
   // STEP 1: Add Expense (without Formik)
   const renderStep1 = () => (
-    <div>
+    <div className="relative">
       {/* Header */}
-      <div className="text-left mt-16 text-[#040b2b] text-[32px] font-semibold font-['Poppins'] leading-[41.57px]">
+      <div className="text-left mt-16 mb-4 text-[#040b2b] text-[32px] font-semibold font-['Poppins'] leading-[41.57px]">
         Add an Expense
       </div>
 
-      {/* Name input */}
-      <div className="flex w-72 flex-col gap-6 text-left mt-0 -mb-4">
+      {/* Search input */}
+      <div className="flex w-72 flex-col gap-6 text-left mt-0 -mb-4 relative">
         <Input
           variant="standard"
-          label="Name"
-          placeholder="Dinner, Lunch, etc.."
-          value={expenseName}
-          onChange={e => setExpenseName(e.target.value)}
+          label="Search"
+          placeholder="Enter Group, Names, Emails.."
+          value={searchValue}
+          onChange={handleSearchChange}
         />
+
+        {/* Display selected items */}
+        {selectedItems.length > 0 && (
+          <div className="flex flex-wrap gap-2 -mt-4">
+            {selectedItems.map((item) => (
+              
+              <div
+                key={`${item.type}-${item.id}`}
+                className="flex items-center gap-1 px-1 py-0.5 bg-blue-50 text-blue-800 rounded-full text-xs border border-blue-200"
+              >
+                {item.type === 'friend' && (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="7" r="4" />
+                    <path d="M5.5 20C5.5 16.9624 7.96243 14.5 11 14.5H13C16.0376 14.5 18.5 16.9624 18.5 20" />
+                  </svg>
+                )}
+                {item.type === 'group' && (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 20C17 18.3431 14.7614 17 12 17C9.23858 17 7 18.3431 7 20" />
+                    <circle cx="12" cy="10" r="3" />
+                    <path d="M21 20C21 18.3431 19.5 17 18 17C16.5 17 16 17.4477 16 18" />
+                    <path d="M3 20C3 18.3431 4.5 17 6 17C7.5 17 8 17.4477 8 18" />
+                    <path d="M18 9.5C18 8.12 17.5 7 16.5 7C15.5 7 15 7.88 15 9" />
+                    <path d="M6 9.5C6 8.12 6.5 7 7.5 7C8.5 7 9 7.88 9 9" />
+                  </svg>
+                )}
+                {item.type === 'user' && (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="7" r="4" />
+                    <path d="M5.5 20C5.5 16.9624 7.96243 14.5 11 14.5H13C16.0376 14.5 18.5 16.9624 18.5 20" />
+                  </svg>
+                )}
+                <span>{item.name}</span>
+                {console.log(item)}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedItems(prev => prev.filter(i => !(i.id === item.id && i.type === item.type)));
+                  }}
+                  className="ml-1 text-blue-600 hover:text-blue-800"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+
+        {/* Render Search Results if searchResults is present */}
+        {searchValue && searchResults && (
+          <div className="absolute top-12 left-0 right-0 mt-1 bg-white shadow-lg rounded-md overflow-y-auto z-50 border border-gray-200">
+            <SearchResults
+              searchData={searchResults}
+              onItemClick={handleSearchItemClick}
+            />
+          </div>
+        )}
       </div>
 
       {/* Name (duplicate? Check if this is intentional) */}
@@ -228,10 +323,10 @@ export default function AddExpensePopup() {
           />
         </svg>
         <div className="h-6 border-l border-gray-400"></div>
-        <Input 
-          variant="standard" 
-          label="Name" 
-          placeholder="Dinner, Lunch, etc.." 
+        <Input
+          variant="standard"
+          label="Name"
+          placeholder="Dinner, Lunch, etc.."
           value={expenseName}
           onChange={e => setExpenseName(e.target.value)}
         />
@@ -273,7 +368,7 @@ export default function AddExpensePopup() {
       <div className="flex items-center justify-between -mt-10">
         <div className="flex space-x-6">
           {/* OCR Scanner Button */}
-          <OCRscanner /> 
+          <OCRscanner />
 
           {/* QR Scanner Button */}
           <QrCodeScanner />
@@ -293,6 +388,7 @@ export default function AddExpensePopup() {
               return;
             }
             setStep(2);
+            // console.log(selectedItems);
           }}
           className="px-6 py-2 bg-[#040b2b] text-white rounded-lg flex items-center gap-2"
         >
@@ -322,7 +418,7 @@ export default function AddExpensePopup() {
         <div className="mt-4">
           {/* People list with checkboxes */}
           <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-3">
-            {expenseParticipants.participants.map((participant, idx) => (
+            {selectedItems.map((participant, idx) => (
               <div key={idx} className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                   <svg
@@ -378,7 +474,7 @@ export default function AddExpensePopup() {
       heading: "Split by Amounts",
       subheading: "Specify exactly how much each person owes.",
       content: (() => {
-        const totalEntered = expenseParticipants.participants.reduce(
+        const totalEntered = selectedItems.reduce(
           (acc, _participant, i) => acc + (parseFloat(formik.values.splitAmounts[i]) || 0),
           0
         );
@@ -386,7 +482,7 @@ export default function AddExpensePopup() {
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
-              {expenseParticipants.participants.map((participant, idx) => {
+              {selectedItems.map((participant, idx) => {
                 const currentValue = parseFloat(formik.values.splitAmounts[idx]) || 0;
                 return (
                   <div key={idx} className="flex items-center gap-3">
@@ -446,14 +542,14 @@ export default function AddExpensePopup() {
       heading: "Split by Percentages",
       subheading: "Enter the percentage split that's fair for your expense.",
       content: (() => {
-        const totalPercentage = expenseParticipants.participants.reduce(
+        const totalPercentage = selectedItems.reduce(
           (acc, _participant, idx) => acc + (parseFloat(formik.values.splitPercentages[idx]) || 0),
           0
         );
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
-              {expenseParticipants.participants.map((participant, idx) => {
+              {selectedItems.map((participant, idx) => {
                 const currentValue = parseFloat(formik.values.splitPercentages[idx]) || 0;
                 return (
                   <div key={idx} className="flex items-center gap-3">
@@ -514,14 +610,14 @@ export default function AddExpensePopup() {
       subheading:
         "Great for time based or splitting across families. (2 nights => 2 shares)",
       content: (() => {
-        const totalShares = expenseParticipants.participants.reduce(
+        const totalShares = selectedItems.reduce(
           (acc, _participant, idx) => acc + (parseFloat(formik.values.splitShares[idx]) || 0),
           0
         );
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-3">
-              {expenseParticipants.participants.map((participant, idx) => (
+              {selectedItems.map((participant, idx) => (
                 <div key={idx} className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                     <svg
@@ -626,6 +722,8 @@ export default function AddExpensePopup() {
         onClick={() => {
           setIsOpen(true);
           setStep(1);
+          setSearchValue(""); // Clear search input when opening popup
+          setSearchResults(null); // Clear search results when opening popup
         }}
         className="absolute left-2 top-1  w-[70px] h-[70px] bg-[#040b2b] text-white flex items-center justify-center rounded-full shadow-md border-2 border-white"
       >
@@ -648,8 +746,8 @@ export default function AddExpensePopup() {
 
       {/* The Popup */}
       {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-96 bg-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-40">
+          <div className="w-96 bg-white p-6 rounded-2xl shadow-lg relative overflow-visible">
             <button
               onClick={() => setIsOpen(false)}
               className="absolute top-3 right-3 text-gray-500"
