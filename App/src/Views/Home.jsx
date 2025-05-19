@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import GroupCard from '../Components/GroupCard';
@@ -5,6 +8,7 @@ import HeaderProfile from '../Components/HeaderProfile';
 import NavBar from '../Components/NavBar';
 import YourBalanceCard from '../Components/YourBalanceCard';
 import FriendReqComponent from '../Components/FriendReqComponent';
+import MobileOverlay from "../Components/MobileOverlay";
 
 export default function Home() {
   // State for user data, group data, loading, and error
@@ -59,6 +63,7 @@ export default function Home() {
   return (
     <>
       <NavBar />
+
       <div className="ml-8 mt-2"> {/* Reduced top margin from -mt-8 to mt-2 */}
         <HeaderProfile
           userName={userData.userName}
@@ -69,10 +74,12 @@ export default function Home() {
           {/* LEFT SIDE: Group Cards */}
           <div className="xl:w-[70%] lg:w-[60%] w-full md:px-3 px-1 flex flex-col xl:h-[78vh] lg:h-[76vh] h-[80vh]">
             <div className="flex-grow rounded-2xl p-4 overflow-hidden">
+
               <div className="text-[#040b2b] text-2xl font-bold font-inter mx-0 mt-1">
                 Groups
               </div>
               {/* A responsive grid for group cards */}
+
               <div className="grid grid-cols-2 gap-4 mt-4 overflow-y-auto h-full">
                 {groupLoading ? (
                   <div className="col-span-2 text-center text-[#040b2b] text-lg">
@@ -96,6 +103,7 @@ export default function Home() {
           </div>
 
           {/* RIGHT SIDE: Empty Column with bg-[#f1f2f9] */}
+
           <div className="xl:w-[30%] lg:w-[40%] px-3 pb-10 flex flex-col xl:h-[78vh] lg:h-[76vh] h-[80vh]">
             <div className="flex-grow bg-[#f1f2f9] rounded-2xl p-0 overflow-hidden">
               <YourBalanceCard
@@ -104,12 +112,19 @@ export default function Home() {
                 error={userError}
               />
               <div className="p-2 -mt-4"> {/* Reduced padding and margin */}
+
                 <FriendReqComponent />
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Render MobileOverlay only on mobile */}
+      <div className="block md:hidden">
+        <MobileOverlay />
+      </div>
+
     </>
   );
 }

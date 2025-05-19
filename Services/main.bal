@@ -1,27 +1,20 @@
-// import splittrack_backend.db;
-
-// import ballerina/sql;
 import splittrack_backend.db_scripts as generator;
 import splittrack_backend.db_scripts as db_setup;
 import splittrack_backend.users;
 import splittrack_backend.expense;
+import splittrack_backend.friend; 
 import ballerina/http;
 import ballerina/io;
 import splittrack_backend.search;
 import splittrack_backend.groups;
 
-
 // Configure the main listener
 listener http:Listener httpListener = new (9090);
 
-
-
-
 public function main() returns error? {
-
-
     check httpListener.attach(users:getUserService(), "api_user/v1");
     check httpListener.attach(expense:getExpenseService(), "api_expense/v1");
+    check httpListener.attach(friend:getFriendService(), "api_friend/v1"); // Friend service attached
     check httpListener.attach(groups:getGroupService(), "api_group/v1");
     check httpListener.attach(search:getSearchService(), "api_search/v1");
     check executeSqlScript();
@@ -42,7 +35,7 @@ function executeSqlScript() returns error? {
     if execResult is error {
         io:println("Error executing SQL queries: ", execResult.message());
         return execResult;
-    }else{
+    } else {
         io:println("SQL queries executed successfully");
     }
 
