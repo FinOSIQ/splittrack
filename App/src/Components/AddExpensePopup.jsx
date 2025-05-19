@@ -1,19 +1,59 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Input } from "@material-tailwind/react";
 import { useFormik } from "formik";
 import DatePicker from "./DatePicker";
 import expenseParticipants from "./ExpenseParticipants"; // Import your expense participants
+import { fetchSearchData } from "../utils/requests/expense";
+import axios from "axios";
+import OCRscanner from "./OCRscanner";
+import QrCodeScanner from "./QrCodeScanner";
 
 export default function AddExpensePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
-  // Initialize totalExpense as an empty string.
   const [totalExpense, setTotalExpense] = useState("");
+  const [expenseName, setExpenseName] = useState("");
+  const [expenseDate, setExpenseDate] = useState(new Date()); // Add state for date
+
+  const [searchValue, setSearchValue] = useState("");
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchValue(value);
+  };
+
+  // Handle date change from DatePicker
+  const handleDateChange = (date) => {
+    setExpenseDate(date);
+  };
 
   // Log the expense participants on component mount
   useEffect(() => {
     console.log(expenseParticipants);
   }, []);
+
+  useEffect(() => {
+    if (!searchValue) return;
+
+    const source = axios.CancelToken.source();
+
+    const fetchData = async () => {
+      try {
+        const data = await fetchSearchData(searchValue, "groups,friends,users", "600fc673", source.token);
+        console.log(data);
+      } catch (error) {
+        console.error("Error fetching search data:", error);
+      }
+    };
+
+    fetchData();
+
+    // Cancel the previous request when the search value changes
+    return () => {
+      source.cancel("Request canceled due to new search input.");
+    };
+  }, [searchValue]);
 
   // Initialize Formik for the split options
   const formik = useFormik({
@@ -25,59 +65,80 @@ export default function AddExpensePopup() {
     },
     onSubmit: (values) => {
       const expense = Number(totalExpense);
-      let submissionData = { type: "", details: [] };
+      let participantDetails = [];
 
+      // Determine and calculate the appropriate split
       switch (selectedTab) {
         case 1: {
           // Split Equally
-          submissionData.type = "equal";
           const countSelected = values.splitEqual.filter(Boolean).length;
           const equalAmount = countSelected > 0 ? expense / countSelected : 0;
-          submissionData.details = expenseParticipants.participants.map((name, idx) => ({
-            name,
-            amount: values.splitEqual[idx] ? equalAmount : 0
-          }));
+          
+          // Create participant array with selected participants
+          participantDetails = expenseParticipants.participants.map((participant, idx) => {
+            // Skip unselected participants
+            if (!values.splitEqual[idx]) return null;
+            
+            return {
+              participant_role: "member", 
+              owning_amount: parseFloat(equalAmount.toFixed(2)),
+              userUser_Id: participant.userId
+            };
+          }).filter(Boolean); // Remove null entries
           break;
         }
         case 2: {
           // Split by Amounts
           const totalEntered = expenseParticipants.participants.reduce(
-            (acc, _name, idx) => acc + (parseFloat(values.splitAmounts[idx]) || 0),
+            (acc, _participant, idx) => acc + (parseFloat(values.splitAmounts[idx]) || 0),
             0
           );
+          
           if (totalEntered < expense) {
             alert(
               `Please allocate the full amount. You still have LKR ${(expense - totalEntered).toFixed(2)} left.`
             );
             return;
           }
-          submissionData.type = "amount";
-          submissionData.details = expenseParticipants.participants.map((name, idx) => ({
-            name,
-            amount: parseFloat(values.splitAmounts[idx]) || 0
-          }));
+          
+          participantDetails = expenseParticipants.participants.map((participant, idx) => {
+            const amount = parseFloat(values.splitAmounts[idx]) || 0;
+            if (amount <= 0) return null; // Skip participants with zero amount
+            
+            return {
+              participant_role: "member", 
+              owning_amount: parseFloat(amount.toFixed(2)),
+              userUser_Id: participant.userId
+            };
+          }).filter(Boolean);
           break;
         }
         case 3: {
           // Split by Percentages
           const totalPercentage = expenseParticipants.participants.reduce(
-            (acc, _name, idx) => acc + (parseFloat(values.splitPercentages[idx]) || 0),
+            (acc, _participant, idx) => acc + (parseFloat(values.splitPercentages[idx]) || 0),
             0
           );
+          
           if (totalPercentage !== 100) {
             alert(
               `Please allocate 100% of the expense. Currently allocated: ${totalPercentage.toFixed(2)}%`
             );
             return;
           }
-          submissionData.type = "percentage";
-          submissionData.details = expenseParticipants.participants.map((name, idx) => {
+          
+          participantDetails = expenseParticipants.participants.map((participant, idx) => {
             const perc = parseFloat(values.splitPercentages[idx]) || 0;
+            if (perc <= 0) return null;
+            
+            const amount = (expense * perc) / 100;
+            
             return {
-              name,
-              amount: (expense * perc) / 100
+              participant_role: "member", 
+              owning_amount: parseFloat(amount.toFixed(2)),
+              userUser_Id: participant.userId
             };
-          });
+          }).filter(Boolean);
           break;
         }
         case 4: {
@@ -86,20 +147,46 @@ export default function AddExpensePopup() {
             (acc, val) => acc + (parseFloat(val) || 0),
             0
           );
-          submissionData.type = "share";
-          submissionData.details = expenseParticipants.participants.map((name, idx) => {
+          
+          if (totalShares <= 0) {
+            alert("Please allocate at least one share.");
+            return;
+          }
+          
+          participantDetails = expenseParticipants.participants.map((participant, idx) => {
             const share = parseFloat(values.splitShares[idx]) || 0;
+            if (share <= 0) return null;
+            
+            const amount = (expense * share) / totalShares;
+            
             return {
-              name,
-              amount: totalShares > 0 ? (expense * share) / totalShares : 0
+              participant_role: "member", 
+              owning_amount: parseFloat(amount.toFixed(2)),
+              userUser_Id: participant.userId
             };
-          });
+          }).filter(Boolean);
           break;
         }
         default:
           break;
       }
-      console.log("Submission Data:", submissionData);
+
+      // Create the final expense object
+      const expenseObject = {
+        expense_Id: null, // This will be assigned by the backend
+        name: expenseName,
+        expense_total_amount: parseFloat(expense.toFixed(2)),
+        expense_actual_amount: parseFloat(expense.toFixed(2)),
+        usergroupGroup_Id: null, // Assuming no group ID is specified initially
+        participant: participantDetails
+      };
+
+      console.log("Expense Object:", expenseObject);
+      
+      // Here you would send the expense object to your API
+      // For example:
+      // sendExpenseToAPI(expenseObject);
+      
       setIsOpen(false);
     }
   });
@@ -112,16 +199,18 @@ export default function AddExpensePopup() {
         Add an Expense
       </div>
 
-      {/* "With" input */}
+      {/* Name input */}
       <div className="flex w-72 flex-col gap-6 text-left mt-0 -mb-4">
         <Input
-          variant="static"
-          label=""
-          placeholder="With: Enter Group, Names, Emails..."
+          variant="standard"
+          label="Name"
+          placeholder="Dinner, Lunch, etc.."
+          value={expenseName}
+          onChange={e => setExpenseName(e.target.value)}
         />
       </div>
 
-      {/* Name */}
+      {/* Name (duplicate? Check if this is intentional) */}
       <div className="mt-16 flex items-center space-x-4">
         <svg
           width="38"
@@ -139,7 +228,13 @@ export default function AddExpensePopup() {
           />
         </svg>
         <div className="h-6 border-l border-gray-400"></div>
-        <Input variant="standard" label="Name" placeholder="Dinner, Lunch, etc.." />
+        <Input 
+          variant="standard" 
+          label="Name" 
+          placeholder="Dinner, Lunch, etc.." 
+          value={expenseName}
+          onChange={e => setExpenseName(e.target.value)}
+        />
       </div>
 
       {/* Amount */}
@@ -164,62 +259,24 @@ export default function AddExpensePopup() {
           variant="standard"
           label="Amount"
           placeholder="0.00"
+          value={totalExpense}
           onChange={(e) => setTotalExpense(e.target.value)}
         />
       </div>
 
       {/* Date */}
       <div className="flex justify-center -mt-16">
-        <DatePicker />
+        <DatePicker onDateChange={handleDateChange} />
       </div>
 
       {/* OCR & QR Scanner and Next Button */}
       <div className="flex items-center justify-between -mt-10">
         <div className="flex space-x-6">
           {/* OCR Scanner Button */}
-          <button type="button" className="p-0">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.66663 12.0001V8.66675C2.66663 5.34675 5.34663 2.66675 8.66663 2.66675H12M20 2.66675H23.3333C26.6533 2.66675 29.3333 5.34675 29.3333 8.66675V12.0001M29.3333 21.3334V23.3334C29.3333 26.6534 26.6533 29.3334 23.3333 29.3334H21.3333M12 29.3334H8.66663C5.34663 29.3334 2.66663 26.6534 2.66663 23.3334V20.0001M25.3333 16.0001H6.66663M22.6666 12.6667V19.3334C22.6666 22.0001 21.3333 23.3334 18.6666 23.3334H13.3333C10.6666 23.3334 9.33329 22.0001 9.33329 19.3334V12.6667C9.33329 10.0001 10.6666 8.66675 13.3333 8.66675H18.6666C21.3333 8.66675 22.6666 10.0001 22.6666 12.6667Z"
-                stroke="#040B2B"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          <OCRscanner /> 
 
           {/* QR Scanner Button */}
-          <button type="button" className="p-0">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M5 6.5C5 5.672 5.672 5 6.5 5H12.5C13.328 5 14 5.672 14 6.5V12.5C14 13.328 13.328 14 12.5 14H6.5C6.10218 14 5.72064 13.842 5.43934 13.5607C5.15804 13.2794 5 12.8978 5 12.5V6.5ZM5 19.5C5 18.672 5.672 18 6.5 18H12.5C13.328 18 14 18.672 14 19.5V25.5C14 26.328 13.328 27 12.5 27H6.5C6.10218 27 5.72064 26.842 5.43934 26.5607C5.15804 26.2794 5 25.8978 5 25.5V19.5ZM18 6.5C18 5.672 18.672 5 19.5 5H25.5C26.328 5 27 5.672 27 6.5V12.5C27 13.328 26.328 14 25.5 14H19.5C19.1022 14 18.7206 13.842 18.4393 13.5607C18.158 13.2794 18 12.8978 18 12.5V6.5Z"
-                stroke="black"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M9 9H10V10H9V9ZM9 22H10V23H9V22ZM22 9H23V10H22V9ZM18 18H19V19H18V18ZM18 26H19V27H18V26ZM26 18H27V19H26V18ZM26 26H27V27H26V26ZM22 22H23V23H22V22Z"
-                stroke="black"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          <QrCodeScanner />
         </div>
 
         {/* Next Button */}
@@ -229,6 +286,10 @@ export default function AddExpensePopup() {
             // Check if a valid amount was entered
             if (!totalExpense || Number(totalExpense) <= 0) {
               alert("Please enter a valid amount to continue.");
+              return;
+            }
+            if (!expenseName.trim()) {
+              alert("Please enter an expense name to continue.");
               return;
             }
             setStep(2);
@@ -261,7 +322,7 @@ export default function AddExpensePopup() {
         <div className="mt-4">
           {/* People list with checkboxes */}
           <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-3">
-            {expenseParticipants.participants.map((name, idx) => (
+            {expenseParticipants.participants.map((participant, idx) => (
               <div key={idx} className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                   <svg
@@ -279,7 +340,7 @@ export default function AddExpensePopup() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <span className="font-normal">{name}</span>
+                  <span className="font-normal">{participant.name}</span>
                 </div>
                 <input
                   type="checkbox"
@@ -318,14 +379,14 @@ export default function AddExpensePopup() {
       subheading: "Specify exactly how much each person owes.",
       content: (() => {
         const totalEntered = expenseParticipants.participants.reduce(
-          (acc, _name, i) => acc + (parseFloat(formik.values.splitAmounts[i]) || 0),
+          (acc, _participant, i) => acc + (parseFloat(formik.values.splitAmounts[i]) || 0),
           0
         );
-    
+
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
-              {expenseParticipants.participants.map((name, idx) => {
+              {expenseParticipants.participants.map((participant, idx) => {
                 const currentValue = parseFloat(formik.values.splitAmounts[idx]) || 0;
                 return (
                   <div key={idx} className="flex items-center gap-3">
@@ -345,7 +406,7 @@ export default function AddExpensePopup() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <span className="font-medium">{name}</span>
+                      <span className="font-medium">{participant.name}</span>
                     </div>
                     <div className="w-16">
                       <Input
@@ -386,13 +447,13 @@ export default function AddExpensePopup() {
       subheading: "Enter the percentage split that's fair for your expense.",
       content: (() => {
         const totalPercentage = expenseParticipants.participants.reduce(
-          (acc, _name, idx) => acc + (parseFloat(formik.values.splitPercentages[idx]) || 0),
+          (acc, _participant, idx) => acc + (parseFloat(formik.values.splitPercentages[idx]) || 0),
           0
         );
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-0">
-              {expenseParticipants.participants.map((name, idx) => {
+              {expenseParticipants.participants.map((participant, idx) => {
                 const currentValue = parseFloat(formik.values.splitPercentages[idx]) || 0;
                 return (
                   <div key={idx} className="flex items-center gap-3">
@@ -412,7 +473,7 @@ export default function AddExpensePopup() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <span className="font-medium">{name}</span>
+                      <span className="font-medium">{participant.name}</span>
                     </div>
                     <div className="w-16">
                       <Input
@@ -448,19 +509,19 @@ export default function AddExpensePopup() {
     },
     {
       id: 4,
-      label: "",
+      label: "1/3",
       heading: "Split by Shares",
       subheading:
         "Great for time based or splitting across families. (2 nights => 2 shares)",
       content: (() => {
         const totalShares = expenseParticipants.participants.reduce(
-          (acc, _name, idx) => acc + (parseFloat(formik.values.splitShares[idx]) || 0),
+          (acc, _participant, idx) => acc + (parseFloat(formik.values.splitShares[idx]) || 0),
           0
         );
         return (
           <div className="mt-4">
             <div className="max-h-[300px] overflow-x-hidden overflow-y-auto space-y-3">
-              {expenseParticipants.participants.map((name, idx) => (
+              {expenseParticipants.participants.map((participant, idx) => (
                 <div key={idx} className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                     <svg
@@ -478,7 +539,7 @@ export default function AddExpensePopup() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <span className="font-medium">{name}</span>
+                    <span className="font-medium">{participant.name}</span>
                   </div>
                   <div className="w-16">
                     <Input
@@ -518,9 +579,8 @@ export default function AddExpensePopup() {
               key={tab.id}
               type="button"
               onClick={() => setSelectedTab(tab.id)}
-              className={`flex-1 py-1 px-2 border border-gray-300 text-center rounded-lg transition-colors duration-200 ${
-                selectedTab === tab.id ? "bg-[#040b2b] text-white" : "hover:bg-gray-100"
-              }`}
+              className={`flex-1 py-1 px-2 border border-gray-300 text-center rounded-lg transition-colors duration-200 ${selectedTab === tab.id ? "bg-[#040b2b] text-white" : "hover:bg-gray-100"
+                }`}
             >
               {tab.icon ? tab.icon : <span className="font-bold text-sm">{tab.label}</span>}
             </button>
@@ -561,21 +621,39 @@ export default function AddExpensePopup() {
   };
 
   return (
-    <div className="flex justify-center items-center z-20">
+    <div className="relative w-[80px] h-[80px] bg-white rounded-full ml-3">
       <button
         onClick={() => {
           setIsOpen(true);
           setStep(1);
         }}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+        className="absolute left-2 top-1  w-[70px] h-[70px] bg-[#040b2b] text-white flex items-center justify-center rounded-full shadow-md border-2 border-white"
       >
-        Add Expense
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 2V22M2 12H22"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
 
+      {/* The Popup */}
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-96 bg-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
-            <button onClick={() => setIsOpen(false)} className="absolute top-3 right-3 text-gray-500">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-3 right-3 text-gray-500"
+            >
               ✖
             </button>
             {renderStepContent()}

@@ -7,6 +7,7 @@ import cgroupImg from '../images/cgroup.png';
 import addExpenseImg from '../images/addexpense.png';
 import addImg from '../images/add.png';
 import activityImg from '../images/activity.png';
+import AddExpensePopup from './AddExpensePopup';
 
 const NavBar = () => {
   return (
@@ -26,13 +27,9 @@ const NavBar = () => {
             <img src={cgroupImg} alt="Cgroup" />
           </Link>
 
-          <div className="relative w-[80px] h-[80px] bg-white rounded-full ml-3">
-            <Link
-              to="/addexpense"
-              className="absolute left-2 top-2 w-[64px] h-[64px] bg-[#040b2b] text-white flex items-center justify-center rounded-full shadow-md border-2 border-white"
-            >
-              <img src={addExpenseImg} alt="Add Expense" className="w-6 h-6 filter invert" />
-            </Link>
+          <div>
+            <AddExpensePopup />
+            
           </div>
 
           <Link to="/add" className="w-7 h-7 mr-7">

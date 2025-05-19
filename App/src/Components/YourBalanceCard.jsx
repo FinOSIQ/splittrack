@@ -9,13 +9,14 @@ const YourBalanceCard = ({ balance, loading, error }) => {
   };
 
   return (
+
     <div className="px-0 py-4">
       <div
         className="
           w-full h-[135px]
           rounded-xl
           p-4
-          flex items-center relative
+          flex items-center 
           bg-[radial-gradient(at_top_left,_#dddbff,_#040B2B)]
         "
       >

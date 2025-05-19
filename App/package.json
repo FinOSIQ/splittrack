@@ -17,15 +17,15 @@
     "date-fns": "^4.1.0",
     "formik": "^2.4.6",
     "gsap": "^3.12.7",
+    "lodash.debounce": "^4.0.8",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-day-picker": "^9.6.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.5",
-     "react-webcam": "^7.2.0",
-     "react-select": "^5.10.1",
+    "react-select": "^5.10.1",
     "react-tailwindcss-datepicker": "^2.0.0",
-
+    "react-webcam": "^7.2.0",
     "yup": "^1.6.1"
   },
   "devDependencies": {
