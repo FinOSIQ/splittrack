@@ -10,13 +10,7 @@ import ballerina/sql;
 import ballerina/uuid;
 
 
-
-
-
 final db:Client dbClient = check new ();
-
-
-
 
 public function hello(string? name) returns string {
     if name !is () {
@@ -27,7 +21,17 @@ public function hello(string? name) returns string {
 
 // New Expense Service
 public function getExpenseService() returns http:Service {
-    return service object {
+    return @http:ServiceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowMethods: ["GET", "POST", "OPTIONS","PUT", "DELETE"],
+            allowHeaders: ["Content-Type", "Authorization"],
+            allowCredentials: false,
+            maxAge: 3600
+        }
+    }
+    
+     service object {
         resource function post expense(http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
             http:Response response = new;
 
@@ -166,6 +170,7 @@ public function getExpenseService() returns http:Service {
             }
         }
 
+
         resource function get expense/[string expenseId](http:Caller caller, http:Request req) returns error? {
             db:ExpenseWithRelations|error expenseDetails = dbClient->/expenses/[expenseId]();
             if expenseDetails is error {
@@ -251,6 +256,7 @@ public function getExpenseService() returns http:Service {
         }
 
         resource function get groupExpenses(http:Caller caller, http:Request req, @http:Header string authorization, @http:Query string userId, @http:Payload UserIdPayload payload) returns http:Ok & readonly|error? {
+
             http:Response response = new;
 
             // Authenticate the request
@@ -406,7 +412,7 @@ public function getExpenseService() returns http:Service {
             return;
         }
 
-        resource function get groupExpensesTwo(http:Caller caller, http:Request req, @http:Header string authorization, @http:Query string? userId) returns http:Ok & readonly|error? {
+        resource function get groupExpensesTwo(http:Caller caller, http:Request req, @http:Query string? userId) returns http:Ok & readonly|error? {
             http:Response response = new;
 
             // Authenticate the request
