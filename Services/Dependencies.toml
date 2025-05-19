@@ -483,6 +483,7 @@ modules = [
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.db_scripts"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.email"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.expense"},
+	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.friend"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.groups"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.interceptor"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.search"},
