@@ -42,7 +42,7 @@ public function getGroupService() returns http:Service {
 
             // Insert group
             string group_Id = uuid:createType4AsString();
-            db:UserGroupInsert[] group = [{group_Id: group_Id, name: name}];
+            db:UserGroupInsert[] group = [{group_Id: group_Id, name: name,status: 1}];
             transaction {
                 _ = check dbClient->/usergroups.post(group);
 
@@ -81,7 +81,8 @@ public function getGroupService() returns http:Service {
                         group_member_Id: groupMemberId,
                         userUser_Id: userId,
                         member_role: role,
-                        groupGroup_Id: group_Id
+                        groupGroup_Id: group_Id,
+                        status: 1
                     });
                 }
 
@@ -205,7 +206,8 @@ public function getGroupService() returns http:Service {
                             group_member_Id: groupMemberId,
                             userUser_Id: userId,
                             member_role: role,
-                            groupGroup_Id: groupId
+                            groupGroup_Id: groupId,
+                            status: 1
                         });
                     }
 

@@ -104,7 +104,8 @@ public function getUserService() returns http:Service {
                     last_name: lastName,
                     birthdate: birthdate,
                     phone_number: phoneNumber,
-                    currency_pref: "USD"
+                    currency_pref: "USD",
+                    status: 1
                 };
 
                 string[]|error result = dbClient->/users.post([newUser]);

@@ -113,7 +113,8 @@ public function getExpenseService() returns http:Service {
                     participant_role: participant.participant_role,
                     owning_amount: participant.owning_amount,
                     expenseExpense_Id: expenseId,
-                    userUser_Id: participant.userUser_Id
+                    userUser_Id: participant.userUser_Id,
+                    status: 1
                 };
 
                 string[]|error participantResult = dbClient->/expenseparticipants.post([newParticipant]);
@@ -233,7 +234,7 @@ public function getExpenseService() returns http:Service {
                     expenseUpdate.name = name;
                 }
                 if expense_actual_amount is decimal {
-                    expenseUpdate.expense_actual_amount = expense_actual_amount;
+                    expenseUpdate.expense_owe_amount = expense_actual_amount;
                 }
 
                 _ = check dbClient->/expenses/[expenseId].put(expenseUpdate);
