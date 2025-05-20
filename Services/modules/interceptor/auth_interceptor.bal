@@ -1,5 +1,6 @@
 // utils.bal
 import ballerina/http;
+import splittrack_backend.utils as cookie_utils;
 
 isolated function validateToken(string token) returns boolean|error {
     http:Client asgardeoClient = check new ("https://api.asgardeo.io/t/sparkz");
@@ -9,11 +10,20 @@ isolated function validateToken(string token) returns boolean|error {
     return userInfoResp.statusCode == 200;
 }
 
+
 public isolated function authenticate(http:Request req) returns boolean|error {
+    // First check for token in header 
     string? authHeader = check req.getHeader("Authorization");
-    if authHeader is () || !authHeader.startsWith("Bearer ") {
-        return false;
+    if authHeader is string && authHeader.startsWith("Bearer ") {
+        string token = authHeader.substring(7).trim();
+        return validateToken(token);
     }
-    string token = authHeader.substring(7).trim();
-    return validateToken(token);
+    
+    // If not in header, try to get from cookie
+    string? cookieToken = cookie_utils:getCookieValue(req, "access_token");
+    if cookieToken is string {
+        return validateToken(cookieToken);
+    }
+    
+    return false;
 }

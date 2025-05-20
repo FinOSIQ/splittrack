@@ -1,7 +1,7 @@
 import splittrack_backend.db;
 import splittrack_backend.email as emailInterceptor;
 import splittrack_backend.interceptor as authInterceptor;
-// import splittrack_backend.utils as id_store_util;
+import splittrack_backend.utils as cookie_utils;
 
 import ballerina/http;
 import ballerina/io;
@@ -50,6 +50,8 @@ public function getUserService() returns http:Service {
 
             http:Response response = new;
 
+            // string? accessTokenn = cookie_utils:getCookieValue(req, "access_token");
+
             boolean|error isValid = authInterceptor:authenticate(req);
             if isValid is error || !isValid {
                 response.statusCode = 401;
@@ -93,6 +95,10 @@ public function getUserService() returns http:Service {
 
             db:UserWithRelations|persist:Error existingUser = dbClient->/users/[id];
             if existingUser is db:UserWithRelations {
+
+                // Set cookies using utility function for existing user
+                cookie_utils:setAuthCookies(response, accessToken, id);
+
                 response.statusCode = http:STATUS_OK;
                 response.setJsonPayload({"status": "success", "message": "User already exists", "userId": id});
                 return caller->respond(response);
@@ -131,6 +137,9 @@ public function getUserService() returns http:Service {
                 } else {
                     message = message + ". Email sent successfully";
                 }
+
+                // Set cookies using utility function for new user
+                cookie_utils:setAuthCookies(response, accessToken, id);
 
                 response.statusCode = http:STATUS_CREATED;
                 response.setJsonPayload({
