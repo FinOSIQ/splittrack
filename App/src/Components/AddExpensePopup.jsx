@@ -717,7 +717,7 @@ export default function AddExpensePopup() {
   };
 
   return (
-    <div className="relative w-[80px] h-[80px] bg-white rounded-full ml-3">
+    <div className="relative w-[80px] h-[80px] bg-white rounded-full ml-3 z-500">
       <button
         onClick={() => {
           setIsOpen(true);
