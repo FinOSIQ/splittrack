@@ -32,7 +32,9 @@ public function getExpenseService() returns http:Service {
     }
     
     service object {
+
         resource function post expense(http:Caller caller, http:Request req, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
+
             http:Response response = new;
 
             boolean|error isValid = authInterceptor:authenticate(req);
