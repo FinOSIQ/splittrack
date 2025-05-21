@@ -1,6 +1,6 @@
 // utils.bal
 
-import splittrack_backend.utils as cookie_utils;
+// import splittrack_backend.utils as cookie_utils;
 
 import ballerina/http;
 
@@ -15,10 +15,10 @@ isolated function validateToken(string token) returns boolean|error {
 public isolated function authenticate(http:Request req) returns boolean|error {
 
     // If not in header, try to get from cookie
-    string? cookieToken = cookie_utils:getCookieValue(req, "access_token");
-    if cookieToken is string {
-        return validateToken(cookieToken);
-    }
+    // string? cookieToken = cookie_utils:getCookieValue(req, "access_token");
+    // if cookieToken is string {
+    //     return validateToken(cookieToken);
+    // }
 
     // First check for token in header 
     string? authHeader = check req.getHeader("Authorization");
