@@ -2,13 +2,11 @@ import splittrack_backend.db;
 import splittrack_backend.interceptor as authInterceptor;
 import splittrack_backend.utils;
 
-
 import ballerina/http;
 import ballerina/log;
 import ballerina/persist;
 import ballerina/sql;
 import ballerina/uuid;
-
 
 final db:Client dbClient = check new ();
 
@@ -26,15 +24,15 @@ public function getExpenseService() returns http:Service {
     return @http:ServiceConfig {
         cors: {
             allowOrigins: ["http://localhost:5173"], // Your frontend origin
-            allowMethods: ["GET", "POST", "OPTIONS","PUT", "DELETE"],
+            allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: false,
             maxAge: 3600
         }
     }
     
-     service object {
-        resource function post expense(http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
+    service object {
+        resource function post expense(http:Caller caller, http:Request req, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
             http:Response response = new;
 
             boolean|error isValid = authInterceptor:authenticate(req);
@@ -44,6 +42,31 @@ public function getExpenseService() returns http:Service {
                 check caller->respond(response);
                 return;
             }
+
+            string? creatorId = utils:getCookieValue(req, "user_id");
+            if creatorId == () {
+                return utils:sendErrorResponse(
+                        caller,
+                        http:STATUS_BAD_REQUEST,
+                        "Invalid 'user_id' cookie",
+                        "Expected a valid 'user_id' cookie"
+                );
+            }
+
+            // Calculate the owe_amount by finding the creator's amount and subtracting from total
+            decimal calculatedOweAmount = payload.expense_total_amount;
+            decimal creatorOwningAmount = 0;
+
+            // Find the creator's owning amount from participants
+            foreach ParticipantPayload participant in payload.participant {
+                if participant.userUser_Id == creatorId {
+                    creatorOwningAmount = participant.owning_amount;
+                    break;
+                }
+            }
+
+            // Calculate what others owe to the creator (total minus creator's share)
+            calculatedOweAmount -= creatorOwningAmount;
 
             string? payloadUsergroupId = payload.usergroupGroup_Id;
             if payloadUsergroupId is string && payloadUsergroupId.trim() != "" {
@@ -83,8 +106,9 @@ public function getExpenseService() returns http:Service {
             }
 
             string? usergroupId = payloadUsergroupId == "" ? null : payload.usergroupGroup_Id;
-            sql:ParameterizedQuery insertQuery = `INSERT INTO Expense (expense_Id, name, expense_total_amount,expense_actual_amount, usergroupGroup_Id) 
-                                      VALUES (${expenseId}, ${payload.name}, ${payload.expense_total_amount}, ${payload.expense_owe_amount}, ${usergroupId})`;
+            // Use the calculated owe_amount instead of the one from payload
+            sql:ParameterizedQuery insertQuery = `INSERT INTO Expense (expense_Id, name, expense_total_amount, expense_owe_amount, usergroupGroup_Id) 
+                              VALUES (${expenseId}, ${payload.name}, ${payload.expense_total_amount}, ${calculatedOweAmount}, ${usergroupId})`;
             persist:Error|sql:ExecutionResult expenseResult = dbClient->executeNativeSQL(insertQuery);
             if expenseResult is persist:Error {
                 log:printError("Database error creating expense: " + expenseResult.message());
@@ -112,7 +136,7 @@ public function getExpenseService() returns http:Service {
 
                 db:ExpenseParticipant newParticipant = {
                     participant_Id: participantId,
-                    participant_role: participant.participant_role,
+                    participant_role: participant.userUser_Id == creatorId ? "Creator" : participant.participant_role,
                     owning_amount: participant.owning_amount,
                     expenseExpense_Id: expenseId,
                     userUser_Id: participant.userUser_Id,
@@ -133,7 +157,8 @@ public function getExpenseService() returns http:Service {
             response.setJsonPayload({
                 "status": "success",
                 "message": "Expense created successfully" + (payload.participant.length() > 0 ? " with participants" : ""),
-                "expenseId": expenseId
+                "expenseId": expenseId,
+                "oweAmount": calculatedOweAmount // Include the calculated amount in the response
             });
             check caller->respond(response);
             return;
@@ -172,7 +197,6 @@ public function getExpenseService() returns http:Service {
                 return utils:sendErrorResponse(caller, statusCode, "Failed to delete expense", e.message());
             }
         }
-
 
         resource function get expense/[string expenseId](http:Caller caller, http:Request req) returns error? {
             db:ExpenseWithRelations|error expenseDetails = dbClient->/expenses/[expenseId]();
@@ -258,9 +282,19 @@ public function getExpenseService() returns http:Service {
             return res;
         }
 
-        resource function get groupExpenses(http:Caller caller, http:Request req, @http:Header string authorization, @http:Query string userId, @http:Payload UserIdPayload payload) returns http:Ok & readonly|error? {
+        resource function get groupExpenses(http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload UserIdPayload payload) returns http:Ok & readonly|error? {
 
             http:Response response = new;
+
+            string? userId = utils:getCookieValue(req, "user_id");
+            if userId == () {
+                return utils:sendErrorResponse(
+                        caller,
+                        http:STATUS_BAD_REQUEST,
+                        "Invalid 'user_id' cookie",
+                        "Expected a valid 'user_id' cookie"
+                );
+            }
 
             // Authenticate the request
             // boolean|error isValid = authInterceptor:authenticate(req);
