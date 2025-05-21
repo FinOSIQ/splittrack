@@ -166,7 +166,7 @@ public function getUserService() returns http:Service {
         }
 
         // UPDATE USER
-        resource function put user(http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload UserUpdatePayload payload) returns http:Ok & readonly|error? {
+        resource function put user(http:Caller caller, http:Request req, @http:Payload UserUpdatePayload payload) returns http:Ok & readonly|error? {
 
             http:Response response = new;
 
@@ -236,7 +236,7 @@ public function getUserService() returns http:Service {
         }
 
         // GET USER BY ID
-        resource function get user_byid(http:Caller caller, http:Request req, @http:Header string authorization) returns http:Ok & readonly|error? {
+        resource function get user_byid(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
             http:Response response = new;
 
             string? id = cookie_utils:getCookieValue(req, "user_id");
