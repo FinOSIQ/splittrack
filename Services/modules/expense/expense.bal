@@ -290,7 +290,7 @@ public function getExpenseService() returns http:Service {
         }
 
 
-        resource function get groupExpenses(http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload UserIdPayload payload) returns http:Ok & readonly|error? {
+        resource function get groupExpenses(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
 
             http:Response response = new;
 
