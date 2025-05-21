@@ -1,6 +1,7 @@
 import splittrack_backend.db as db;
 
 import ballerina/http;
+import ballerina/log;
 import ballerina/sql;
 import ballerina/uuid;
 
@@ -11,11 +12,10 @@ public function getFriendService() returns http:Service {
 
         // Get list of friends for a user
         resource function get friends/[string userId](http:Caller caller, http:Request req) returns error? {
-            // Adjust column names according to your schema
-            sql:ParameterizedQuery whereClause = `user_id_1 = ${userId} OR user_id_2 = ${userId}`;
+            sql:ParameterizedQuery whereClause = `user_id_1User_Id = ${userId} OR user_id_2User_Id = ${userId}`;
 
             stream<db:FriendWithRelations, error?> resultStream = dbClient->/friends.get(
-                db:FriendWithRelations,
+                db:FriendOptionalized,
                 whereClause
             );
 
@@ -24,8 +24,8 @@ public function getFriendService() returns http:Service {
             error? e = resultStream.forEach(function(db:FriendWithRelations friend) {
                 friends.push(friend);
             });
-
             if (e is error) {
+                log:printError("Error retrieving friends from DB", err = e.toString());
                 http:Response res = new;
                 res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
                 res.setJsonPayload({"error": "Failed to retrieve friends"});
@@ -33,12 +33,16 @@ public function getFriendService() returns http:Service {
                 return;
             }
 
-            check caller->respond(friends);
+            // Return the collected friends as JSON response
+            http:Response res = new;
+            res.statusCode = http:STATUS_OK;
+            res.setJsonPayload({"friends": friends});
+            check caller->respond(res);
         }
 
         // Get friend requests received by a user
         resource function get friendrequests/[string userId](http:Caller caller, http:Request req) returns error? {
-            // treat userId as string, no int conversion
+           
             string userIdStr = userId;
 
             stream<db:FriendRequestWithRelations, error?> friendRequestsStream = dbClient->/friendrequests(db:FriendRequestWithRelations);
@@ -78,8 +82,10 @@ public function getFriendService() returns http:Service {
 
         // Send a friend request
         resource function post friendrequests/send(http:Caller caller, http:Request req) returns error? {
+            // Parse JSON payload from request
             json|error jsonPayload = req.getJsonPayload();
             if (jsonPayload is error) {
+                log:printError("Invalid JSON payload received in send friend request", err = jsonPayload.toString());
                 http:Response res = new;
                 res.statusCode = http:STATUS_BAD_REQUEST;
                 res.setJsonPayload({"error": "Invalid JSON payload"});
@@ -87,21 +93,27 @@ public function getFriendService() returns http:Service {
                 return;
             }
 
+           
             map<json> payloadMap = <map<json>>jsonPayload;
 
+            // Validate required keys
             if !payloadMap.hasKey("send_user_idUser_Id") || !payloadMap.hasKey("receive_user_Id") {
+                log:printError("Missing required fields in send friend request payload");
                 http:Response res = new;
                 res.statusCode = http:STATUS_BAD_REQUEST;
-                res.setJsonPayload({"error": "Missing required fields"});
+                res.setJsonPayload({"error": "Missing required fields: send_user_idUser_Id and receive_user_Id"});
                 check caller->respond(res);
                 return;
             }
 
+            // Extract sender and receiver IDs as strings
             string senderId = <string>payloadMap["send_user_idUser_Id"];
-            string receiverId = <string>payloadMap["receive_user_Id"];  // treat as string here
+            string receiverId = <string>payloadMap["receive_user_Id"];
 
+            // Create unique friend request ID
             string friendReq_ID = "fr-" + uuid:createType4AsString().toString();
 
+            // Construct new FriendRequest record
             db:FriendRequest newRequest = {
                 friendReq_ID: friendReq_ID,
                 send_user_idUser_Id: senderId,
@@ -109,9 +121,11 @@ public function getFriendService() returns http:Service {
                 status: "pending"
             };
 
+            // Insert new friend request into DB
             var insertResult = dbClient->/friendrequests.post([newRequest]);
 
             if (insertResult is error) {
+                log:printError("Failed to insert friend request into DB", err = insertResult.toString());
                 http:Response res = new;
                 res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
                 res.setJsonPayload({"error": "Failed to insert friend request"});
@@ -119,6 +133,7 @@ public function getFriendService() returns http:Service {
                 return;
             }
 
+            // Success response
             json response = {
                 message: "Friend request sent successfully",
                 requestId: newRequest.friendReq_ID
@@ -129,7 +144,6 @@ public function getFriendService() returns http:Service {
             res.setJsonPayload(response);
             check caller->respond(res);
         }
-
         // Accept or decline a friend request
         resource function put friendRequests/[string requestId](http:Caller caller, http:Request req) returns error? {
             json|error payload = req.getJsonPayload();
