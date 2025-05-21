@@ -30,6 +30,8 @@ public function getExpenseService() returns http:Service {
     }
     
     service object {
+
+        // create expensee
         resource function post expense(http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
             http:Response response = new;
 
@@ -135,6 +137,7 @@ public function getExpenseService() returns http:Service {
             return;
         }
 
+        // delete expense
         resource function delete expense/[string expenseId](http:Caller caller, http:Request req) returns error? {
             http:Response response = new;
 
@@ -169,6 +172,7 @@ public function getExpenseService() returns http:Service {
             }
         }
 
+        // get expense by id
         resource function get expense/[string expenseId](http:Caller caller, http:Request req) returns error? {
             db:ExpenseWithRelations|error expenseDetails = dbClient->/expenses/[expenseId]();
             if expenseDetails is error {
@@ -189,6 +193,7 @@ public function getExpenseService() returns http:Service {
             return caller->respond(res);
         }
 
+        // update expense
         resource function put expenses/[string expenseId](http:Caller caller, http:Request req) returns error?|http:Response {
             json payload = check req.getJsonPayload();
 
@@ -253,18 +258,10 @@ public function getExpenseService() returns http:Service {
             return res;
         }
 
+        // get group expenses for certain user id
         resource function get groupExpenses(http:Caller caller, http:Request req, @http:Header string authorization, @http:Query string userId, @http:Payload UserIdPayload payload) returns http:Ok & readonly|error? {
 
             http:Response response = new;
-
-            // Authenticate the request
-            // boolean|error isValid = authInterceptor:authenticate(req);
-            // if isValid is error || !isValid {
-            //     response.statusCode = 401;
-            //     response.setJsonPayload({"status": "error", "message": "Unauthorized: Invalid or expired token"});
-            //     check caller->respond(response);
-            //     return;
-            // }
 
             // Fetch groups where the user is a member
             stream<db:UserGroupMember, persist:Error?> groupMembers = dbClient->/usergroupmembers(
@@ -590,6 +587,7 @@ public function getExpenseService() returns http:Service {
             return;
         }
 
+        // get non group expenses for certain user id
         resource function get nonGroupExpenses(http:Caller caller, http:Request req, @http:Query string userId) returns http:Ok & readonly|error? {
             http:Response response = new;
             final db:Client dbClient = check new (); // Assuming db:Client is your persist client
@@ -745,6 +743,7 @@ public function getExpenseService() returns http:Service {
             return;
         }
 
+        // get owe summary in home
         resource function get userExpenseSummary(http:Caller caller, http:Request req, @http:Query string userId) returns http:Ok & readonly|error? {
             http:Response response = new;
 
@@ -870,6 +869,176 @@ public function getExpenseService() returns http:Service {
                     "netAmount": netAmount
                 }
             });
+            check caller->respond(response);
+            return;
+        }
+
+        // get group balances
+        resource function get groupMemberBalances/[string groupId](http:Caller caller, http:Request req) returns error? {
+            http:Response response = new;
+
+            // First, fetch the group to make sure it exists
+            db:UserGroupWithRelations|persist:Error groupResult = dbClient->/usergroups/[groupId];
+            if groupResult is persist:NotFoundError {
+                response.statusCode = http:STATUS_NOT_FOUND;
+                response.setJsonPayload({"status": "error", "message": "Group not found"});
+                check caller->respond(response);
+                return;
+            } else if groupResult is persist:Error {
+                log:printError("Database error fetching group: " + groupResult.message());
+                response.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                response.setJsonPayload({"status": "error", "message": "Database error"});
+                check caller->respond(response);
+                return;
+            }
+
+            // Explicitly check type and extract group name
+            string groupName = "";
+            if groupResult is db:UserGroupWithRelations {
+                groupName = groupResult.name ?: "";
+            }
+
+            // Fetch all members of the group
+            stream<db:UserGroupMember, persist:Error?> groupMembersStream = dbClient->/usergroupmembers(
+                whereClause = sql:queryConcat(`groupGroup_Id = ${groupId}`)
+            );
+            db:UserGroupMember[]|persist:Error groupMembersResult = from var member in groupMembersStream
+                select member;
+
+            if groupMembersResult is persist:Error {
+                log:printError("Database error fetching group members: " + groupMembersResult.message());
+                response.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                response.setJsonPayload({"status": "error", "message": "Failed to fetch group members"});
+                check caller->respond(response);
+                return;
+            }
+
+            // Explicit type check
+            db:UserGroupMember[] groupMembers = [];
+            if groupMembersResult is db:UserGroupMember[] {
+                groupMembers = groupMembersResult;
+            }
+
+            // Create a map to track which users are group members
+            map<boolean> groupMemberMap = {};
+            foreach db:UserGroupMember member in groupMembers {
+                groupMemberMap[member.userUser_Id] = true;
+            }
+
+            // Fetch all expenses for the group
+            stream<db:Expense, persist:Error?> expensesStream = dbClient->/expenses(
+                whereClause = sql:queryConcat(`usergroupGroup_Id = ${groupId}`)
+            );
+            db:Expense[]|persist:Error expensesResult = from var expense in expensesStream
+                select expense;
+
+            if expensesResult is persist:Error {
+                log:printError("Database error fetching expenses: " + expensesResult.message());
+                response.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                response.setJsonPayload({"status": "error", "message": "Failed to fetch expenses"});
+                check caller->respond(response);
+                return;
+            }
+
+            // Explicit type check
+            db:Expense[] expenses = [];
+            if expensesResult is db:Expense[] {
+                expenses = expensesResult;
+            }
+
+            // Map to track balances (positive = owed to user, negative = user owes)
+            map<decimal> balanceMap = {};
+
+            // Track all users involved (including non-members)
+            map<boolean> allUsersMap = {};
+
+            // Process each expense
+            foreach db:Expense expense in expenses {
+                // Fetch participants for this expense
+                stream<db:ExpenseParticipant, persist:Error?> participantsStream = dbClient->/expenseparticipants(
+                    whereClause = sql:queryConcat(`expenseExpense_Id = ${expense.expense_Id}`)
+                );
+                db:ExpenseParticipant[]|persist:Error participantsResult = from var participant in participantsStream
+                    select participant;
+
+                if participantsResult is persist:Error {
+                    log:printError("Database error fetching participants: " + participantsResult.message());
+                    response.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                    response.setJsonPayload({"status": "error", "message": "Failed to fetch expense participants"});
+                    check caller->respond(response);
+                    return;
+                }
+
+                // Explicit type check
+                db:ExpenseParticipant[] participants = [];
+                if participantsResult is db:ExpenseParticipant[] {
+                    participants = participantsResult;
+                }
+
+                // Find the creator user ID
+                string? creatorUserId = ();
+                foreach db:ExpenseParticipant participant in participants {
+                    // Add all participants to the all users map
+                    allUsersMap[participant.userUser_Id] = true;
+
+                    // Track the creator
+                    if participant.participant_role == "creator" {
+                        creatorUserId = participant.userUser_Id;
+                    }
+                }
+
+                // Process the expense balances
+                if creatorUserId is string {
+                    foreach db:ExpenseParticipant participant in participants {
+                        if participant.userUser_Id != creatorUserId {
+                            // Participant owes creator
+                            decimal currentOwes = balanceMap.hasKey(participant.userUser_Id) ?
+                                balanceMap.get(participant.userUser_Id) : 0d;
+                            balanceMap[participant.userUser_Id] = currentOwes - participant.owning_amount;
+
+                            // Creator is owed by participant
+                            decimal currentOwed = balanceMap.hasKey(creatorUserId) ?
+                                balanceMap.get(creatorUserId) : 0d;
+                            balanceMap[creatorUserId] = currentOwed + participant.owning_amount;
+                        }
+                    }
+                }
+            }
+
+            // Prepare the response
+            GroupMemberBalance[] memberBalances = [];
+
+            // Process all users (members and non-members)
+            foreach string userId in allUsersMap.keys() {
+                // Get user details
+                db:UserWithRelations|persist:Error userResult = dbClient->/users/[userId];
+
+                if userResult is db:UserWithRelations {
+                    decimal oweAmount = balanceMap.hasKey(userId) ? balanceMap.get(userId) : 0d;
+                    boolean isMember = groupMemberMap.hasKey(userId);
+
+                    string? firstName = userResult.first_name;
+                    string? lastName = userResult.last_name;
+                    string fullName = (firstName ?: "") + " " + (lastName ?: "");
+
+                    memberBalances.push({
+                        name: fullName,
+                        owe_amount: oweAmount,
+                        isMember: isMember ? "yes" : "no"
+                    });
+                } else {
+                    log:printError("Could not fetch user " + userId);
+                }
+            }
+
+            // Create the response
+            json responsePayload = {
+                "status": "success",
+                "groupName": groupName,
+                "members": memberBalances
+            };
+
+            response.setJsonPayload(responsePayload);
             check caller->respond(response);
             return;
         }
