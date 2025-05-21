@@ -42,7 +42,7 @@ public function getFriendService() returns http:Service {
 
         // Get friend requests received by a user
         resource function get friendrequests/[string userId](http:Caller caller, http:Request req) returns error? {
-           
+
             string userIdStr = userId;
 
             stream<db:FriendRequestWithRelations, error?> friendRequestsStream = dbClient->/friendrequests(db:FriendRequestWithRelations);
@@ -93,7 +93,6 @@ public function getFriendService() returns http:Service {
                 return;
             }
 
-           
             map<json> payloadMap = <map<json>>jsonPayload;
 
             // Validate required keys
@@ -111,7 +110,8 @@ public function getFriendService() returns http:Service {
             string receiverId = <string>payloadMap["receive_user_Id"];
 
             // Create unique friend request ID
-            string friendReq_ID = "fr-" + uuid:createType4AsString().toString();
+            string fullUuid = uuid:createType4AsString().toString();
+            string friendReq_ID = "fr-" + fullUuid.substring(0, 8);
 
             // Construct new FriendRequest record
             db:FriendRequest newRequest = {
