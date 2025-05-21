@@ -1,7 +1,7 @@
 import splittrack_backend.db;
 import splittrack_backend.email as emailInterceptor;
 import splittrack_backend.interceptor as authInterceptor;
-// import splittrack_backend.utils as id_store_util;
+import splittrack_backend.utils as cookie_utils;
 
 import ballerina/http;
 import ballerina/io;
@@ -18,7 +18,16 @@ public function hello(string? name) returns string {
 }
 
 public function getUserService() returns http:Service {
-    return service object {
+    return @http:ServiceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+            allowHeaders: ["Content-Type", "Authorization"],
+            allowCredentials: false,
+            maxAge: 3600
+        }
+    }
+    service object {
         resource function get sayHello(http:Caller caller, http:Request req) returns error? {
 
             io:println("Hello from the user service");
@@ -46,9 +55,11 @@ public function getUserService() returns http:Service {
         }
 
         // CREATE USER
-        resource function post user(http:Caller caller, http:Request req, @http:Header string authorization) returns http:Created & readonly|error? {
+        resource function post user(http:Caller caller, http:Request req) returns http:Created & readonly|error? {
 
             http:Response response = new;
+
+            // string? accessTokenn = cookie_utils:getCookieValue(req, "access_token");
 
             boolean|error isValid = authInterceptor:authenticate(req);
             if isValid is error || !isValid {
@@ -93,6 +104,10 @@ public function getUserService() returns http:Service {
 
             db:UserWithRelations|persist:Error existingUser = dbClient->/users/[id];
             if existingUser is db:UserWithRelations {
+
+                // Set cookies using utility function for existing user
+                cookie_utils:setAuthCookies(response, accessToken, id);
+
                 response.statusCode = http:STATUS_OK;
                 response.setJsonPayload({"status": "success", "message": "User already exists", "userId": id});
                 return caller->respond(response);
@@ -131,6 +146,9 @@ public function getUserService() returns http:Service {
                 } else {
                     message = message + ". Email sent successfully";
                 }
+
+                // Set cookies using utility function for new user
+                cookie_utils:setAuthCookies(response, accessToken, id);
 
                 response.statusCode = http:STATUS_CREATED;
                 response.setJsonPayload({
@@ -195,6 +213,9 @@ public function getUserService() returns http:Service {
         // GET ALL USERS
         resource function get user(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
             http:Response response = new;
+
+            // string? accessTokenn = cookie_utils:getCookieValue(req, "user_id");
+            // io:print(accessTokenn);
 
             stream<db:UserWithRelations, persist:Error?> userStream = dbClient->/users;
             db:UserWithRelations[] users = check from db:UserWithRelations user in userStream

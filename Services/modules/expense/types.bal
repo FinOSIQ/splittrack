@@ -3,7 +3,7 @@ public type ExpenseCreatePayload record {|
     string? expense_Id;
     string name;
     decimal expense_total_amount;
-    decimal expense_actual_amount;
+    decimal expense_owe_amount;
     string? usergroupGroup_Id; 
     ParticipantPayload[] participant; 
 |};
