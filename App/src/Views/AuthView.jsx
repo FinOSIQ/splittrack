@@ -18,10 +18,12 @@ export default function AuthView () {
                     if (res.status === 200) {
                         window.location.href = "/home";
                     } else {
-                        alert(error);
+                        console.log(error);
+                        
                     }
                 } catch (error) {
-                    alert(error);
+                    console.log(error);
+                    
                 }
             };
             fetchAccessToken();
