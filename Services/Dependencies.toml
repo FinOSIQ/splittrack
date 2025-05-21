@@ -479,6 +479,7 @@ dependencies = [
 ]
 modules = [
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend"},
+	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.bankAccount"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.db"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.db_scripts"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.email"},

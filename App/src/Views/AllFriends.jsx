@@ -3,10 +3,16 @@ import FriendReqComponent from "../Components/FriendReqComponent";
 import { useState, useRef, useEffect } from "react";
 import gsap from "gsap";
 import HeaderProfile from "../Components/HeaderProfile";
+import NavBar from '../Components/NavBar';
+import MobileOverlay from "../Components/MobileOverlay";
+import useIsMobile from '../utils/useIsMobile';
+
 
 export default function AllFriends() {
   const [activeTab, setActiveTab] = useState("friends");
   const contentRef = useRef(null);
+    const isMobile = useIsMobile();
+
 
   useEffect(() => {
     if (contentRef.current) {
@@ -38,7 +44,13 @@ export default function AllFriends() {
   return (
     <>
       <HeaderProfile />
-      <div className="h-[80vh] flex flex-row bg-white rounded-md md:mx-5 -mt-8 px-0 md:mt-4 overflow-x-hidden overflow-y-hidden">
+      {isMobile ? (
+        <MobileOverlay />
+      ) : (
+        <NavBar />
+      )}
+
+      <div className="h-[80vh] flex flex-row bg-white rounded-md mx-12 -mt-8 px-0 md:mt-4 overflow-x-hidden overflow-y-hidden">
         {/* Left Column – 65% Width */}
         <div className="xl:w-[70%] lg:w-[60%] w-full md:px-3 px-1 xl:h-[78vh] lg:h-[76vh]">
           <div className="h-full rounded-2xl p-4 overflow-hidden">
@@ -99,7 +111,7 @@ export default function AllFriends() {
 
               {/* Content Area with Animation */}
               <div className="my-4 ml-2 overflow-y-auto max-h-[75vh] [&::-webkit-scrollbar]:w-2 scrollable-div">
-                <div ref={contentRef}>
+                <div ref={contentRef}>  
                   {activeTab === "friends" && (
                     <>
                       <FriendCard

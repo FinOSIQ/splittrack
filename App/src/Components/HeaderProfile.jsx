@@ -30,25 +30,7 @@ export default function HeaderProfile({ userName, loading, error }) {
         <img className="w-[60px] h-[61px]" src="https://placehold.co/60x61" alt="Profile" />
       </div>
 
-      <div className="md:hidden mr-2">
-        <div className="relative w-[41px] h-[41px] rounded-full bg-[#F1F2F9] flex items-center justify-center">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M3.75 6.75H20.25M3.75 12H20.25M3.75 17.25H20.25"
-              stroke="black"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-      </div>
+      
     </div>
   );
 }
