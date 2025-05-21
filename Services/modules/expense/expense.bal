@@ -259,7 +259,7 @@ public function getExpenseService() returns http:Service {
         }
 
         // get group expenses for certain user id
-        resource function get groupExpenses(http:Caller caller, http:Request req, @http:Query string userId, @http:Payload UserIdPayload payload) returns http:Ok & readonly|error? {
+        resource function get groupExpenses(http:Caller caller, http:Request req, @http:Query string userId) returns http:Ok & readonly|error? {
 
             http:Response response = new;
 
