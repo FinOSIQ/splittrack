@@ -22,7 +22,17 @@ final db:Client dbClient = check new ();
 // HTTP Service for Group CRUD Operations
 public function getGroupService() returns http:Service {
 
-    return service object {
+    return @http:ServiceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowMethods: ["GET", "POST", "OPTIONS","PUT", "DELETE"],
+            allowHeaders: ["Content-Type", "Authorization"],
+            allowCredentials: false,
+            maxAge: 3600
+        }
+    } 
+    service object {
+
 
         // CREATE: Add a new group with optional initial members
         resource function post groups(http:Caller caller, http:Request req) returns error? {
