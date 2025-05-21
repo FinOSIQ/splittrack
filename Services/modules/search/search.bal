@@ -41,10 +41,20 @@ public function getSearchService() returns http:Service {
     } 
      service object {
         resource function get search(http:Caller caller, http:Request req) returns error? {
+
+            string? userId = utils:getCookieValue(req, "user_id");
+            if userId == () {
+                return utils:sendErrorResponse(
+                    caller, 
+                    http:STATUS_BAD_REQUEST, 
+                    "Invalid 'user_id' cookie", 
+                    "Expected a valid 'user_id' cookie"
+                );
+            }    
             // Get query parameters
             map<string[]> queryParams = req.getQueryParams();
             string? searchValue = queryParams.hasKey("value") ? queryParams.get("value")[0] : ();
-            string? userId = queryParams.hasKey("userId") ? queryParams.get("userId")[0] : (); 
+            // string? userId = queryParams.hasKey("userId") ? queryParams.get("userId")[0] : ();   
             string[] searchTypes = queryParams.get("type") is string[] ? queryParams.get("type") : [];
 
 
@@ -58,13 +68,6 @@ public function getSearchService() returns http:Service {
                 return;
             }
 
-            if searchTypes.indexOf("friends") != () && userId == () {
-                http:Response res = new;
-                res.statusCode = http:STATUS_BAD_REQUEST;
-                res.setPayload({"error": "Missing 'userId' query parameter for friends search"});
-                check caller->respond(res);
-                return;
-            }
 
             
             // Validate types

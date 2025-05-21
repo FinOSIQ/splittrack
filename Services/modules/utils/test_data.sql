@@ -1,5 +1,6 @@
 -- Execute after schema creation
 -- Get-Content modules\utils\test_data.sql | & "C:\xampp\mysql\bin\mysql.exe" -u root -D splittrack
+-- Get-Content modules\utils\test_data.sql | & "C:\XAMMP\mysql\bin\mysql.exe" -u root -D splittrack
 
 
 START TRANSACTION;
@@ -44,7 +45,7 @@ INSERT INTO UserGroupMember (group_member_Id, member_role, groupGroup_Id, userUs
 ('1e0facc9', 'member', '2515d78d', '65d0ed7b');
 
 -- Expenses
-INSERT INTO Expense (expense_Id, name, expense_total_amount, expense_actual_amount, usergroupGroup_Id) VALUES 
+INSERT INTO Expense (expense_Id, name, expense_total_amount, expense_owe_amount, usergroupGroup_Id) VALUES 
 ('ec9986e2', 'Hotel Booking', 120.00, 120.00, '49bf830f'),
 ('af0348c4', 'Lunch', 50.50, 50.50, '49bf830f'),
 ('b098f734', 'Office Party', 200.00, 200.00, '2515d78d');

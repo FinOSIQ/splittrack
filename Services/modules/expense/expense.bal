@@ -18,6 +18,8 @@ public function hello(string? name) returns string {
 }
 
 // New Expense Service
+# Description.
+# + return - return value description
 public function getExpenseService() returns http:Service {
     return @http:ServiceConfig {
         cors: {
@@ -31,8 +33,10 @@ public function getExpenseService() returns http:Service {
     
     service object {
 
-        // create expensee
+
         resource function post expense(http:Caller caller, http:Request req, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
+
+
             http:Response response = new;
 
             boolean|error isValid = authInterceptor:authenticate(req);
@@ -42,6 +46,31 @@ public function getExpenseService() returns http:Service {
                 check caller->respond(response);
                 return;
             }
+
+            string? creatorId = utils:getCookieValue(req, "user_id");
+            if creatorId == () {
+                return utils:sendErrorResponse(
+                        caller,
+                        http:STATUS_BAD_REQUEST,
+                        "Invalid 'user_id' cookie",
+                        "Expected a valid 'user_id' cookie"
+                );
+            }
+
+            // Calculate the owe_amount by finding the creator's amount and subtracting from total
+            decimal calculatedOweAmount = payload.expense_total_amount;
+            decimal creatorOwningAmount = 0;
+
+            // Find the creator's owning amount from participants
+            foreach ParticipantPayload participant in payload.participant {
+                if participant.userUser_Id == creatorId {
+                    creatorOwningAmount = participant.owning_amount;
+                    break;
+                }
+            }
+
+            // Calculate what others owe to the creator (total minus creator's share)
+            calculatedOweAmount -= creatorOwningAmount;
 
             string? payloadUsergroupId = payload.usergroupGroup_Id;
             if payloadUsergroupId is string && payloadUsergroupId.trim() != "" {
@@ -81,8 +110,9 @@ public function getExpenseService() returns http:Service {
             }
 
             string? usergroupId = payloadUsergroupId == "" ? null : payload.usergroupGroup_Id;
-            sql:ParameterizedQuery insertQuery = `INSERT INTO Expense (expense_Id, name, expense_total_amount,expense_actual_amount, usergroupGroup_Id) 
-                                      VALUES (${expenseId}, ${payload.name}, ${payload.expense_total_amount}, ${payload.expense_owe_amount}, ${usergroupId})`;
+            // Use the calculated owe_amount instead of the one from payload
+            sql:ParameterizedQuery insertQuery = `INSERT INTO Expense (expense_Id, name, expense_total_amount, expense_owe_amount, usergroupGroup_Id) 
+                              VALUES (${expenseId}, ${payload.name}, ${payload.expense_total_amount}, ${calculatedOweAmount}, ${usergroupId})`;
             persist:Error|sql:ExecutionResult expenseResult = dbClient->executeNativeSQL(insertQuery);
             if expenseResult is persist:Error {
                 log:printError("Database error creating expense: " + expenseResult.message());
@@ -110,7 +140,7 @@ public function getExpenseService() returns http:Service {
 
                 db:ExpenseParticipant newParticipant = {
                     participant_Id: participantId,
-                    participant_role: participant.participant_role,
+                    participant_role: participant.userUser_Id == creatorId ? "Creator" : participant.participant_role,
                     owning_amount: participant.owning_amount,
                     expenseExpense_Id: expenseId,
                     userUser_Id: participant.userUser_Id,
@@ -131,7 +161,8 @@ public function getExpenseService() returns http:Service {
             response.setJsonPayload({
                 "status": "success",
                 "message": "Expense created successfully" + (payload.participant.length() > 0 ? " with participants" : ""),
-                "expenseId": expenseId
+                "expenseId": expenseId,
+                "oweAmount": calculatedOweAmount // Include the calculated amount in the response
             });
             check caller->respond(response);
             return;
@@ -258,10 +289,29 @@ public function getExpenseService() returns http:Service {
             return res;
         }
 
-        // get group expenses for certain user id
-        resource function get groupExpenses(http:Caller caller, http:Request req, @http:Query string userId) returns http:Ok & readonly|error? {
+
+        resource function get groupExpenses(http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload UserIdPayload payload) returns http:Ok & readonly|error? {
 
             http:Response response = new;
+
+            string? userId = utils:getCookieValue(req, "user_id");
+            if userId == () {
+                return utils:sendErrorResponse(
+                        caller,
+                        http:STATUS_BAD_REQUEST,
+                        "Invalid 'user_id' cookie",
+                        "Expected a valid 'user_id' cookie"
+                );
+            }
+
+            // Authenticate the request
+            // boolean|error isValid = authInterceptor:authenticate(req);
+            // if isValid is error || !isValid {
+            //     response.statusCode = 401;
+            //     response.setJsonPayload({"status": "error", "message": "Unauthorized: Invalid or expired token"});
+            //     check caller->respond(response);
+            //     return;
+            // }
 
             // Fetch groups where the user is a member
             stream<db:UserGroupMember, persist:Error?> groupMembers = dbClient->/usergroupmembers(

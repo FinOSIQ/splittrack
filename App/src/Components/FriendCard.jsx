@@ -19,7 +19,7 @@ export default function FriendCard({ img, name, email }) {
     }, []);
 
     return (
-        <div className="flex items-center justify-between p-2 mx-2 pb-3 border-b border-gray-200 relative">
+        <div className="flex items-center justify-between p-2 mx-2 pb-3 border-b border-gray-200 ">
             {/* Left Section: Avatar & Info */}
             <div className="flex items-center space-x-4">
                 <img src={img} alt={name} className="w-10 h-10 rounded-full" />
