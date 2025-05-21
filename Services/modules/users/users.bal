@@ -18,7 +18,16 @@ public function hello(string? name) returns string {
 }
 
 public function getUserService() returns http:Service {
-    return service object {
+    return @http:ServiceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+            allowHeaders: ["Content-Type", "Authorization"],
+            allowCredentials: false,
+            maxAge: 3600
+        }
+    }
+    service object {
         resource function get sayHello(http:Caller caller, http:Request req) returns error? {
 
             io:println("Hello from the user service");
@@ -46,7 +55,7 @@ public function getUserService() returns http:Service {
         }
 
         // CREATE USER
-        resource function post user(http:Caller caller, http:Request req, @http:Header string authorization) returns http:Created & readonly|error? {
+        resource function post user(http:Caller caller, http:Request req) returns http:Created & readonly|error? {
 
             http:Response response = new;
 
@@ -204,6 +213,9 @@ public function getUserService() returns http:Service {
         // GET ALL USERS
         resource function get user(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
             http:Response response = new;
+
+            // string? accessTokenn = cookie_utils:getCookieValue(req, "user_id");
+            // io:print(accessTokenn);
 
             stream<db:UserWithRelations, persist:Error?> userStream = dbClient->/users;
             db:UserWithRelations[] users = check from db:UserWithRelations user in userStream

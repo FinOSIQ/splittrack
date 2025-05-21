@@ -3,8 +3,8 @@ import ballerina/log;
 
 // Fetch SMTP config from environment variables
 configurable string smtpHost = "smtp.gmail.com";
-configurable string smtpUsername = "sonalattanayake2002@gmail.com";
-configurable string smtpPassword = "olmvitpapqywvspi";
+configurable string smtpUsername = "lasinthaattanayake@gmail.com";
+configurable string smtpPassword = "qvdeuetwecoskseg";
 configurable int smtpPort = 465;
 
 // Define parameters for user registration email

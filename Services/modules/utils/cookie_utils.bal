@@ -22,6 +22,15 @@ public isolated function setAuthCookies(http:Response response, string accessTok
     // Add cookies to response
     response.addCookie(accessTokenCookie);
     response.addCookie(userIdCookie);
+
+    // Add manual Set-Cookie headers to reinforce the HttpOnly flag
+    // This ensures the headers are explicitly set
+    string accessTokenHeader = "access_token=" + accessToken + "; Path=/; HttpOnly; Secure; Max-Age=3600";
+    string userIdHeader = "user_id=" + userId + "; Path=/; HttpOnly; Secure; Max-Age=3600";
+
+    // Override any existing cookie headers to ensure HttpOnly is set
+    response.setHeader("Set-Cookie", accessTokenHeader);
+    response.addHeader("Set-Cookie", userIdHeader);
 }
 
 // Function to extract cookie value by name

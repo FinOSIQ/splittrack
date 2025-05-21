@@ -82,7 +82,7 @@ public function getExpenseService() returns http:Service {
 
             string? usergroupId = payloadUsergroupId == "" ? null : payload.usergroupGroup_Id;
             sql:ParameterizedQuery insertQuery = `INSERT INTO Expense (expense_Id, name, expense_total_amount,expense_actual_amount, usergroupGroup_Id) 
-                                      VALUES (${expenseId}, ${payload.name}, ${payload.expense_total_amount}, ${payload.expense_actual_amount}, ${usergroupId})`;
+                                      VALUES (${expenseId}, ${payload.name}, ${payload.expense_total_amount}, ${payload.expense_owe_amount}, ${usergroupId})`;
             persist:Error|sql:ExecutionResult expenseResult = dbClient->executeNativeSQL(insertQuery);
             if expenseResult is persist:Error {
                 log:printError("Database error creating expense: " + expenseResult.message());
