@@ -33,9 +33,7 @@ public function getExpenseService() returns http:Service {
     
     service object {
 
-
         resource function post expense(http:Caller caller, http:Request req, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
-
 
             http:Response response = new;
 
@@ -288,7 +286,6 @@ public function getExpenseService() returns http:Service {
             res.setJsonPayload({"expense": updatedExpense});
             return res;
         }
-
 
         resource function get groupExpenses(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
 
@@ -794,15 +791,17 @@ public function getExpenseService() returns http:Service {
         }
 
         // get owe summary in home
-        resource function get userExpenseSummary(http:Caller caller, http:Request req, @http:Query string userId) returns http:Ok & readonly|error? {
+        resource function get userExpenseSummary(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
             http:Response response = new;
 
-            // Validate userId
-            if userId == "" {
-                response.statusCode = 400;
-                response.setJsonPayload({"status": "error", "message": "Missing or empty userId query parameter"});
-                check caller->respond(response);
-                return;
+            string? userId = utils:getCookieValue(req, "user_id");
+            if userId == () {
+                return utils:sendErrorResponse(
+                        caller,
+                        http:STATUS_BAD_REQUEST,
+                        "Invalid 'user_id' cookie",
+                        "Expected a valid 'user_id' cookie"
+                );
             }
 
             // Fetch user's name
