@@ -3,9 +3,9 @@ public type ExpenseCreatePayload record {|
     string? expense_Id;
     string name;
     decimal expense_total_amount;
-    decimal expense_actual_amount;
-    string? usergroupGroup_Id; 
-    ParticipantPayload[] participant; 
+    decimal expense_owe_amount;
+    string? usergroupGroup_Id;
+    ParticipantPayload[] participant;
 |};
 
 public enum ParticipantRole {
@@ -18,7 +18,6 @@ public type ParticipantPayload record {|
     decimal owning_amount;
     string userUser_Id;
 |};
-
 
 // Response type for your specific need
 type GroupSummary record {|
@@ -48,4 +47,11 @@ type ExpenseSummary record {|
 type UserExpenseSummary record {|
     string userName;
     decimal netAmount;
+|};
+
+// Group Member Balance type definition
+type GroupMemberBalance record {|
+    string name;
+    decimal owe_amount;
+    string isMember;
 |};

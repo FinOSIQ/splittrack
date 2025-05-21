@@ -1,18 +1,27 @@
 
-import React, { useState } from 'react';
+
+
+
+import React, { useState,useEffect } from 'react';
 import Navbar from '../Components/NavBar.jsx';
 import HeaderProfile from '../Components/HeaderProfile.jsx';
 import OwedCard from '../Components/OwedCard.jsx';
 import PaidCard from '../Components/PaidCard.jsx';
 import CommentSection from '../Components/CommentSection.jsx';
+import { fetchGroupDetails } from '../utils/requests/Group'; 
 
 const GroupView = () => {
     const [activeTab, setActiveTab] = useState('expenses');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [groupDetails, setGroupDetails] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // 🔸 Placeholder values (replace with real data later)
-    const groupName = "software Group";
-    const groupCreatedDate = "25 May, 2025";
+
+
+    //Replace this
+    const groupId = "49bf830f"; 
+
 
     const members = [
         { name: "Sonal Attanayake", img: "src/images/profile1.png" },
@@ -24,6 +33,26 @@ const GroupView = () => {
 
     const visibleMembers = members.slice(0, 2);
     const remainingCount = members.length - 2;
+
+
+    useEffect(() => {
+        const loadGroupDetails = async () => {
+            setLoading(true);
+            try {
+                const data = await fetchGroupDetails(groupId);
+                setGroupDetails(data);
+                setLoading(false);
+                console.log('Group Details:', data);
+            } catch (err) {
+                setError(err.message);
+                setLoading(false);
+            }
+        };
+        
+        loadGroupDetails();
+    }, [groupId]);
+
+
 
     return (
         <div className="flex min-h-screen bg-white">
@@ -47,8 +76,10 @@ const GroupView = () => {
                                         className="w-[64px] h-[58px]"
                                     />
                                     <div>
-                                        <div className="text-[#040b2b] text-lg font-normal font-['Inter']">
-                                            {groupName}
+
+                                        <div className=" text-[#040b2b] text-lg font-normal font-['Inter']">
+                                            {groupDetails?.name}
+
                                         </div>
                                         <div className="text-[#5c5470] text-xs font-normal font-['Inter']">
                                             {groupCreatedDate}

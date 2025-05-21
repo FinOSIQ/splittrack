@@ -7,6 +7,7 @@ import ballerina/http;
 import ballerina/io;
 import splittrack_backend.search;
 import splittrack_backend.groups;
+import splittrack_backend.bankAccount;
 
 // Configure the main listener
 listener http:Listener httpListener = new (9090);
@@ -17,6 +18,7 @@ public function main() returns error? {
     check httpListener.attach(friend:getFriendService(), "api_friend/v1"); // Friend service attached
     check httpListener.attach(groups:getGroupService(), "api_group/v1");
     check httpListener.attach(search:getSearchService(), "api_search/v1");
+    check httpListener.attach(bankAccount:getBankAccountService(), "api_bank/v1");
     check executeSqlScript();
 
     check httpListener.start();
