@@ -161,7 +161,7 @@ export default function MobileOverlay() {
 
                 {/* Floating Action Button */}
                 <button
-                    className="w-14 h-14 rounded-full bg-blue-700 text-white flex items-center justify-center shadow-lg z-40"
+                    className="w-14 h-14 rounded-full bg-[#040b2b] text-white flex items-center justify-center shadow-lg z-40"
                     onClick={handlePlusClick}
                 >
                     <PlusIcon
