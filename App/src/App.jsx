@@ -22,6 +22,12 @@ function ProtectedRoute() {
   return state.isAuthenticated ? <Outlet /> : <Navigate to="/" replace />;
 }
 
+// Public route - redirects to home if already authenticated
+function PublicRoute() {
+  const { state } = useAuthContext();
+  return state.isAuthenticated ? <Navigate to="/home" replace /> : <Outlet />;
+}
+
 
 function App() {
 
@@ -31,25 +37,27 @@ function App() {
 
         <Router>
           <Routes>
-            <Route path="/" element={<Login />} />
+            <Route element={<PublicRoute />}>
+              <Route path="/" element={<Login />} />
+            </Route>
             <Route path="/home" element={<Home />} />
             <Route path="/profile" element={<ProfileView />} />
             <Route path="/paid" element={<PaidView />} />
 
             <Route path="/group" element={<GroupView />} />
 
-              {/* protected routes */}
+            {/* protected routes */}
             {/* <Route element={<ProtectedRoute />}>
                 <Route path="/expense" element={<ExpenseView />} />
             </Route> */}
 
 
             <Route path="/expense" element={<ExpenseView />} />
-             <Route path="/allfriends" element={<AllFriends/>} />
-             <Route path="/ocr" element={<OCRscanner/>} />
-             <Route path="/friend" element={<FriendView/>}  />
-             <Route path="/settleup" element={<SettleUp/>}  />
-             
+            <Route path="/allfriends" element={<AllFriends />} />
+            <Route path="/ocr" element={<OCRscanner />} />
+            <Route path="/friend" element={<FriendView />} />
+            <Route path="/settleup" element={<SettleUp />} />
+
 
           </Routes>
         </Router>
