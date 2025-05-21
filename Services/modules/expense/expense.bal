@@ -2,13 +2,11 @@ import splittrack_backend.db;
 import splittrack_backend.interceptor as authInterceptor;
 import splittrack_backend.utils;
 
-
 import ballerina/http;
 import ballerina/log;
 import ballerina/persist;
 import ballerina/sql;
 import ballerina/uuid;
-
 
 final db:Client dbClient = check new ();
 
@@ -24,14 +22,14 @@ public function getExpenseService() returns http:Service {
     return @http:ServiceConfig {
         cors: {
             allowOrigins: ["http://localhost:5173"], // Your frontend origin
-            allowMethods: ["GET", "POST", "OPTIONS","PUT", "DELETE"],
+            allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: false,
             maxAge: 3600
         }
     }
     
-     service object {
+    service object {
         resource function post expense(http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
             http:Response response = new;
 
@@ -170,7 +168,6 @@ public function getExpenseService() returns http:Service {
                 return utils:sendErrorResponse(caller, statusCode, "Failed to delete expense", e.message());
             }
         }
-
 
         resource function get expense/[string expenseId](http:Caller caller, http:Request req) returns error? {
             db:ExpenseWithRelations|error expenseDetails = dbClient->/expenses/[expenseId]();

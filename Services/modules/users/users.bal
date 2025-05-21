@@ -166,9 +166,11 @@ public function getUserService() returns http:Service {
         }
 
         // UPDATE USER
-        resource function put user/[string id](http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload UserUpdatePayload payload) returns http:Ok & readonly|error? {
+        resource function put user(http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload UserUpdatePayload payload) returns http:Ok & readonly|error? {
 
             http:Response response = new;
+
+            string? id = cookie_utils:getCookieValue(req, "user_id");
 
             boolean|error isValid = authInterceptor:authenticate(req);
             if isValid is error || !isValid {
@@ -178,7 +180,13 @@ public function getUserService() returns http:Service {
                 return;
             }
 
-            db:UserWithRelations|persist:Error existingUser = dbClient->/users/[id](db:User);
+            if id is () {
+                response.statusCode = http:STATUS_BAD_REQUEST;
+                response.setJsonPayload({"status": "error", "message": "User ID cookie not found"});
+                return caller->respond(response);
+            }
+
+            db:UserWithRelations|persist:Error existingUser = dbClient->/users/[<string>id](db:User);
             if existingUser is persist:NotFoundError {
                 response.statusCode = http:STATUS_NOT_FOUND;
                 response.setJsonPayload({"status": "error", "message": "User not found"});
@@ -214,9 +222,6 @@ public function getUserService() returns http:Service {
         resource function get user(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
             http:Response response = new;
 
-            // string? accessTokenn = cookie_utils:getCookieValue(req, "user_id");
-            // io:print(accessTokenn);
-
             stream<db:UserWithRelations, persist:Error?> userStream = dbClient->/users;
             db:UserWithRelations[] users = check from db:UserWithRelations user in userStream
                 select user;
@@ -231,8 +236,10 @@ public function getUserService() returns http:Service {
         }
 
         // GET USER BY ID
-        resource function get user/[string id](http:Caller caller, http:Request req, @http:Header string authorization) returns http:Ok & readonly|error? {
+        resource function get user_byid(http:Caller caller, http:Request req, @http:Header string authorization) returns http:Ok & readonly|error? {
             http:Response response = new;
+
+            string? id = cookie_utils:getCookieValue(req, "user_id");
 
             boolean|error isValid = authInterceptor:authenticate(req);
             if isValid is error || !isValid {
@@ -240,6 +247,12 @@ public function getUserService() returns http:Service {
                 response.setPayload({"error": "Unauthorized", "message": "Invalid or expired token"});
                 check caller->respond(response);
                 return;
+            }
+
+            if id is () {
+                response.statusCode = http:STATUS_BAD_REQUEST;
+                response.setJsonPayload({"status": "error", "message": "User ID cookie not found"});
+                return caller->respond(response);
             }
 
             db:UserWithRelations|persist:Error user = dbClient->/users/[id];
@@ -263,8 +276,10 @@ public function getUserService() returns http:Service {
         }
 
         // DELETE USER BY ID
-        resource function delete user/[string id](http:Caller caller, http:Request req, @http:Header string authorization) returns http:Ok & readonly|error? {
+        resource function delete user(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
             http:Response response = new;
+
+            string? id = cookie_utils:getCookieValue(req, "user_id");
 
             boolean|error isValid = authInterceptor:authenticate(req);
             if isValid is error || !isValid {
@@ -274,14 +289,32 @@ public function getUserService() returns http:Service {
                 return;
             }
 
-            db:User|persist:Error result = dbClient->/users/[id].delete();
-            if result is persist:NotFoundError {
+            if id is () {
+                response.statusCode = http:STATUS_BAD_REQUEST;
+                response.setJsonPayload({"status": "error", "message": "User ID cookie not found"});
+                return caller->respond(response);
+            }
+
+            // First check if the user exists
+            db:UserWithRelations|persist:Error existingUser = dbClient->/users/[id];
+            if existingUser is persist:NotFoundError {
                 response.statusCode = http:STATUS_NOT_FOUND;
                 response.setJsonPayload({"status": "error", "message": "User not found"});
                 return caller->respond(response);
-            } else if result is persist:Error {
+            } else if existingUser is persist:Error {
                 response.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
-                response.setJsonPayload({"status": "error", "message": result.message()});
+                response.setJsonPayload({"status": "error", "message": "Database error"});
+                return caller->respond(response);
+            }
+
+            db:UserUpdate updateData = {
+                status: 0
+            };
+
+            db:User|persist:Error result = dbClient->/users/[id].put(updateData);
+            if result is persist:Error {
+                response.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                response.setJsonPayload({"status": "error", "message": "Failed to deactivate user: " + result.message()});
                 return caller->respond(response);
             }
 
