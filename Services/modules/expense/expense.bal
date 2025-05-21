@@ -20,6 +20,8 @@ public function hello(string? name) returns string {
 }
 
 // New Expense Service
+# Description.
+# + return - return value description
 public function getExpenseService() returns http:Service {
     return @http:ServiceConfig {
         cors: {

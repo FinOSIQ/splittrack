@@ -39,9 +39,9 @@ function App() {
             <Route path="/group" element={<GroupView />} />
 
               {/* protected routes */}
-            <Route element={<ProtectedRoute />}>
+            {/* <Route element={<ProtectedRoute />}>
                 <Route path="/expense" element={<ExpenseView />} />
-            </Route>
+            </Route> */}
 
 
             <Route path="/expense" element={<ExpenseView />} />
