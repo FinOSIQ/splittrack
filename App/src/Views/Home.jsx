@@ -38,13 +38,16 @@ export default function Home() {
     const fetchUserData = async () => {
       try {
         const response = await axios.get(
-          'http://localhost:9090/api_expense/v1/userExpenseSummary?userId=65d0ed7b'
+          'http://localhost:9090/api_expense/v1/userExpenseSummary',
+          { withCredentials: true }
         );
         setUserData({
           userName: response.data.summary.userName,
           balance: response.data.summary.netAmount,
         });
         setUserLoading(false);
+        console.log(response);
+        
       } catch (err) {
         setUserError(err.message || 'Failed to fetch user data');
         setUserLoading(false);
@@ -60,7 +63,8 @@ export default function Home() {
     const fetchGroupData = async () => {
       try {
         const response = await axios.get(
-          'http://localhost:9090/api_expense/v1/groupExpenses?userId=65d0ed7b'
+          'http://localhost:9090/api_expense/v1/groupExpenses',
+          { withCredentials: true }
         );
         setGroups(response.data.groups || []);
         setGroupLoading(false);
