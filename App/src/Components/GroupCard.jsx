@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import GroupCardImage from '../assets/GroupCardImage.png';
 
 export default function GroupCard({ group }) {
+  const navigate = useNavigate();
+
   // Format netAmount for display
   const formatAmount = (amount) => {
     return amount !== null
@@ -16,6 +19,12 @@ export default function GroupCard({ group }) {
   // Get first two participants and count of additional ones
   const displayedParticipants = group.participantNames.slice(0, 2);
   const extraParticipants = group.participantNames.length - 2;
+
+  // Handle navigation to group details
+  const handleViewDetails = () => {
+    console.log(`Navigating to group: ${group.groupId || group.group_Id}`);
+    navigate(`/group/${group.groupId || group.group_Id}`);
+  };
 
   return (
     <div className="flex justify-center items-center p-4">
@@ -39,7 +48,10 @@ export default function GroupCard({ group }) {
         <p className="text-sm text-right text-[#040b2b] font-medium">{amountLabel}</p>
 
         <div className="flex justify-between items-center">
-          <button className="px-3 py-1 bg-white border rounded-xl italic text-xs font-medium text-[#5c5470]">
+          <button 
+            className="px-3 py-1 bg-white border rounded-xl italic text-xs font-medium text-[#5c5470]"
+            onClick={handleViewDetails}
+          >
             View Details
           </button>
           <div className="text-right">

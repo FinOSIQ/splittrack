@@ -9,7 +9,10 @@ import addImg from '../images/add.png';
 import activityImg from '../images/activity.png';
 import AddExpensePopup from './AddExpensePopup';
 
+
 const NavBar = () => {
+
+
   return (
     <>
       
