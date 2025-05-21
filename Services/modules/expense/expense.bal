@@ -32,7 +32,7 @@ public function getExpenseService() returns http:Service {
     service object {
 
         // create expensee
-        resource function post expense(http:Caller caller, http:Request req, @http:Header string authorization, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
+        resource function post expense(http:Caller caller, http:Request req, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
             http:Response response = new;
 
             boolean|error isValid = authInterceptor:authenticate(req);
@@ -259,7 +259,7 @@ public function getExpenseService() returns http:Service {
         }
 
         // get group expenses for certain user id
-        resource function get groupExpenses(http:Caller caller, http:Request req, @http:Header string authorization, @http:Query string userId, @http:Payload UserIdPayload payload) returns http:Ok & readonly|error? {
+        resource function get groupExpenses(http:Caller caller, http:Request req, @http:Query string userId, @http:Payload UserIdPayload payload) returns http:Ok & readonly|error? {
 
             http:Response response = new;
 
