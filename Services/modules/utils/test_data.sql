@@ -1,5 +1,6 @@
 -- Execute after schema creation
 -- Get-Content modules\utils\test_data.sql | & "C:\xampp\mysql\bin\mysql.exe" -u root -D splittrack
+-- Get-Content modules\utils\test_data.sql | & "C:\XAMMP\mysql\bin\mysql.exe" -u root -D splittrack
 
 
 START TRANSACTION;
