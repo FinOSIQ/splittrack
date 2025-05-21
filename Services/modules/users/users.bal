@@ -63,6 +63,7 @@ public function getUserService() returns http:Service {
 
             boolean|error isValid = authInterceptor:authenticate(req);
             if isValid is error || !isValid {
+                io:println(isValid);
                 response.statusCode = 401;
                 response.setPayload({"error": "Unauthorized", "message": "Invalid or expired token"});
                 check caller->respond(response);

@@ -16,6 +16,7 @@ import GroupView from './Views/GroupView';
 import { authConfig } from "./authConfig"; // Import Asgardeo configuration
 import PaidView from './Views/PaidView';
 import SettleUp from './Views/SettleUpView';
+import AuthView from './Views/AuthView';
 
 function ProtectedRoute() {
   const { state } = useAuthContext();
@@ -35,7 +36,8 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/profile" element={<ProfileView />} />
             <Route path="/paid" element={<PaidView />} />
-
+            <Route path="/authenticate" element={<AuthView />} />
+  
             <Route path="/group" element={<GroupView />} />
 
               {/* protected routes */}
