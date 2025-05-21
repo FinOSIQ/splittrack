@@ -16,3 +16,4 @@ public final mysql:Client Client = check new(
     port = port,
     database = database
 );
+
