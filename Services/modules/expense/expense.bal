@@ -7,6 +7,7 @@ import ballerina/log;
 import ballerina/persist;
 import ballerina/sql;
 import ballerina/uuid;
+import ballerina/io;
 
 final db:Client dbClient = check new ();
 
@@ -26,7 +27,7 @@ public function getExpenseService() returns http:Service {
             allowOrigins: ["http://localhost:5173"], // Your frontend origin
             allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
-            allowCredentials: false,
+            allowCredentials: true,
             maxAge: 3600
         }
     }
@@ -40,6 +41,7 @@ public function getExpenseService() returns http:Service {
             http:Response response = new;
 
             boolean|error isValid = authInterceptor:authenticate(req);
+            io:println("isValid: ", isValid);
             if isValid is error || !isValid {
                 response.statusCode = 401;
                 response.setJsonPayload({"status": "error", "message": "Unauthorized: Invalid or expired token"});
@@ -53,7 +55,7 @@ public function getExpenseService() returns http:Service {
                         caller,
                         http:STATUS_BAD_REQUEST,
                         "Invalid 'user_id' cookie",
-                        "Expected a valid 'user_id' cookie"
+                        "Expected a valid 'user_id' cookie" 
                 );
             }
 
@@ -111,8 +113,8 @@ public function getExpenseService() returns http:Service {
 
             string? usergroupId = payloadUsergroupId == "" ? null : payload.usergroupGroup_Id;
             // Use the calculated owe_amount instead of the one from payload
-            sql:ParameterizedQuery insertQuery = `INSERT INTO Expense (expense_Id, name, expense_total_amount, expense_owe_amount, usergroupGroup_Id) 
-                              VALUES (${expenseId}, ${payload.name}, ${payload.expense_total_amount}, ${calculatedOweAmount}, ${usergroupId})`;
+            sql:ParameterizedQuery insertQuery = `INSERT INTO Expense (expense_Id, name, expense_total_amount, expense_owe_amount, usergroupGroup_Id,status) 
+                              VALUES (${expenseId}, ${payload.name}, ${payload.expense_total_amount}, ${calculatedOweAmount}, ${usergroupId}, 1)`;
             persist:Error|sql:ExecutionResult expenseResult = dbClient->executeNativeSQL(insertQuery);
             if expenseResult is persist:Error {
                 log:printError("Database error creating expense: " + expenseResult.message());

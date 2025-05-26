@@ -23,7 +23,7 @@ public function getUserService() returns http:Service {
             allowOrigins: ["http://localhost:5173"], // Your frontend origin
             allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
-            allowCredentials: false,
+            allowCredentials: true,
             maxAge: 3600
         }
     }
@@ -58,6 +58,11 @@ public function getUserService() returns http:Service {
         resource function post user(http:Caller caller, http:Request req) returns http:Created & readonly|error? {
 
             http:Response response = new;
+
+            response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+            response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+            response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
 
             // string? accessTokenn = cookie_utils:getCookieValue(req, "access_token");
 

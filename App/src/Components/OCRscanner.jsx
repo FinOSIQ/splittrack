@@ -103,9 +103,7 @@ export default function OCRscanner() {
                 screenshotFormat="image/png"
                 className="w-full rounded"
                 style={{ aspectRatio: "3/4" }}
-                videoConstraints={{
-                        facingMode: { exact: "environment" }, // Forces back camera
-                    }}
+               
               />
             ) : (
               <img src={image} alt="Captured" className="w-full rounded mb-2" />

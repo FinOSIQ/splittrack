@@ -1,18 +1,20 @@
 import { useNavigate } from "react-router-dom";
 import logoutImg from "../images/logout.png"; 
+import { useAuthContext } from "@asgardeo/auth-react";
 
 const LogoutButton = () => {
     const navigate = useNavigate();
+      const { state, signIn, signOut, getAccessToken } = useAuthContext();
 
     const handleLogout = () => {
         
         localStorage.removeItem("authToken"); 
-        navigate("/login"); 
+        navigate("/"); 
     };
 
     return (
         <button 
-            onClick={handleLogout} 
+            onClick={() => signOut()} 
             className="w-full h-full flex justify-center items-center p-2 transition-all duration-300 ease-in-out hover:bg-gray-200 rounded-lg"
         >
             <img

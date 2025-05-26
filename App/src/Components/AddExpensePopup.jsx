@@ -3,13 +3,13 @@ import { Input } from "@material-tailwind/react";
 import { useFormik } from "formik";
 import DatePicker from "./DatePicker";
 import expenseParticipants from "./ExpenseParticipants"; // Import your expense participants
-import { fetchSearchData } from "../utils/requests/expense";
+import { createExpense, fetchSearchData } from "../utils/requests/expense";
 import axios from "axios";
 import OCRscanner from "./OCRscanner";
 import QrCodeScanner from "./QrCodeScanner";
 import SearchResults from "./SearchResults";
 import { se } from "date-fns/locale";
-
+import { getGroupDetails } from "../utils/requests/Group";
 
 export default function AddExpensePopup() {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,7 +17,8 @@ export default function AddExpensePopup() {
   const [totalExpense, setTotalExpense] = useState("");
   const [expenseName, setExpenseName] = useState("");
   const [expenseDate, setExpenseDate] = useState(new Date()); // Add state for date
-
+  const [isLoadingGroupMembers, setIsLoadingGroupMembers] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
 
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState(null);
@@ -39,10 +40,11 @@ export default function AddExpensePopup() {
 
     // Create a new item with type and details
     const newSelectedItem = {
-      id: item.user_id || null, // Use item id or generate one
+      id: item.user_id || item.group_id || item.id || null,
       type,
-      name: item.first_name || item.email || item.username || "Unknown",
+      name: item.first_name || item.email || item.name || "Unknown",
       avatar: item.avatar || null,
+      originalData: item // Store original data for reference
     };
 
     // Add to selected items (avoiding duplicates)
@@ -59,6 +61,80 @@ export default function AddExpensePopup() {
     // Clear search
     setSearchValue("");
     setSearchResults(null);
+  };
+
+  // Function to fetch group members and replace group with individual members
+  const fetchGroupMembersAndProceed = async (selectedItems) => {
+    // console.log("selected items:", selectedItems);
+    
+    const selectedGroups = selectedItems.filter(item => item.type === 'group');
+    // console.log("selected grps:",selectedGroups);
+    
+    
+    if (selectedGroups.length === 0) {
+      // No groups selected, proceed normally
+      setStep(2);
+      return;
+    }
+   
+    
+    setIsLoadingGroupMembers(true);
+
+    try {
+      let updatedSelectedItems = [...selectedItems];
+      let groupId = null;
+
+      for (const group of selectedGroups) {
+        try {
+          
+          const groupDetails = await getGroupDetails(group.id);
+          // console.log("Fetched group details:", groupDetails.group.groupMembers);
+          groupId = group.id; // Store the group ID for submission
+          
+          // Remove the group from selected items
+          updatedSelectedItems = updatedSelectedItems.filter(
+            item => !(item.id === group.id && item.type === 'group')
+          );
+
+          // Add individual group members
+          if (groupDetails && groupDetails.group.groupMembers) {
+            const groupMembers = groupDetails.group.groupMembers.map(member => ({
+              id: member.userUser_Id || null,
+              type: 'user',
+              name: member.first_name || member.name || member.email || "Unknown",
+              avatar: member.avatar || null,
+              originalData: member
+            }));
+
+            console.log("Group members:", groupMembers);
+            
+            // Add members, avoiding duplicates
+            groupMembers.forEach(member => {
+              const exists = updatedSelectedItems.some(existingItem =>
+                existingItem.id === member.id && existingItem.type === member.type
+              );
+              if (!exists) {
+                updatedSelectedItems.push(member);
+              }
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching group details for group ${group.id}:`, error);
+          // You might want to show an error message to the user here
+          alert(`Failed to fetch members for group: ${group.name}`);
+        }
+      }
+
+      setSelectedItems(updatedSelectedItems);
+      setSelectedGroupId(groupId); // Store the group ID for later use
+      setStep(2);
+      
+    } catch (error) {
+      console.error("Error processing groups:", error);
+      alert("An error occurred while processing group members.");
+    } finally {
+      setIsLoadingGroupMembers(false);
+    }
   };
 
   // Log the expense participants on component mount
@@ -90,17 +166,18 @@ export default function AddExpensePopup() {
     return () => {
       source.cancel("Request canceled due to new search input.");
     };
-  }, [searchValue]);
+  }, [searchValue]); 
 
   // Initialize Formik for the split options
   const formik = useFormik({
     initialValues: {
       splitEqual: selectedItems.map(() => true),
-      splitAmounts: expenseParticipants.participants.map(() => ""),
-      splitPercentages: expenseParticipants.participants.map(() => ""),
-      splitShares: expenseParticipants.participants.map(() => "")
+      splitAmounts: selectedItems.map(() => ""),
+      splitPercentages: selectedItems.map(() => ""),
+      splitShares: selectedItems.map(() => "")
     },
-    onSubmit: (values) => {
+    enableReinitialize: true, // This allows formik to reinitialize when selectedItems changes
+    onSubmit: async (values) => {
       const expense = Number(totalExpense);
       let participantDetails = [];
 
@@ -173,7 +250,7 @@ export default function AddExpensePopup() {
             return {
               participant_role: "member",
               owning_amount: parseFloat(amount.toFixed(2)),
-              userUser_Id: participant.userId
+              userUser_Id: participant.id
             };
           }).filter(Boolean);
           break;
@@ -199,7 +276,7 @@ export default function AddExpensePopup() {
             return {
               participant_role: "member",
               owning_amount: parseFloat(amount.toFixed(2)),
-              userUser_Id: participant.userId
+              userUser_Id: participant.id
             };
           }).filter(Boolean);
           break;
@@ -213,8 +290,7 @@ export default function AddExpensePopup() {
         expense_Id: null, // This will be assigned by the backend
         name: expenseName,
         expense_total_amount: parseFloat(expense.toFixed(2)),
-        expense_actual_amount: parseFloat(expense.toFixed(2)),
-        usergroupGroup_Id: null, // Assuming no group ID is specified initially
+        usergroupGroup_Id: selectedGroupId, // Use the stored group ID
         participant: participantDetails
       };
 
@@ -223,6 +299,7 @@ export default function AddExpensePopup() {
       // Here you would send the expense object to your API
       // For example:
       // sendExpenseToAPI(expenseObject);
+      const res = await createExpense(expenseObject);
 
       setIsOpen(false);
     }
@@ -377,7 +454,7 @@ export default function AddExpensePopup() {
         {/* Next Button */}
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
             // Check if a valid amount was entered
             if (!totalExpense || Number(totalExpense) <= 0) {
               alert("Please enter a valid amount to continue.");
@@ -387,21 +464,31 @@ export default function AddExpensePopup() {
               alert("Please enter an expense name to continue.");
               return;
             }
-            setStep(2);
-            // console.log(selectedItems);
+            
+            await fetchGroupMembersAndProceed(selectedItems);
           }}
-          className="px-6 py-2 bg-[#040b2b] text-white rounded-lg flex items-center gap-2"
+          disabled={isLoadingGroupMembers}
+          className="px-6 py-2 bg-[#040b2b] text-white rounded-lg flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed min-w-[100px]"
         >
-          Next
-          <svg
-            width="8"
-            height="12"
-            viewBox="0 0 8 12"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="M4.7134 6L0.113403 1.4L1.5134 0L7.5134 6L1.5134 12L0.113403 10.6L4.7134 6Z" fill="#FEF7FF" />
-          </svg>
+          {isLoadingGroupMembers ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Loading...
+            </>
+          ) : (
+            <>
+              Next
+              <svg
+                width="8"
+                height="12"
+                viewBox="0 0 8 12"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M4.7134 6L0.113403 1.4L1.5134 0L7.5134 6L1.5134 12L0.113403 10.6L4.7134 6Z" fill="#FEF7FF" />
+              </svg>
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -724,6 +811,8 @@ export default function AddExpensePopup() {
           setStep(1);
           setSearchValue(""); // Clear search input when opening popup
           setSearchResults(null); // Clear search results when opening popup
+          setSelectedItems([]); // Clear selected items when opening popup
+          setSelectedGroupId(null); // Clear selected group ID when opening popup
         }}
         className="absolute left-2 top-1  w-[70px] h-[70px] bg-[#040b2b] text-white flex items-center justify-center rounded-full shadow-md border-2 border-white"
       >
