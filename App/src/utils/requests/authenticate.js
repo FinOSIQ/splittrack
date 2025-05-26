@@ -5,7 +5,7 @@ const fetchUserData = async (token) => {
   try {
     // Make the API request with headers directly in axios
     const response = await axios.post(
-        'http://localhost:9090/api_user/v1/user',
+        `${import.meta.env.VITE_API_URL}/api_user/v1/user`,
         {},
         {
             headers: {

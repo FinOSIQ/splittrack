@@ -4,7 +4,7 @@ import axios from 'axios';
 export const fetchGroupDetails = async (groupId) => {
   try {
     const response = await axios.get(
-      `http://localhost:9090/api_group/v1/groups/${groupId}`
+      `${import.meta.env.VITE_API_URL}/api_group/v1/groups/${groupId}`
     );
     return response.data.group || {};
   } catch (err) {
