@@ -5,7 +5,7 @@ const fetchUserData = async (token) => {
   try {
     // Make the API request with headers directly in axios
     const response = await axios.post(
-        'https://f332-112-134-211-205.ngrok-free.app/api_user/v1/user',
+        `${import.meta.env.VITE_API_URL}/api_user/v1/user`,
         {},
         {
             headers: {

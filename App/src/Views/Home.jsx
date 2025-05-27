@@ -118,7 +118,7 @@ export default function Home() {
             </div>
 
             {/* Groups list */}
-            <div 
+            {/* <div 
               ref={groupsListRef} 
               className="mt-4 flex-1 overflow-y-auto scrollable-div"
             >
@@ -141,7 +141,7 @@ export default function Home() {
                   ))
                 )}
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Desktop Right */}

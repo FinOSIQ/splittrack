@@ -13,7 +13,8 @@ export const fetchSearchData = async (value, type, userId, cancelToken) => {
         type: type,
         userId: userId
       },
-      cancelToken: cancelToken // Pass the cancel token here
+      cancelToken: cancelToken, // Pass the cancel token here
+      withCredentials: true, // Include credentials in the request
     });
 
     return response.data;
@@ -26,3 +27,30 @@ export const fetchSearchData = async (value, type, userId, cancelToken) => {
     return [];
   }
 };
+
+
+
+// Function to create expense with POST request
+export const createExpense = async (expenseData) => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/expense`; // Test URL - adjust as needed
+    
+    // Make the POST request
+    const response = await axios.post(url, expenseData, {
+      withCredentials: true, // Include credentials in the request
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+     console.log(response);
+    return response.data;
+   
+      
+  } catch (error) {
+    console.error("Error creating expense:", error); // Handle errors
+    return null;
+  }
+};
+
+

@@ -8,7 +8,7 @@ public isolated function setAuthCookies(http:Response response, string accessTok
         path = "/",
         httpOnly = true,
         secure = true,
-        maxAge = 3600
+        maxAge = 86400
     );
 
     // Create user ID cookie with all properties set in the constructor
@@ -16,7 +16,7 @@ public isolated function setAuthCookies(http:Response response, string accessTok
         path = "/",
         httpOnly = true,
         secure = true,
-        maxAge = 3600
+        maxAge = 86400
     );
 
     // Add cookies to response

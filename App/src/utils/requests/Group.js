@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 // Function to fetch group details by ID
-const fetchGroupDetails = async (groupId) => {
+export const fetchGroupDetails = async (groupId) => {
   try {
     const response = await axios.get(
-      `http://localhost:9090/api_group/v1/groups/${groupId}`
+      `${import.meta.env.VITE_API_URL}/api_group/v1/groups/${groupId}`
     );
     return response.data.group || {};
   } catch (err) {
@@ -14,6 +14,22 @@ const fetchGroupDetails = async (groupId) => {
   }
 };
 
-export {
-  fetchGroupDetails
+
+export const getGroupDetails = async (groupId) => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_group/v1/groupDetails/${groupId}`;
+    
+    // Make the GET request
+    const response = await axios.get(url, {
+      withCredentials: true, // Include credentials in the request
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching group details:", error);
+    return null;
+  }
 };
