@@ -1,12 +1,9 @@
-import { useState } from 'react'
+
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider, SecureRoute, useAuthContext } from "@asgardeo/auth-react";
 import './App.css'
-import HeaderProfile from './Components/HeaderProfile'
 import ProfileView from './Views/ProfileView'
 import Login from './Views/Login'
-import CreateGroupModal from './Components/CreateGroup'
-import GroupCard from './Components/GroupCard'
 import Home from './Views/Home'
 import ExpenseView from './Views/ExpenseView';
 import AllFriends from './Views/AllFriends';
@@ -17,6 +14,7 @@ import { authConfig } from "./authConfig"; // Import Asgardeo configuration
 import PaidView from './Views/PaidView';
 import SettleUp from './Views/SettleUpView';
 import AuthView from './Views/AuthView';
+import { Toaster } from 'sonner';
 
 function ProtectedRoute() {
   const { state } = useAuthContext();
@@ -37,24 +35,28 @@ function App() {
             <Route path="/profile" element={<ProfileView />} />
             <Route path="/paid" element={<PaidView />} />
             <Route path="/authenticate" element={<AuthView />} />
-  
+
             <Route path="/group" element={<GroupView />} />
 
-              {/* protected routes */}
+            {/* protected routes */}
             {/* <Route element={<ProtectedRoute />}>
                 <Route path="/expense" element={<ExpenseView />} />
             </Route> */}
 
 
             <Route path="/expense" element={<ExpenseView />} />
-             <Route path="/allfriends" element={<AllFriends/>} />
-             <Route path="/ocr" element={<OCRscanner/>} />
-             <Route path="/friend" element={<FriendView/>}  />
-             <Route path="/settleup" element={<SettleUp/>}  />
-             
+            <Route path="/allfriends" element={<AllFriends />} />
+            <Route path="/ocr" element={<OCRscanner />} />
+            <Route path="/friend" element={<FriendView />} />
+            <Route path="/settleup" element={<SettleUp />} />
+
 
           </Routes>
         </Router>
+        <Toaster
+          richColors={true}
+          position="top-center"
+        />
       </div>
     </AuthProvider>
   )

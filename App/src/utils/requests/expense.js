@@ -5,7 +5,7 @@ export const fetchSearchData = async (value, type, userId, cancelToken) => {
   try {
 
     const url = `${import.meta.env.VITE_API_URL}/api_search/v1/search`;
-    
+
     // Make the API request with the cancel token
     const response = await axios.get(url, {
       params: {
@@ -34,7 +34,7 @@ export const fetchSearchData = async (value, type, userId, cancelToken) => {
 export const createExpense = async (expenseData) => {
   try {
     const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/expense`; // Test URL - adjust as needed
-    
+
     // Make the POST request
     const response = await axios.post(url, expenseData, {
       withCredentials: true, // Include credentials in the request
@@ -42,14 +42,13 @@ export const createExpense = async (expenseData) => {
         'Content-Type': 'application/json'
       }
     });
-    
-     console.log(response);
-    return response.data;
-   
-      
+
+    return response;
+
+
   } catch (error) {
     console.error("Error creating expense:", error); // Handle errors
-    return null;
+    return error;
   }
 };
 
