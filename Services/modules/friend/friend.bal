@@ -7,15 +7,24 @@ import ballerina/uuid;
 
 final db:Client dbClient = check new;
 
-public function getFriendService() returns http:Service {
-    return service object {
+ public function getFriendService() returns http:Service {
+
+    return @http:ServiceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:5173"],
+            allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+            allowHeaders: ["Content-Type", "Authorization"],
+            allowCredentials: true,
+            maxAge: 3600
+        }
+    }service object {
 
         // Get list of friends for a user
         resource function get friends/[string userId](http:Caller caller, http:Request req) returns error? {
             sql:ParameterizedQuery whereClause = `user_id_1User_Id = ${userId} OR user_id_2User_Id = ${userId}`;
 
             stream<db:FriendWithRelations, error?> resultStream = dbClient->/friends.get(
-                db:FriendOptionalized,
+                db:FriendWithRelations,
                 whereClause
             );
 
@@ -33,10 +42,46 @@ public function getFriendService() returns http:Service {
                 return;
             }
 
-            // Return the collected friends as JSON response
+            // Build friend details array with name and email
+            json[] friendDetails = [];
+
+            foreach var friend in friends {
+                db:UserOptionalized? otherUser = ();
+
+                if friend.user_id_1User_Id == userId {
+                    otherUser = friend.user_Id_2;
+                } else {
+                    otherUser = friend.user_Id_1;
+                }
+
+                if otherUser is db:UserOptionalized {
+                    string fullName = "";
+
+                    string? fname = otherUser.first_name;
+                    if fname is string {
+                        fullName += fname;
+                    }
+
+                    string? lname = otherUser.last_name;
+                    if lname is string {
+                        if fullName.length() > 0 {
+                            fullName += " ";
+                        }
+                        fullName += lname;
+                    }
+
+                    friendDetails.push({
+                        name: fullName,
+                        email: otherUser.email ?: ""
+                    });
+                }
+
+            }
+
+            // Return the friendDetails JSON array
             http:Response res = new;
             res.statusCode = http:STATUS_OK;
-            res.setJsonPayload({"friends": friends});
+            res.setJsonPayload({"friends": friendDetails});
             check caller->respond(res);
         }
 
