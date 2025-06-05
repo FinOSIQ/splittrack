@@ -1,7 +1,7 @@
 
 import axios from 'axios';
 
-const fetchUserData = async (token) => {
+export const postUserData = async (token) => {
   try {
     // Make the API request with headers directly in axios
     const response = await axios.post(
@@ -21,8 +21,6 @@ const fetchUserData = async (token) => {
   } catch (error) {
     // Handle any errors
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
       console.error('Error response:', error.response.status, error.response.data);
       throw new Error(`API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
     } else if (error.request) {
@@ -30,12 +28,51 @@ const fetchUserData = async (token) => {
       console.error('No response received:', error.request);
       throw new Error('No response received from server');
     } else {
-      // Something happened in setting up the request that triggered an Error
       console.error('Request error:', error.message);
       throw new Error(`Request failed: ${error.message}`);
     }
   }
 };
 
-export default fetchUserData;
 
+export const fetchUserData = async () => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_user/v1/user_byid`;
+
+    // Make the GET request
+    const response = await axios.get(url, {
+      withCredentials: true, // Include credentials (cookies) in the request
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return response;
+
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    return error;
+  }
+};
+
+
+
+export const updateUserData = async (userData) => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_user/v1/user`;
+
+    // Make the PUT request
+    const response = await axios.put(url, userData, {
+      withCredentials: true, 
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return response;
+
+  } catch (error) {
+    console.error("Error updating user data:", error);
+    return error;
+  }
+};

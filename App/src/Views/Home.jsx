@@ -118,10 +118,7 @@ export default function Home() {
             </div>
 
             {/* Groups list */}
-            {/* <div 
-              ref={groupsListRef} 
-              className="mt-4 flex-1 overflow-y-auto scrollable-div"
-            >
+         
               <div className="grid grid-cols-2 gap-4">
                 {groupLoading ? (
                   <div className="col-span-2 text-center text-[#040b2b] text-lg">
@@ -141,7 +138,7 @@ export default function Home() {
                   ))
                 )}
               </div>
-            </div> */}
+          
           </div>
 
           {/* Desktop Right */}
