@@ -20,10 +20,12 @@ public type ParticipantPayload record {|
 
 // Response type for your specific need
 type GroupSummary record {|
+    string groupId;
     string groupName;
     string[] participantNames;
     decimal netAmount; // Positive if user owes, negative if group owes user
 |};
+
 
 // Payload type for the request (just userId for now)
 type UserIdPayload record {|

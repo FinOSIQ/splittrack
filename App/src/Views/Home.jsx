@@ -67,6 +67,7 @@ export default function Home() {
           { withCredentials: true }
         );
         setGroups(response.data.groups || []);
+        console.log('Groups data:', response.data.groups); 
         setGroupLoading(false);
       } catch (err) {
         setGroupError(err.message || 'Failed to fetch group data');
@@ -121,7 +122,7 @@ export default function Home() {
             {/* <div 
               ref={groupsListRef} 
               className="mt-4 flex-1 overflow-y-auto scrollable-div"
-            >
+            > */}
               <div className="grid grid-cols-2 gap-4">
                 {groupLoading ? (
                   <div className="col-span-2 text-center text-[#040b2b] text-lg">
@@ -141,7 +142,7 @@ export default function Home() {
                   ))
                 )}
               </div>
-            </div> */}
+            {/* </div> */}
           </div>
 
           {/* Desktop Right */}
