@@ -1,35 +1,39 @@
 import axios from 'axios';
 
 // Function to fetch group details by ID
-export const fetchGroupDetails = async (groupId) => {
-  try {
-    const response = await axios.get(
-      `${import.meta.env.VITE_API_URL}/api_group/v1/groups/${groupId}`
-    );
-    return response.data.group || {};
-  } catch (err) {
-    console.error('Error fetching group details:', 
-      err.response ? err.response.data : err.message);
-    throw new Error(err.message || 'Failed to fetch group details');
-  }
-};
-
-
 export const getGroupDetails = async (groupId) => {
   try {
     const url = `${import.meta.env.VITE_API_URL}/api_group/v1/groupDetails/${groupId}`;
     
-    // Make the GET request
+    console.log('Fetching group details with:', { 
+      groupId, 
+      url 
+    });   
+    // Make the GET request with proper authentication
     const response = await axios.get(url, {
-      withCredentials: true, // Include credentials in the request
+      withCredentials: true, // This will automatically include all cookies
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
     });
-    
+
+    console.log('Group details response:', response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching group details:", error);
-    return null;
+    console.error("Response data:", error.response?.data);
+    console.error("Response status:", error.response?.status);
+    
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      throw new Error('Unauthorized. Please login again.');
+    } else if (error.response?.status === 404) {
+      throw new Error('Group not found.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error(`Failed to fetch group details: ${error.message}`);
+    }
   }
 };
+
