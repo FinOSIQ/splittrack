@@ -82,7 +82,7 @@ public type BankAccount record {|
     string bank;
     string branch;
     Card[] cards;
-    int status;
+    int status; 
 |};
 
 public type Card record {|

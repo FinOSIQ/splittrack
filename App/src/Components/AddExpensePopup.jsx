@@ -10,6 +10,8 @@ import QrCodeScanner from "./QrCodeScanner";
 import SearchResults from "./SearchResults";
 import { se } from "date-fns/locale";
 import { getGroupDetails } from "../utils/requests/Group";
+import { toast } from "sonner";
+import { set } from "date-fns";
 
 export default function AddExpensePopup() {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,7 +38,7 @@ export default function AddExpensePopup() {
   };
 
   const handleSearchItemClick = (item, type) => {
-    console.log(`Selected ${type}:`, item);
+    // console.log(`Selected ${type}:`, item);
 
     // Create a new item with type and details
     const newSelectedItem = {
@@ -106,7 +108,7 @@ export default function AddExpensePopup() {
               originalData: member
             }));
 
-            console.log("Group members:", groupMembers);
+            // console.log("Group members:", groupMembers);
             
             // Add members, avoiding duplicates
             groupMembers.forEach(member => {
@@ -294,14 +296,25 @@ export default function AddExpensePopup() {
         participant: participantDetails
       };
 
-      console.log("Expense Object:", expenseObject);
-
       // Here you would send the expense object to your API
       // For example:
       // sendExpenseToAPI(expenseObject);
       const res = await createExpense(expenseObject);
+      if (res.status == 201) {
+        toast.success(`Expense ${expenseName} Created successfully`)
+        setIsOpen(false);
+      }else {
+        toast.error(`Failed to create Expense ${res}`)
+      }
+      
+      
+     setExpenseName("");
+     setTotalExpense("");
+     setExpenseDate(new Date());
+      
+     
 
-      setIsOpen(false);
+      
     }
   });
 
