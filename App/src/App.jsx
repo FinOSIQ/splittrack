@@ -35,8 +35,8 @@ function App() {
             <Route path="/profile" element={<ProfileView />} />
             <Route path="/paid" element={<PaidView />} />
             <Route path="/authenticate" element={<AuthView />} />
+                          <Route path="/group/:groupId" element={<GroupView />} />
 
-            <Route path="/group" element={<GroupView />} />
 
             {/* protected routes */}
             {/* <Route element={<ProtectedRoute />}>
