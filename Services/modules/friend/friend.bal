@@ -217,31 +217,7 @@ public function getFriendService() returns http:Service {
         //Accept or decline frined
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        resource function put friendRequests/[string requestId](http:Caller caller, http:Request req) returns error? {
+  resource function put friendRequests/[string requestId](http:Caller caller, http:Request req) returns error? {
     json|error payload = req.getJsonPayload();
     if (payload is error) {
         http:Response res = new;
