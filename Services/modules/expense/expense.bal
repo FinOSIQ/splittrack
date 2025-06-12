@@ -3,11 +3,11 @@ import splittrack_backend.interceptor as authInterceptor;
 import splittrack_backend.utils;
 
 import ballerina/http;
+import ballerina/io;
 import ballerina/log;
 import ballerina/persist;
 import ballerina/sql;
 import ballerina/uuid;
-import ballerina/io;
 
 final db:Client dbClient = check new ();
 
@@ -34,9 +34,7 @@ public function getExpenseService() returns http:Service {
     
     service object {
 
-
         resource function post expense(http:Caller caller, http:Request req, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
-
 
             http:Response response = new;
 
@@ -55,7 +53,7 @@ public function getExpenseService() returns http:Service {
                         caller,
                         http:STATUS_BAD_REQUEST,
                         "Invalid 'user_id' cookie",
-                        "Expected a valid 'user_id' cookie" 
+                        "Expected a valid 'user_id' cookie"
                 );
             }
 
@@ -290,7 +288,6 @@ public function getExpenseService() returns http:Service {
             res.setJsonPayload({"expense": updatedExpense});
             return res;
         }
-
 
         resource function get groupExpenses(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
 
@@ -1093,6 +1090,68 @@ public function getExpenseService() returns http:Service {
             response.setJsonPayload(responsePayload);
             check caller->respond(response);
             return;
+        }
+
+        // Create  session for expense
+        resource function post expense/session() returns ExpenseSession|http:BadRequest|http:InternalServerError {
+            ExpenseSession|error session = createExpenseSession();
+            if session is error {
+                log:printError("Failed to create session", session);
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            return session;
+        }
+
+        resource function get joinExpense/[string sessionId](http:Caller caller) returns error? {
+            ExpenseSession|error session = getExpenseSession(sessionId);
+            if session is error {
+                return utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Session not found", "Session with ID " + sessionId + " does not exist or has expired");
+            }
+
+            // Return JSON response
+            http:Response res = new;
+            json payload = {
+                "sessionId": sessionId,
+                "expenseId": session.expenseId,
+                "isValid": session.status == "active"
+            };
+
+            res.setJsonPayload(payload);
+            res.statusCode = http:STATUS_OK;
+            return caller->respond(res);
+        }
+
+        // Add guest to session via API
+        resource function post joinExpense(http:Caller caller, @http:Payload GuestJoinRequest request) returns error? {
+            string|error result = addGuestToSession(request.sessionId, request.name);
+            if result is error {
+                return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Failed to add guest", result.toString());
+            }
+
+            // Get updated session to return current guest list
+            any|error cachedValue = sessionCache.get(request.sessionId);
+            if cachedValue is error {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Session error", cachedValue.toString());
+            }
+
+            ExpenseSession session;
+            if cachedValue is ExpenseSession {
+                session = cachedValue;
+            } else {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Invalid session data");
+            }
+
+            http:Response res = new;
+            json payload = {
+                "message": "Guest added successfully",
+                "guestName": result,
+                "totalGuests": session.guestUsers.length(),
+                "allGuests": session.guestUsers
+            };
+
+            res.setJsonPayload(payload);
+            res.statusCode = http:STATUS_CREATED;
+            return caller->respond(res);
         }
 
     };

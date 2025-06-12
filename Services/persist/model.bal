@@ -1,5 +1,6 @@
 import ballerina/persist as _;
 
+
 public type User record {|
     readonly string user_Id;
     string email;
@@ -54,6 +55,7 @@ public type Expense record {|
     decimal expense_owe_amount;
     ExpenseParticipant[] expenseParticipants;
     Transaction[] transactions;
+    GuestUser[] guestUsers;
 	UserGroup usergroup;
     int status;
 |};
@@ -93,4 +95,12 @@ public type Card record {|
     string card_cv;
     BankAccount bankAccount;
     int status;
+|};
+
+public type GuestUser record {|
+    readonly string guest_user_id;
+    string guest_name;              
+    Expense expense;             
+    decimal owning_amount;          
+    int status;                      
 |};

@@ -1,3 +1,5 @@
+import ballerina/time;
+
 // request payloads
 public type ExpenseCreatePayload record {|
     string? expense_Id;
@@ -53,4 +55,28 @@ type GroupMemberBalance record {|
     string name;
     decimal owe_amount;
     string isMember;
+|};
+
+
+public type ExpenseSession record {|
+    string sessionId;
+    string expenseId;
+    string status;
+    time:Utc createdAt; 
+    time:Utc expiresAt;
+    string[] guestUsers;  // ✅ Embedded guest users array
+|};
+
+type ExpenseJoinInfo record {
+    string sessionId;
+    string expenseId;
+    string expenseTitle;
+    string createdBy;
+    boolean isValid;
+};
+
+
+type GuestJoinRequest record {|
+    string name;
+    string sessionId;
 |};
