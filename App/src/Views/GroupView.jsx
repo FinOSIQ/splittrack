@@ -8,6 +8,7 @@ import CommentSection from '../Components/CommentSection.jsx';
 import { getGroupDetails } from '../utils/requests/Group'; 
 import GroupImage from '../images/group.png'; 
 import ProfileImage from '../images/profile.png'; 
+import ExpenseImage from '../images/plate.png'; // Adjust the path as necessary
 
 const GroupView = () => {
     const [activeTab, setActiveTab] = useState('expenses');
@@ -160,7 +161,7 @@ const GroupView = () => {
                             <div className="mt-4 space-y-3">
                                 {members.map((member, index) => (
                                     <div key={index} className="flex items-center space-x-3 p-2 border-b">
-                                        <img src={member.img} alt={member.name} className="w-10 h-10 rounded-full" />
+                                        <img src={ProfileImage} alt={member.name} className="w-10 h-10 rounded-full" />
                                         <span className="text-[#040b2b] text-lg">{member.name}</span>
                                     </div>
                                 ))}
@@ -181,6 +182,7 @@ const GroupView = () => {
                                     {groupDetails?.group?.expenses?.map((expense) => (
                                         <OwedCard
                                             key={expense.expense_Id}
+                                            image={ExpenseImage}
                                             dateMonth="Dec"
                                             dateDay="18"
                                             title={expense.name}
@@ -188,7 +190,7 @@ const GroupView = () => {
                                             amount={`${expense.expense_owe_amount.toLocaleString()} LKR`}
                                         />
                                     ))}
-                                    <PaidCard />
+                                    {/* <PaidCard /> */}
                                 </div>
                             </div>
                         </div>
