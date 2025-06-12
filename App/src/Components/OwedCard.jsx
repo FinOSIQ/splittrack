@@ -1,10 +1,12 @@
 // OwedCard.jsx
 import React from 'react';
+import ExpenseImage from '../images/plate.png'; // Adjust the path as necessary
+
 
 const OwedCard = ({ 
   dateMonth = 'Dec', 
   dateDay = '18', 
-  image = "src/images/plate.png", 
+  image = {}, 
   title = 'Dinner', 
   description = 'You Paid LKR 5,000.00', 
   amount = '5,000.00 LKR' 
