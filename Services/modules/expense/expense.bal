@@ -7,6 +7,7 @@ import ballerina/io;
 import ballerina/log;
 import ballerina/persist;
 import ballerina/sql;
+import ballerina/time;
 import ballerina/uuid;
 
 final db:Client dbClient = check new ();
@@ -1102,6 +1103,7 @@ public function getExpenseService() returns http:Service {
             return session;
         }
 
+        // return session data by ID
         resource function get joinExpense/[string sessionId](http:Caller caller) returns error? {
             ExpenseSession|error session = getExpenseSession(sessionId);
             if session is error {
@@ -1151,6 +1153,46 @@ public function getExpenseService() returns http:Service {
 
             res.setJsonPayload(payload);
             res.statusCode = http:STATUS_CREATED;
+            return caller->respond(res);
+        }
+
+        // Delete session by ID
+        resource function delete session/[string sessionId](http:Caller caller) returns error? {
+            // Check if session exists first
+            any|error cachedValue = sessionCache.get(sessionId);
+            if cachedValue is error {
+                return utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Session not found", "Session with ID " + sessionId + " does not exist");
+            }
+
+            ExpenseSession session;
+            if cachedValue is ExpenseSession {
+                session = cachedValue;
+            } else {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Invalid session data");
+            }
+
+            // Check if session is already closed/inactive
+            if session.status == "closed" || session.status == "inactive" {
+                return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Session already closed", "Session with ID " + sessionId + " is already closed or inactive");
+            }
+
+            // Remove session from cache (permanent deletion)
+            error? removeResult = sessionCache.invalidate(sessionId);
+            if removeResult is error {
+                log:printError("Failed to delete session", removeResult);
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to delete session", removeResult.toString());
+            }
+
+            // Return success response
+            http:Response res = new;
+            json payload = {
+                "message": "Session deleted successfully",
+                "sessionId": sessionId,
+                "deletedAt": time:utcNow()
+            };
+
+            res.setJsonPayload(payload);
+            res.statusCode = http:STATUS_OK;
             return caller->respond(res);
         }
 
