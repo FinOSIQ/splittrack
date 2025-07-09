@@ -84,7 +84,7 @@ dependencies = [
 [[package]]
 org = "ballerina"
 name = "http"
-version = "2.14.1"
+version = "2.14.2"
 dependencies = [
 	{org = "ballerina", name = "auth"},
 	{org = "ballerina", name = "cache"},
@@ -488,6 +488,7 @@ modules = [
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.groups"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.interceptor"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.search"},
+	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.settleup"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.users"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.utils"}
 ]
