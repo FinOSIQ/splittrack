@@ -1,3 +1,5 @@
+import ballerina/time;
+
 // request payloads
 public type ExpenseCreatePayload record {|
     string? expense_Id;
@@ -24,6 +26,8 @@ type GroupSummary record {|
     string groupName;
     string[] participantNames;
     decimal netAmount; // Positive if user owes, negative if group owes user
+    time:Utc created_at;
+    time:Utc updated_at;
 |};
 
 
@@ -43,6 +47,8 @@ type ExpenseSummary record {|
     string expenseName;
     string[] participantNames;
     decimal netAmount;
+    time:Utc created_at;
+    time:Utc updated_at;
 |};
 
 type UserExpenseSummary record {|

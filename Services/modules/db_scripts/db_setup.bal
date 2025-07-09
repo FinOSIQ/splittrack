@@ -7,6 +7,8 @@ sql:ParameterizedQuery query1 = `CREATE TABLE IF NOT EXISTS UserGroup (
 group_Id VARCHAR(191) NOT NULL,
 name VARCHAR(191) NOT NULL,
 status INT NOT NULL,
+created_at TIMESTAMP NOT NULL,
+updated_at TIMESTAMP NOT NULL,
 PRIMARY KEY(group_Id)
 )`;
 sql:ParameterizedQuery query2 = `CREATE TABLE IF NOT EXISTS BankAccount (
@@ -15,6 +17,8 @@ account_no VARCHAR(191) NOT NULL,
 bank VARCHAR(191) NOT NULL,
 branch VARCHAR(191) NOT NULL,
 status INT NOT NULL,
+created_at TIMESTAMP NOT NULL,
+updated_at TIMESTAMP NOT NULL,
 PRIMARY KEY(account_Id)
 )`;
 sql:ParameterizedQuery query3 = `CREATE TABLE IF NOT EXISTS User (
@@ -26,6 +30,8 @@ phone_number VARCHAR(191) NOT NULL,
 birthdate VARCHAR(191) NOT NULL,
 currency_pref VARCHAR(191) NOT NULL,
 status INT NOT NULL,
+created_at TIMESTAMP NOT NULL,
+updated_at TIMESTAMP NOT NULL,
 PRIMARY KEY(user_Id)
 )`;
 sql:ParameterizedQuery query4 = `CREATE TABLE IF NOT EXISTS Card (
@@ -35,6 +41,8 @@ card_name VARCHAR(191) NOT NULL,
 card_expiry VARCHAR(191) NOT NULL,
 card_cv VARCHAR(191) NOT NULL,
 status INT NOT NULL,
+created_at TIMESTAMP NOT NULL,
+updated_at TIMESTAMP NOT NULL,
 bankaccountAccount_Id VARCHAR(191) NOT NULL,
 FOREIGN KEY(bankaccountAccount_Id) REFERENCES BankAccount(account_Id),
 PRIMARY KEY(card_Id)
@@ -43,6 +51,8 @@ sql:ParameterizedQuery query5 = `CREATE TABLE IF NOT EXISTS UserGroupMember (
 group_member_Id VARCHAR(191) NOT NULL,
 member_role VARCHAR(191) NOT NULL,
 status INT NOT NULL,
+created_at TIMESTAMP NOT NULL,
+updated_at TIMESTAMP NOT NULL,
 groupGroup_Id VARCHAR(191) NOT NULL,
 FOREIGN KEY(groupGroup_Id) REFERENCES UserGroup(group_Id),
 userUser_Id VARCHAR(191) NOT NULL,
@@ -53,6 +63,8 @@ sql:ParameterizedQuery query6 = `CREATE TABLE IF NOT EXISTS FriendRequest (
 friendReq_ID VARCHAR(191) NOT NULL,
 receive_user_Id VARCHAR(191) NOT NULL,
 status VARCHAR(191) NOT NULL,
+created_at TIMESTAMP NOT NULL,
+updated_at TIMESTAMP NOT NULL,
 send_user_idUser_Id VARCHAR(191) NOT NULL,
 FOREIGN KEY(send_user_idUser_Id) REFERENCES User(user_Id),
 PRIMARY KEY(friendReq_ID)
@@ -63,6 +75,8 @@ name VARCHAR(191) NOT NULL,
 expense_total_amount DECIMAL(65,30) NOT NULL,
 expense_owe_amount DECIMAL(65,30) NOT NULL,
 status INT NOT NULL,
+created_at TIMESTAMP NOT NULL,
+updated_at TIMESTAMP NOT NULL,
 usergroupGroup_Id VARCHAR(191) NOT NULL,
 FOREIGN KEY(usergroupGroup_Id) REFERENCES UserGroup(group_Id),
 PRIMARY KEY(expense_Id)
@@ -71,6 +85,8 @@ sql:ParameterizedQuery query8 = `CREATE TABLE IF NOT EXISTS Transaction (
 transaction_Id VARCHAR(191) NOT NULL,
 payed_amount DECIMAL(65,30) NOT NULL,
 status INT NOT NULL,
+created_at TIMESTAMP NOT NULL,
+updated_at TIMESTAMP NOT NULL,
 expenseExpense_Id VARCHAR(191) NOT NULL,
 FOREIGN KEY(expenseExpense_Id) REFERENCES Expense(expense_Id),
 payee_idUser_Id VARCHAR(191) NOT NULL,
@@ -80,6 +96,8 @@ PRIMARY KEY(transaction_Id)
 sql:ParameterizedQuery query9 = `CREATE TABLE IF NOT EXISTS Friend (
 friend_Id VARCHAR(191) NOT NULL,
 status INT NOT NULL,
+created_at TIMESTAMP NOT NULL,
+updated_at TIMESTAMP NOT NULL,
 user_id_1User_Id VARCHAR(191) NOT NULL,
 FOREIGN KEY(user_id_1User_Id) REFERENCES User(user_Id),
 user_id_2User_Id VARCHAR(191) NOT NULL,
@@ -91,6 +109,8 @@ participant_Id VARCHAR(191) NOT NULL,
 participant_role VARCHAR(191) NOT NULL,
 owning_amount DECIMAL(65,30) NOT NULL,
 status INT NOT NULL,
+created_at TIMESTAMP NOT NULL,
+updated_at TIMESTAMP NOT NULL,
 expenseExpense_Id VARCHAR(191) NOT NULL,
 FOREIGN KEY(expenseExpense_Id) REFERENCES Expense(expense_Id),
 userUser_Id VARCHAR(191) NOT NULL,

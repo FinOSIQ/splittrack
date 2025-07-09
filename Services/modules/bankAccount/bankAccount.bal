@@ -6,6 +6,7 @@ import ballerina/http;
 
 import ballerina/persist;
 // import ballerina/sql;
+import ballerina/time;
 import ballerina/uuid;
 
 import ballerina/log;
@@ -67,12 +68,15 @@ public function getBankAccountService() returns http:Service {
             string accountId = uuid:createType4AsString();
             
             // Create a new bank account record
+            time:Utc currentTime = time:utcNow();
             db:BankAccountInsert newBankAccount = {
                 account_Id: accountId,
                 account_no: accountNo,
                 bank: bank,
                 branch: branch,
-                status: 1  // Active status
+                status: 1,  // Active status
+                created_at: currentTime,
+                updated_at: currentTime
             };
             
             // Insert the bank account into the database

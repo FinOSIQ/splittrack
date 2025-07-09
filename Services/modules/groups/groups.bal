@@ -7,6 +7,7 @@ import ballerina/io;
 
 import ballerina/persist;
 import ballerina/sql;
+import ballerina/time;
 import ballerina/uuid;
 
 // import ballerina/io; 
@@ -52,7 +53,14 @@ public function getGroupService() returns http:Service {
 
             // Insert group
             string group_Id = uuid:createType4AsString();
-            db:UserGroupInsert[] group = [{group_Id: group_Id, name: name, status: 1}];
+            time:Utc currentTime = time:utcNow();
+            db:UserGroupInsert[] group = [{
+                group_Id: group_Id, 
+                name: name, 
+                status: 1,
+                created_at: currentTime,
+                updated_at: currentTime
+            }];
             transaction {
                 _ = check dbClient->/usergroups.post(group);
 
@@ -92,7 +100,9 @@ public function getGroupService() returns http:Service {
                         userUser_Id: userId,
                         member_role: role,
                         groupGroup_Id: group_Id,
-                        status: 1
+                        status: 1,
+                        created_at: currentTime,
+                        updated_at: currentTime
                     });
                 }
 
@@ -188,6 +198,7 @@ public function getGroupService() returns http:Service {
                     io:println("Deleted rows: ", deleteResult.affectedRowCount);
 
                     // Insert new members
+                    time:Utc memberCurrentTime = time:utcNow();
                     db:UserGroupMemberInsert[] toInsert = [];
                     foreach json member in members {
                         json|error userIdJson = member.userId;
@@ -217,7 +228,9 @@ public function getGroupService() returns http:Service {
                             userUser_Id: userId,
                             member_role: role,
                             groupGroup_Id: groupId,
-                            status: 1
+                            status: 1,
+                            created_at: memberCurrentTime,
+                            updated_at: memberCurrentTime
                         });
                     }
 
