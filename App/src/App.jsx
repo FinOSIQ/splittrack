@@ -35,7 +35,7 @@ function App() {
             <Route path="/profile" element={<ProfileView />} />
             <Route path="/paid" element={<PaidView />} />
             <Route path="/authenticate" element={<AuthView />} />
-                          <Route path="/group/:groupId" element={<GroupView />} />
+            <Route path="/group/:groupId" element={<GroupView />} />
 
 
             {/* protected routes */}
@@ -47,7 +47,7 @@ function App() {
             <Route path="/expense" element={<ExpenseView />} />
             <Route path="/allfriends" element={<AllFriends />} />
             <Route path="/ocr" element={<OCRscanner />} />
-            <Route path="/friend" element={<FriendView />} />
+            <Route path="/friend/:friendId" element={<FriendView />} />
             <Route path="/settleup" element={<SettleUp />} />
 
 
