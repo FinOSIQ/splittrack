@@ -3,12 +3,12 @@ import ballerina/time;
 
 public type User record {|
     readonly string user_Id;
-    string email;
+    string? email;
     string first_name;
     string last_name;
-    string phone_number;
-    string birthdate;
-    string currency_pref;
+    string? phone_number;
+    string? birthdate;
+    string? currency_pref;
     FriendRequest[] friendRequests;
     UserGroupMember[] groupMembers;
     ExpenseParticipant[] expenseParticipants;
