@@ -1114,10 +1114,10 @@ public function getExpenseService() returns http:Service {
             http:Response res = new;
             json payload = {
                 "sessionId": sessionId,
-                "expenseId": session.expenseId,
+                "guestUsers": session.guestUsers,
                 "isValid": session.status == "active"
             };
-
+    
             res.setJsonPayload(payload);
             res.statusCode = http:STATUS_OK;
             return caller->respond(res);
@@ -1125,7 +1125,7 @@ public function getExpenseService() returns http:Service {
 
         // Add guest to session via API
         resource function post joinExpense(http:Caller caller, @http:Payload GuestJoinRequest request) returns error? {
-            string|error result = addGuestToSession(request.sessionId, request.name);
+            GuestUser|error result = addGuestToSession(request.sessionId, request.firstName, request.lastName);
             if result is error {
                 return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Failed to add guest", result.toString());
             }
@@ -1146,7 +1146,10 @@ public function getExpenseService() returns http:Service {
             http:Response res = new;
             json payload = {
                 "message": "Guest added successfully",
-                "guestName": result,
+                "guestUser": {
+                    "firstName": result.firstName,
+                    "lastName": result.lastName
+                },
                 "totalGuests": session.guestUsers.length(),
                 "allGuests": session.guestUsers
             };

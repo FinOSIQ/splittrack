@@ -11,21 +11,17 @@ cache:Cache sessionCache = new(capacity = 1000, evictionFactor = 0.2);
 
 public function createExpenseSession() returns ExpenseSession|error {
     string sessionId = uuid:createType1AsString();
-    string tempExpenseId = uuid:createType1AsString();
     time:Utc now = time:utcNow();
     time:Utc expiresAt = time:utcAddSeconds(now, SESSION_TIMEOUT_MINUTES * 60); 
     
     ExpenseSession session = {
         sessionId: sessionId,
-        expenseId: tempExpenseId, // Use temporary ID
         status: "active",
         createdAt: now,
         expiresAt: expiresAt,
         guestUsers: []
     };
 
-    
-    
     // Store in cache/Redis
     check sessionCache.put(sessionId, session);
     return session;
@@ -69,7 +65,7 @@ public function closeExpenseSession(string sessionId) returns error? {
 }
 
 
-public function addGuestToSession(string sessionId, string guestName) returns string|error {
+public function addGuestToSession(string sessionId, string firstName, string lastName) returns GuestUser|error {
     // Get existing session
     any|error cachedValue = sessionCache.get(sessionId);
     if cachedValue is error {
@@ -87,13 +83,19 @@ public function addGuestToSession(string sessionId, string guestName) returns st
         return error("Session is not active");
     }
     
-    // Add guest name directly to session array
-    session.guestUsers.push(guestName);
+    // Create new guest user record
+    GuestUser newGuest = {
+        firstName: firstName,
+        lastName: lastName
+    };
+    
+    // Add guest to session array
+    session.guestUsers.push(newGuest);
     
     // Update session in cache
     check sessionCache.put(sessionId, session);
     
-    return guestName;
+    return newGuest;
 }
 
 

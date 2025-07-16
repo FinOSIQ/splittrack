@@ -14,6 +14,7 @@ import { authConfig } from "./authConfig"; // Import Asgardeo configuration
 import PaidView from './Views/PaidView';
 import SettleUp from './Views/SettleUpView';
 import AuthView from './Views/AuthView';
+import GuestEnrollment from './Views/GuestEnroll';
 import { Toaster } from 'sonner';
 
 function ProtectedRoute() {
@@ -48,7 +49,8 @@ function App() {
             <Route path="/allfriends" element={<AllFriends />} />
             <Route path="/ocr" element={<OCRscanner />} />
             <Route path="/friend" element={<FriendView />} />
-            <Route path="/settleup" element={<SettleUp />} />
+            <Route path="/settleup" element={<SettleUp />} /> 
+            <Route path="/guest/:sessionId" element={<GuestEnrollment />} />
 
 
           </Routes>

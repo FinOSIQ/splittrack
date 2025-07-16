@@ -22,6 +22,7 @@ export default function AddExpensePopup() {
   const [isLoadingGroupMembers, setIsLoadingGroupMembers] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
 
+  
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -90,7 +91,7 @@ export default function AddExpensePopup() {
         try {
           
           const groupDetails = await getGroupDetails(group.id);
-          // console.log("Fetched group details:", groupDetails.group.groupMembers);
+          console.log("Fetched group details:", groupDetails.group.groupMembers);
           groupId = group.id; // Store the group ID for submission
           
           // Remove the group from selected items
@@ -195,11 +196,19 @@ export default function AddExpensePopup() {
             // Skip unselected participants
             if (!values.splitEqual[idx]) return null;
 
-            return {
-              participant_role: "member",
+            const baseParticipant = {
+              participant_role: participant.type === 'guest' ? "guest" : "member",
               owning_amount: parseFloat(equalAmount.toFixed(2)),
-              userUser_Id: participant.id
+              userUser_Id: participant.type === 'guest' ? null : participant.id
             };
+
+            // Add firstName and lastName only if participant is a guest
+            if (participant.type === 'guest') {
+              baseParticipant.firstName = participant.originalData?.firstName || participant.name?.split(' ')[0] || '';
+              baseParticipant.lastName = participant.originalData?.lastName || participant.name?.split(' ')[1] || '';
+            }
+
+            return baseParticipant;
           }).filter(Boolean); // Remove null entries
           break;
         }
@@ -221,11 +230,19 @@ export default function AddExpensePopup() {
             const amount = parseFloat(values.splitAmounts[idx]) || 0;
             if (amount <= 0) return null; // Skip participants with zero amount
 
-            return {
-              participant_role: "member",
+            const baseParticipant = {
+              participant_role: participant.type === 'guest' ? "guest" : "member",
               owning_amount: parseFloat(amount.toFixed(2)),
-              userUser_Id: participant.id
+              userUser_Id: participant.type === 'guest' ? null : participant.id
             };
+
+            // Add firstName and lastName only if participant is a guest
+            if (participant.type === 'guest') {
+              baseParticipant.firstName = participant.originalData?.firstName || participant.name?.split(' ')[0] || '';
+              baseParticipant.lastName = participant.originalData?.lastName || participant.name?.split(' ')[1] || '';
+            }
+
+            return baseParticipant;
           }).filter(Boolean);
           break;
         }
@@ -249,11 +266,19 @@ export default function AddExpensePopup() {
 
             const amount = (expense * perc) / 100;
 
-            return {
-              participant_role: "member",
+            const baseParticipant = {
+              participant_role: participant.type === 'guest' ? "guest" : "member",
               owning_amount: parseFloat(amount.toFixed(2)),
-              userUser_Id: participant.id
+              userUser_Id: participant.type === 'guest' ? null : participant.id
             };
+
+            // Add firstName and lastName only if participant is a guest
+            if (participant.type === 'guest') {
+              baseParticipant.firstName = participant.originalData?.firstName || participant.name?.split(' ')[0] || '';
+              baseParticipant.lastName = participant.originalData?.lastName || participant.name?.split(' ')[1] || '';
+            }
+
+            return baseParticipant;
           }).filter(Boolean);
           break;
         }
@@ -275,11 +300,19 @@ export default function AddExpensePopup() {
 
             const amount = (expense * share) / totalShares;
 
-            return {
-              participant_role: "member",
+            const baseParticipant = {
+              participant_role: participant.type === 'guest' ? "guest" : "member",
               owning_amount: parseFloat(amount.toFixed(2)),
-              userUser_Id: participant.id
+              userUser_Id: participant.type === 'guest' ? null : participant.id
             };
+
+            // Add firstName and lastName only if participant is a guest
+            if (participant.type === 'guest') {
+              baseParticipant.firstName = participant.originalData?.firstName || participant.name?.split(' ')[0] || '';
+              baseParticipant.lastName = participant.originalData?.lastName || participant.name?.split(' ')[1] || '';
+            }
+
+            return baseParticipant;
           }).filter(Boolean);
           break;
         }
@@ -295,7 +328,7 @@ export default function AddExpensePopup() {
         usergroupGroup_Id: selectedGroupId, // Use the stored group ID
         participant: participantDetails
       };
-
+      console.log("Expense Object:", expenseObject);
       // Here you would send the expense object to your API
       // For example:
       // sendExpenseToAPI(expenseObject);
@@ -368,7 +401,7 @@ export default function AddExpensePopup() {
                   </svg>
                 )}
                 <span>{item.name}</span>
-                {console.log(item)}
+                {/* {console.log(item)} */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -461,7 +494,10 @@ export default function AddExpensePopup() {
           <OCRscanner />
 
           {/* QR Scanner Button */}
-          <QrCodeScanner />
+          <QrCodeScanner
+            selectedItems={selectedItems}
+            setSelectedItems={setSelectedItems}
+           />
         </div>
 
         {/* Next Button */}

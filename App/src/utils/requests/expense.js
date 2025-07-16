@@ -52,4 +52,64 @@ export const createExpense = async (expenseData) => {
   }
 };
 
+export const createSession = async () => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/expense/session`;
+    
+    const response = await axios.post(url, null, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response;
+  } catch (error) {
+    console.error("Error creating session:", error);
+    return error;
+  }
+};
+
+
+export const deleteSession = async (sessionId) => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/session/${sessionId}`;
+    
+    const response = await axios.delete(url, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response;
+  } catch (error) {
+    console.error("Error deleting session:", error);
+    return error;
+  }
+};
+
+
+export const joinExpense = async (guestData) => {
+ try {
+   const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/joinExpense`;
+   
+   const response = await axios.post(url, guestData, {
+     withCredentials: true,
+     headers: {
+       'Content-Type': 'application/json'
+     }
+   });
+   
+   return response;
+ } catch (error) {
+   console.error("Error joining expense:", error);
+   return error;
+ }
+};
+
+
+
+
+
 

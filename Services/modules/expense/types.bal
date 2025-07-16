@@ -58,18 +58,21 @@ type GroupMemberBalance record {|
 |};
 
 
+public type GuestUser record {|
+    string firstName;
+    string lastName;
+|};
+
 public type ExpenseSession record {|
     string sessionId;
-    string expenseId;
     string status;
     time:Utc createdAt; 
     time:Utc expiresAt;
-    string[] guestUsers;  // ✅ Embedded guest users array
+    GuestUser[] guestUsers;  // ✅ Embedded guest users array with structured data
 |};
 
 type ExpenseJoinInfo record {
     string sessionId;
-    string expenseId;
     string expenseTitle;
     string createdBy;
     boolean isValid;
@@ -77,6 +80,7 @@ type ExpenseJoinInfo record {
 
 
 type GuestJoinRequest record {|
-    string name;
+    string firstName;
+    string lastName;
     string sessionId;
 |};
