@@ -7,6 +7,7 @@ import ballerina/http;
 import ballerina/io;
 import ballerina/log;
 import ballerina/persist;
+import ballerina/time;
 
 final db:Client dbClient = check new ();
 
@@ -118,6 +119,7 @@ public function getUserService() returns http:Service {
                 response.setJsonPayload({"status": "success", "message": "User already exists", "userId": id});
                 return caller->respond(response);
             } else if existingUser is persist:NotFoundError {
+                time:Utc currentTime = time:utcNow();
                 db:User newUser = {
                     user_Id: id,
                     email: email,
@@ -126,7 +128,9 @@ public function getUserService() returns http:Service {
                     birthdate: birthdate,
                     phone_number: phoneNumber,
                     currency_pref: "USD",
-                    status: 1
+                    status: 1,
+                    created_at: currentTime,
+                    updated_at: currentTime
                 };
 
                 string[]|error result = dbClient->/users.post([newUser]);
@@ -208,7 +212,8 @@ public function getUserService() returns http:Service {
                 last_name: payload.last_name,
                 phone_number: payload.phone_number,
                 birthdate: payload.birthdate,
-                currency_pref: payload.currency_pref
+                currency_pref: payload.currency_pref,
+                updated_at: time:utcNow()
             };
 
             db:User|persist:Error result = dbClient->/users/[id].put(updateData);
@@ -232,11 +237,30 @@ public function getUserService() returns http:Service {
             db:UserWithRelations[] users = check from db:UserWithRelations user in userStream
                 select user;
 
+            // Build response data with timestamps
+            json[] userData = [];
+            foreach db:UserWithRelations user in users {
+                json userInfo = {
+                    "user_Id": user.user_Id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "phone_number": user.phone_number,
+                    "birthdate": user.birthdate,
+                    "currency_pref": user.currency_pref,
+                    "status": user.status,
+                    "created_at": user.created_at,
+                    "updated_at": user.updated_at
+                };
+                userData.push(userInfo);
+            }
+
             response.statusCode = http:STATUS_OK;
             response.setJsonPayload({
                 "status": "success",
                 "message": "Users retrieved successfully",
-                "data": users
+                "data": userData,
+                "count": userData.length()
             });
             return caller->respond(response);
         }
@@ -273,11 +297,34 @@ public function getUserService() returns http:Service {
             }
 
             response.statusCode = http:STATUS_OK;
-            response.setJsonPayload({
-                "status": "success",
-                "message": "User retrieved successfully",
-                "data": user is db:UserWithRelations ? user.toJson() : {}
-            });
+            
+            // Build response data with timestamps
+            if user is db:UserWithRelations {
+                json userData = {
+                    "user_Id": user.user_Id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "phone_number": user.phone_number,
+                    "birthdate": user.birthdate,
+                    "currency_pref": user.currency_pref,
+                    "status": user.status,
+                    "created_at": user.created_at,
+                    "updated_at": user.updated_at
+                };
+                
+                response.setJsonPayload({
+                    "status": "success",
+                    "message": "User retrieved successfully",
+                    "data": userData
+                });
+            } else {
+                response.setJsonPayload({
+                    "status": "success",
+                    "message": "User retrieved successfully",
+                    "data": {}
+                });
+            }
             return caller->respond(response);
         }
 
@@ -352,7 +399,8 @@ public function getUserService() returns http:Service {
             }
 
             db:UserUpdate updateData = {
-                status: 0
+                status: 0,
+                updated_at: time:utcNow()
             };
 
             db:User|persist:Error result = dbClient->/users/[id].put(updateData);

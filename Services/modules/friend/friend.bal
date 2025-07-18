@@ -3,6 +3,7 @@ import splittrack_backend.db as db;
 import ballerina/http;
 import ballerina/log;
 import ballerina/sql;
+import ballerina/time;
 import ballerina/uuid;
 import splittrack_backend.utils;
 
@@ -184,11 +185,14 @@ public function getFriendService() returns http:Service {
             string friendReq_ID = "fr-" + fullUuid.substring(0, 8);
 
             // Construct new FriendRequest record
+            time:Utc currentTime = time:utcNow();
             db:FriendRequest newRequest = {
                 friendReq_ID: friendReq_ID,
                 send_user_idUser_Id: senderId,
                 receive_user_Id: receiverId,
-                status: "pending"
+                status: "pending",
+                created_at: currentTime,
+                updated_at: currentTime
             };
 
             // Insert new friend request into DB

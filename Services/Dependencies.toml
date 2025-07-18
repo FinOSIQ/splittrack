@@ -496,6 +496,7 @@ modules = [
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.groups"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.interceptor"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.search"},
+	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.settleup"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.users"},
 	{org = "sonalattanayake", packageName = "splittrack_backend", moduleName = "splittrack_backend.utils"}
 ]

@@ -170,8 +170,8 @@ public function getExpenseService() returns http:Service {
                         return;
                     }
                 }
-
-                // Handle guest users - create user in database if participant role is guest
+                time:Utc currentTime = time:utcNow();
+// Handle guest users - create user in database if participant role is guest
                 string? actualUserId = participant.userUser_Id;
                 if participant.participant_role == "guest" || participant.participant_role == GUEST {
                     if participant.firstName is string && participant.lastName is string {
@@ -241,6 +241,9 @@ public function getExpenseService() returns http:Service {
                     expenseExpense_Id: expenseId,
                     userUser_Id: actualUserId,
                     status: 1
+                    created_at: currentTime,
+                    updated_at: currentTime
+
                 };
 
                 string[]|error participantResult = dbClient->/expenseparticipants.post([newParticipant]);
@@ -311,9 +314,27 @@ public function getExpenseService() returns http:Service {
                 // Other database errors
                 return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, expenseDetails.toString());
             }
+            
             http:Response res = new;
+            
+            // Build response data with timestamps
+            json expenseData = {
+                "expense_Id": expenseDetails.expense_Id,
+                "name": expenseDetails.name,
+                "expense_total_amount": expenseDetails.expense_total_amount,
+                "expense_owe_amount": expenseDetails.expense_owe_amount,
+                "status": expenseDetails.status,
+                "created_at": expenseDetails.created_at,
+                "updated_at": expenseDetails.updated_at,
+                "expenseParticipants": expenseDetails.expenseParticipants,
+                "transactions": expenseDetails.transactions,
+                "usergroup": expenseDetails.usergroup
+            };
+            
             json payload = {
-                "expense": expenseDetails
+                "status": "success",
+                "message": "Expense retrieved successfully",
+                "data": expenseData
             };
             res.setJsonPayload(payload);
             res.statusCode = http:STATUS_OK;
@@ -538,6 +559,8 @@ public function getExpenseService() returns http:Service {
                summaries.push({
                     groupId: groupId,
                     groupName: group.name,
+                    created_at: group.created_at,
+                    updated_at: group.updated_at,
                     participantNames: participantNames,
                     netAmount: netAmount
    });
@@ -765,14 +788,16 @@ public function getExpenseService() returns http:Service {
             foreach db:ExpenseParticipant participant in participantRecords {
                 string expenseId = participant.expenseExpense_Id;
 
-                // Step 3: Use pure SQL to fetch expense details, including usergroupGroup_Id which can be NULL
-                sql:ParameterizedQuery expenseQuery = `SELECT expense_Id, name, usergroupGroup_Id FROM Expense WHERE expense_Id = ${expenseId}`;
+                // Step 3: Use pure SQL to fetch expense details, including timestamps and usergroupGroup_Id which can be NULL
+                sql:ParameterizedQuery expenseQuery = `SELECT expense_Id, name, usergroupGroup_Id, created_at, updated_at FROM Expense WHERE expense_Id = ${expenseId}`;
 
                 // Execute query with proper stream type
                 stream<record {|
                     string expense_Id;
                     string name;
                     string? usergroupGroup_Id;
+                    time:Utc created_at;
+                    time:Utc updated_at;
                 |}, sql:Error?> expenseStream = utils:Client->query(expenseQuery);
 
                 // Process the stream result
@@ -781,7 +806,9 @@ public function getExpenseService() returns http:Service {
                     string expense_Id;
                     string name;
                     string? usergroupGroup_Id;
-                |}? expenseRecord = result is record {|record {|string expense_Id; string name; string? usergroupGroup_Id;|} value;|} ? result.value : ();
+                    time:Utc created_at;
+                    time:Utc updated_at;
+                |}? expenseRecord = result is record {|record {|string expense_Id; string name; string? usergroupGroup_Id; time:Utc created_at; time:Utc updated_at;|} value;|} ? result.value : ();
                 if expenseRecord is () {
                     log:printWarn("Expense " + expenseId + " not found, skipping");
                     continue;
@@ -874,7 +901,9 @@ public function getExpenseService() returns http:Service {
                 summaries.push({
                     expenseName: expenseRecord.name,
                     participantNames: participantNames,
-                    netAmount: netAmount
+                    netAmount: netAmount,
+                    created_at: expenseRecord.created_at,
+                    updated_at: expenseRecord.updated_at
                 });
             }
 
