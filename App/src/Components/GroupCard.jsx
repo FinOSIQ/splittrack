@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import GroupCardImage from '../assets/GroupCardImage.png';
 
 export default function GroupCard({ group }) {
+  const navigate = useNavigate();
+
   // Format netAmount for display
   const formatAmount = (amount) => {
     return amount !== null
@@ -17,9 +20,23 @@ export default function GroupCard({ group }) {
   const displayedParticipants = group.participantNames.slice(0, 2);
   const extraParticipants = group.participantNames.length - 2;
 
+  // Handle navigation to group view
+  const handleViewDetails = () => {
+    // Navigate to group view with the group ID as a URL parameter
+    navigate(`/group/${group.groupId}`);
+  };
+
+  // Handle card click (entire card clickable)
+  const handleCardClick = () => {
+    navigate(`/group/${group.groupId}`);
+  };
+
   return (
     <div className="flex justify-center items-center p-4">
-      <div className="bg-white rounded-xl shadow-md p-4 w-full max-w-md">
+      <div 
+        className="bg-white rounded-xl shadow-md p-4 w-full max-w-md cursor-pointer hover:shadow-lg transition-shadow duration-200"
+        onClick={handleCardClick}
+      >
         <div className="flex items-center mb-2">
           <img className="w-12 h-12 rounded-full mr-4" src={GroupCardImage} alt="Group Avatar" />
           <div>
@@ -39,7 +56,13 @@ export default function GroupCard({ group }) {
         <p className="text-sm text-right text-[#040b2b] font-medium">{amountLabel}</p>
 
         <div className="flex justify-between items-center">
-          <button className="px-3 py-1 bg-white border rounded-xl italic text-xs font-medium text-[#5c5470]">
+          <button 
+            className="px-3 py-1 bg-white border rounded-xl italic text-xs font-medium text-[#5c5470] hover:bg-gray-50 transition-colors duration-200"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent card click when button is clicked
+              handleViewDetails();
+            }}
+          >
             View Details
           </button>
           <div className="text-right">

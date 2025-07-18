@@ -1,14 +1,14 @@
-
-
-
-
 import React, { useState,useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import Navbar from '../Components/NavBar.jsx';
 import HeaderProfile from '../Components/HeaderProfile.jsx';
 import OwedCard from '../Components/OwedCard.jsx';
 import PaidCard from '../Components/PaidCard.jsx';
 import CommentSection from '../Components/CommentSection.jsx';
-import { fetchGroupDetails } from '../utils/requests/Group'; 
+import { getGroupDetails } from '../utils/requests/Group'; 
+import GroupImage from '../images/group.png'; 
+import ProfileImage from '../images/profile.png'; 
+import ExpenseImage from '../images/plate.png'; // Adjust the path as necessary
 
 const GroupView = () => {
     const [activeTab, setActiveTab] = useState('expenses');
@@ -19,17 +19,13 @@ const GroupView = () => {
 
 
 
-    //Replace this
-    const groupId = "49bf830f"; 
+    const { groupId } = useParams();
 
-
-    const members = [
-        { name: "Sonal Attanayake", img: "src/images/profile1.png" },
-        { name: "Shehan Rajapaksha", img: "src/images/profile2.png" },
-        { name: "Saradi Dassanayake", img: "src/images/profile3.png" },
-        { name: "Thanura Mendis", img: "src/images/profile4.png" },
-        { name: "Thanura Mendis", img: "src/images/profile4.png" }
-    ];
+    // Map group members from API data
+    const members = groupDetails?.group?.groupMembers?.map(member => ({
+        name: `${member.first_name} ${member.last_name}`,
+        img: "../images/profile.png"
+    })) || [];
 
     const visibleMembers = members.slice(0, 2);
     const remainingCount = members.length - 2;
@@ -39,7 +35,7 @@ const GroupView = () => {
         const loadGroupDetails = async () => {
             setLoading(true);
             try {
-                const data = await fetchGroupDetails(groupId);
+                const data = await getGroupDetails(groupId);
                 setGroupDetails(data);
                 setLoading(false);
                 console.log('Group Details:', data);
@@ -71,18 +67,18 @@ const GroupView = () => {
                             <div className="flex items-center justify-between flex-wrap">
                                 <div className="flex items-center space-x-4">
                                     <img
-                                        src="src/images/group.png"
+                                        src={GroupImage}
                                         alt="Group"
                                         className="w-[64px] h-[58px]"
                                     />
                                     <div>
 
                                         <div className=" text-[#040b2b] text-lg font-normal font-['Inter']">
-                                            {groupDetails?.name}
+                                            {groupDetails?.group?.name}
 
                                         </div>
                                         <div className="text-[#5c5470] text-xs font-normal font-['Inter']">
-                                            {groupCreatedDate}
+                                            {/* {groupCreatedDate} */}
                                         </div>
                                     </div>
                                 </div>
@@ -90,7 +86,7 @@ const GroupView = () => {
 
                             <div className="flex flex-col sm:flex-row justify-between mt-2 space-y-4 sm:space-y-0">
                                 {/* Member Names */}
-                                <div>
+                               <div>
                                     {visibleMembers.map((member, index) => (
                                         <span key={index} className="text-[#5c5470] text-xs font-normal font-['Poppins']">
                                             {member.name}
@@ -165,7 +161,7 @@ const GroupView = () => {
                             <div className="mt-4 space-y-3">
                                 {members.map((member, index) => (
                                     <div key={index} className="flex items-center space-x-3 p-2 border-b">
-                                        <img src={member.img} alt={member.name} className="w-10 h-10 rounded-full" />
+                                        <img src={ProfileImage} alt={member.name} className="w-10 h-10 rounded-full" />
                                         <span className="text-[#040b2b] text-lg">{member.name}</span>
                                     </div>
                                 ))}
@@ -183,19 +179,18 @@ const GroupView = () => {
                                     December 2024
                                 </div>
                                 <div className="mt-4 space-y-4">
-                                    <OwedCard />
-                                    <OwedCard />
-                                    <PaidCard />
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-[#040b2b] text-base font-medium font-['Poppins'] mt-8">
-                                    November 2024
-                                </div>
-                                <div className="mt-4 space-y-4">
-                                    <OwedCard />
-                                    <OwedCard />
-                                    <PaidCard />
+                                    {groupDetails?.group?.expenses?.map((expense) => (
+                                        <OwedCard
+                                            key={expense.expense_Id}
+                                            image={ExpenseImage}
+                                            dateMonth="Dec"
+                                            dateDay="18"
+                                            title={expense.name}
+                                            description={`You Paid LKR ${expense.expense_total_amount.toLocaleString()}`}
+                                            amount={`${expense.expense_owe_amount.toLocaleString()} LKR`}
+                                        />
+                                    ))}
+                                    {/* <PaidCard /> */}
                                 </div>
                             </div>
                         </div>
