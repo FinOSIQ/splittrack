@@ -17,8 +17,8 @@ public type User record {|
     Friend[] friends;
 	Friend[] friend;
     int status;
-    time:Utc created_at;
-    time:Utc updated_at;
+    time:Utc? created_at;
+    time:Utc? updated_at;
 |};
 
 public type FriendRequest record {|
@@ -26,8 +26,8 @@ public type FriendRequest record {|
     User send_user_Id;
     string receive_user_Id;
     string status;
-    time:Utc created_at;
-    time:Utc updated_at;
+    time:Utc? created_at;
+    time:Utc? updated_at;
 |};
 
 public type Friend record {|
@@ -35,8 +35,8 @@ public type Friend record {|
     User user_Id_1;
     User user_Id_2;
     int status;
-    time:Utc created_at;
-    time:Utc updated_at;
+    time:Utc? created_at;
+    time:Utc? updated_at;
 |};
 
 public type UserGroup record {|
@@ -45,8 +45,8 @@ public type UserGroup record {|
     UserGroupMember[] groupMembers;
     Expense[] expenses;
     int status;
-    time:Utc created_at;
-    time:Utc updated_at;
+    time:Utc? created_at;
+    time:Utc? updated_at;
 |};
 
 public type UserGroupMember record {|
@@ -55,8 +55,8 @@ public type UserGroupMember record {|
     UserGroup group;
     User user;
     int status;
-    time:Utc created_at;
-    time:Utc updated_at;
+    time:Utc? created_at;
+    time:Utc? updated_at;
 |};
 
 public type Expense record {|
@@ -69,8 +69,8 @@ public type Expense record {|
     GuestUser[] guestUsers;
 	UserGroup usergroup;
     int status;
-    time:Utc created_at;
-    time:Utc updated_at;
+    time:Utc? created_at;
+    time:Utc? updated_at;
 |};
 
 public type ExpenseParticipant record {|
@@ -80,8 +80,8 @@ public type ExpenseParticipant record {|
     Expense expense;
     User user;
     int status;
-    time:Utc created_at;
-    time:Utc updated_at;
+    time:Utc? created_at;
+    time:Utc? updated_at;
 |};
 
 public type Transaction record {|
@@ -90,8 +90,8 @@ public type Transaction record {|
 	Expense expense;
 	User payee_Id;
     int status;
-    time:Utc created_at;
-    time:Utc updated_at;
+    time:Utc? created_at;
+    time:Utc? updated_at;
 |};
 
 public type BankAccount record {|
@@ -101,8 +101,8 @@ public type BankAccount record {|
     string branch;
     Card[] cards;
     int status; 
-    time:Utc created_at;
-    time:Utc updated_at;
+    time:Utc? created_at;
+    time:Utc? updated_at;
 |};
 
 public type Card record {|
@@ -113,9 +113,9 @@ public type Card record {|
     string card_cv;
     BankAccount bankAccount;
     int status;
-       time:Utc created_at;
-    time:Utc updated_at;
-    |};
+    time:Utc? created_at;
+    time:Utc? updated_at;
+|};
 
 
 

@@ -203,7 +203,9 @@ public function getExpenseService() returns http:Service {
                             birthdate: "1900-01-01", // Default birthdate for guest users
                             phone_number: null, // Default phone for guest users
                             currency_pref: "USD", // Default currency
-                            status: 1
+                            status: 1,
+                            created_at: currentTime,
+                            updated_at: currentTime
                         };
 
                         string[]|error guestUserResult = dbClient->/users.post([newGuestUser]);
@@ -240,7 +242,7 @@ public function getExpenseService() returns http:Service {
                     owning_amount: participant.owning_amount,
                     expenseExpense_Id: expenseId,
                     userUser_Id: actualUserId,
-                    status: 1
+                    status: 1,
                     created_at: currentTime,
                     updated_at: currentTime
 
@@ -324,8 +326,8 @@ public function getExpenseService() returns http:Service {
                 "expense_total_amount": expenseDetails.expense_total_amount,
                 "expense_owe_amount": expenseDetails.expense_owe_amount,
                 "status": expenseDetails.status,
-                "created_at": expenseDetails.created_at,
-                "updated_at": expenseDetails.updated_at,
+                "created_at": expenseDetails?.created_at ?: (),
+                "updated_at": expenseDetails?.updated_at ?: (),
                 "expenseParticipants": expenseDetails.expenseParticipants,
                 "transactions": expenseDetails.transactions,
                 "usergroup": expenseDetails.usergroup
@@ -559,8 +561,8 @@ public function getExpenseService() returns http:Service {
                summaries.push({
                     groupId: groupId,
                     groupName: group.name,
-                    created_at: group.created_at,
-                    updated_at: group.updated_at,
+                    created_at: group?.created_at ?: time:utcNow(),
+                    updated_at: group?.updated_at ?: time:utcNow(),
                     participantNames: participantNames,
                     netAmount: netAmount
    });
