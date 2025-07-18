@@ -14,7 +14,9 @@ import { authConfig } from "./authConfig"; // Import Asgardeo configuration
 import PaidView from './Views/PaidView';
 import SettleUp from './Views/SettleUpView';
 import AuthView from './Views/AuthView';
+import GuestEnrollment from './Views/GuestEnroll';
 import { Toaster } from 'sonner';
+import { UserProvider } from './contexts/UserContext'; // Import UserProvider
 
 function ProtectedRoute() {
   const { state } = useAuthContext();
@@ -26,7 +28,8 @@ function App() {
 
   return (
     <AuthProvider config={authConfig}>
-      <div className='w-screen mx-0 px-0'>
+      <UserProvider>
+        <div className='w-screen mx-0 px-0'>
 
         <Router>
           <Routes>
@@ -48,7 +51,9 @@ function App() {
             <Route path="/allfriends" element={<AllFriends />} />
             <Route path="/ocr" element={<OCRscanner />} />
             <Route path="/friend/:friendId" element={<FriendView />} />
+             <Route path="/guest/:sessionId" element={<GuestEnrollment />} />
             <Route path="/settleup" element={<SettleUp />} />
+
 
 
           </Routes>
@@ -57,7 +62,8 @@ function App() {
           richColors={true}
           position="top-center"
         />
-      </div>
+        </div>
+      </UserProvider>
     </AuthProvider>
   )
 }

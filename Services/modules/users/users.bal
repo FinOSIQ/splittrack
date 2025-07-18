@@ -281,6 +281,44 @@ public function getUserService() returns http:Service {
             return caller->respond(response);
         }
 
+        // GET USER BY COOKIE (readonly)
+        resource function get user_byCookie(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
+            http:Response response = new;
+
+            string? id = cookie_utils:getCookieValue(req, "user_id");
+
+            if id is () {
+                response.statusCode = http:STATUS_BAD_REQUEST;
+                response.setJsonPayload({"status": "error", "message": "User ID cookie not found"});
+                return caller->respond(response);
+            }
+
+            db:UserWithRelations|persist:Error user = dbClient->/users/[id];
+            if user is persist:NotFoundError {
+                response.statusCode = http:STATUS_NOT_FOUND;
+                response.setJsonPayload({"status": "error", "message": "User not found"});
+                return caller->respond(response);
+            } else if user is persist:Error {
+                response.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                response.setJsonPayload({"status": "error", "message": "Database error"});
+                return caller->respond(response);
+            }
+
+            // Return only the requested fields
+            response.statusCode = http:STATUS_OK;
+            response.setJsonPayload({
+                "status": "success",
+                "message": "User retrieved successfully",
+                "data": {
+                    "user_Id": user is db:UserWithRelations ? user.user_Id : "",
+                    "first_name": user is db:UserWithRelations ? user.first_name : "",
+                    "last_name": user is db:UserWithRelations ? user.last_name : "",
+                    "currency_pref": user is db:UserWithRelations ? user.currency_pref : ""
+                }
+            });
+            return caller->respond(response);
+        }
+
         // DELETE USER BY ID
         resource function delete user(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
             http:Response response = new;
