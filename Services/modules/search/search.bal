@@ -100,8 +100,9 @@ function searchDatabase(string value, string[] types, string? userId) returns Se
 function searchUsers(string value) returns json|error {
     sql:ParameterizedQuery query = `SELECT user_id, first_name, email 
                                     FROM user 
-                                    WHERE first_name LIKE ${"%" + value + "%"} 
-                                       OR email LIKE ${"%" + value + "%"}`;
+                                    WHERE email IS NOT NULL
+                                    AND (first_name LIKE ${"%" + value + "%"} 
+                                       OR email LIKE ${"%" + value + "%"})`;
     stream<utils:JsonRecord, error?> resultStream = utils:Client->query(query);
     return  check utils:streamToJson(resultStream);
 }

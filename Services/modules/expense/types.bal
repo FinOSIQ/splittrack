@@ -11,13 +11,16 @@ public type ExpenseCreatePayload record {|
 
 public enum ParticipantRole {
     CREATOR = "creator",
-    MEMBER = "member"
+    MEMBER = "member",
+    GUEST = "guest"
 }
 
 public type ParticipantPayload record {|
     ParticipantRole participant_role;
     decimal owning_amount;
-    string userUser_Id;
+    string? userUser_Id;
+    string? firstName;
+    string? lastName;
 |};
 
 // Response type for your specific need

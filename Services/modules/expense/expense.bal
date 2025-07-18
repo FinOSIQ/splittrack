@@ -35,7 +35,7 @@ public function getExpenseService() returns http:Service {
     
     service object {
 
-        resource function post expense(http:Caller caller, http:Request req, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
+        resource function post expense(http:Caller caller, http:Request req) returns http:Created & readonly|error? {
 
             http:Response response = new;
 
@@ -44,6 +44,38 @@ public function getExpenseService() returns http:Service {
             if isValid is error || !isValid {
                 response.statusCode = 401;
                 response.setJsonPayload({"status": "error", "message": "Unauthorized: Invalid or expired token"});
+                check caller->respond(response);
+                return;
+            }
+
+            // Get JSON payload manually to handle optional fields
+            json|error jsonPayload = req.getJsonPayload();
+            if jsonPayload is error {
+                response.statusCode = 400;
+                response.setJsonPayload({"status": "error", "message": "Invalid JSON payload"});
+                check caller->respond(response);
+                return;
+            }
+
+            // Manually construct the ExpenseCreatePayload with proper handling of optional fields
+            ExpenseCreatePayload payload;
+            do {
+                json expenseIdJson = check jsonPayload.expense_Id;
+                json nameJson = check jsonPayload.name;
+                json totalAmountJson = check jsonPayload.expense_total_amount;
+                json groupIdJson = check jsonPayload.usergroupGroup_Id;
+                json participantJson = check jsonPayload.participant;
+
+                payload = {
+                    expense_Id: expenseIdJson is () ? () : expenseIdJson.toString(),
+                    name: nameJson.toString(),
+                    expense_total_amount: <decimal>totalAmountJson,
+                    usergroupGroup_Id: groupIdJson is () ? () : groupIdJson.toString(),
+                    participant: check constructParticipants(<json[]>participantJson)
+                };
+            } on fail var e {
+                response.statusCode = 400;
+                response.setJsonPayload({"status": "error", "message": "Invalid payload structure: " + e.message()});
                 check caller->respond(response);
                 return;
             }
@@ -139,12 +171,75 @@ public function getExpenseService() returns http:Service {
                     }
                 }
 
+                // Handle guest users - create user in database if participant role is guest
+                string? actualUserId = participant.userUser_Id;
+                if participant.participant_role == "guest" || participant.participant_role == GUEST {
+                    if participant.firstName is string && participant.lastName is string {
+                        string guestFirstName = <string>participant.firstName;
+                        string guestLastName = <string>participant.lastName;
+                        
+                        // Generate a unique user ID for the guest
+                        string guestUserId;
+                        while true {
+                            guestUserId = uuid:createType4AsString();
+                            db:User|persist:Error existingUser = dbClient->/users/[guestUserId];
+                            if existingUser is persist:NotFoundError {
+                                break; // Unique ID found
+                            } else if existingUser is persist:Error {
+                                log:printError("Database error checking guest user ID: " + existingUser.message());
+                                response.statusCode = 500;
+                                response.setJsonPayload({"status": "error", "message": "Database error checking guest user ID"});
+                                check caller->respond(response);
+                                return;
+                            }
+                        }
+
+                        // Create guest user in database
+                        db:User newGuestUser = {
+                            user_Id: guestUserId,
+                            email: null, // Default email for guest users
+                            first_name: guestFirstName,
+                            last_name: guestLastName,
+                            birthdate: "1900-01-01", // Default birthdate for guest users
+                            phone_number: null, // Default phone for guest users
+                            currency_pref: "USD", // Default currency
+                            status: 1
+                        };
+
+                        string[]|error guestUserResult = dbClient->/users.post([newGuestUser]);
+                        if guestUserResult is error {
+                            log:printError("Database error creating guest user: " + guestUserResult.message());
+                            response.statusCode = 500;
+                            response.setJsonPayload({"status": "error", "message": "Failed to create guest user in database"});
+                            check caller->respond(response);
+                            return;
+                        }
+
+                        actualUserId = guestUserId;
+                    } else {
+                        log:printError("Guest participant missing firstName or lastName");
+                        response.statusCode = 400;
+                        response.setJsonPayload({"status": "error", "message": "Guest participants must have firstName and lastName"});
+                        check caller->respond(response);
+                        return;
+                    }
+                }
+
+                // Ensure actualUserId is not null
+                if actualUserId is () {
+                    log:printError("Participant userUser_Id is null for non-guest participant");
+                    response.statusCode = 400;
+                    response.setJsonPayload({"status": "error", "message": "Non-guest participants must have a valid userUser_Id"});
+                    check caller->respond(response);
+                    return;
+                }
+
                 db:ExpenseParticipant newParticipant = {
                     participant_Id: participantId,
-                    participant_role: participant.userUser_Id == creatorId ? "Creator" : participant.participant_role,
+                    participant_role: actualUserId == creatorId ? "Creator" : participant.participant_role,
                     owning_amount: participant.owning_amount,
                     expenseExpense_Id: expenseId,
-                    userUser_Id: participant.userUser_Id,
+                    userUser_Id: actualUserId,
                     status: 1
                 };
 
@@ -1200,4 +1295,42 @@ public function getExpenseService() returns http:Service {
         }
 
     };
+}
+
+// Helper function to construct ParticipantPayload array from JSON with optional fields
+function constructParticipants(json[] participantJsonArray) returns ParticipantPayload[]|error {
+    ParticipantPayload[] participants = [];
+    
+    foreach json participantJson in participantJsonArray {
+        json roleJson = check participantJson.participant_role;
+        json amountJson = check participantJson.owning_amount;
+        json userIdJson = check participantJson.userUser_Id;
+        
+        // Get optional fields
+        json|error firstNameResult = participantJson.firstName;
+        json|error lastNameResult = participantJson.lastName;
+        
+        string? firstName = ();
+        string? lastName = ();
+        
+        if firstNameResult is json && firstNameResult !is () {
+            firstName = firstNameResult.toString();
+        }
+        
+        if lastNameResult is json && lastNameResult !is () {
+            lastName = lastNameResult.toString();
+        }
+        
+        ParticipantPayload participant = {
+            participant_role: <ParticipantRole>roleJson,
+            owning_amount: <decimal>amountJson,
+            userUser_Id: userIdJson is () ? () : userIdJson.toString(),
+            firstName: firstName,
+            lastName: lastName
+        };
+        
+        participants.push(participant);
+    }
+    
+    return participants;
 }

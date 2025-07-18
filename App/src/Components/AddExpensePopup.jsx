@@ -12,8 +12,12 @@ import { se } from "date-fns/locale";
 import { getGroupDetails } from "../utils/requests/Group";
 import { toast } from "sonner";
 import { set } from "date-fns";
+import useUserData from "../hooks/useUserData";
 
 export default function AddExpensePopup() {
+  // Get current user data
+  const { user, getFullName, isLoggedIn } = useUserData();
+  
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [totalExpense, setTotalExpense] = useState("");
@@ -26,6 +30,22 @@ export default function AddExpensePopup() {
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
+
+  // Initialize selectedItems with current user when component mounts or when user data changes
+  useEffect(() => {
+    if (user && isLoggedIn() && selectedItems.length === 0) {
+      const currentUserItem = {
+        id: user.user_Id,
+        type: 'user',
+        name: getFullName() || `${user.first_name} ${user.last_name}`.trim(),
+        avatar: null,
+        originalData: user,
+        isCurrentUser: true // Flag to identify current user
+      };
+      
+      setSelectedItems([currentUserItem]);
+    }
+  }, [user, isLoggedIn, getFullName]); // Dependencies to re-run when user data changes
 
   // Handle search input change
   const handleSearchChange = (e) => {
@@ -58,6 +78,14 @@ export default function AddExpensePopup() {
       );
 
       if (exists) return prev;
+      
+      // Check if this is the current user being added again
+      if (user && newSelectedItem.id === user.user_Id && newSelectedItem.type === 'user') {
+        // Don't add duplicate current user, but maybe show a message
+        toast.info("You are already included in this expense");
+        return prev;
+      }
+      
       return [...prev, newSelectedItem];
     });
 
@@ -174,7 +202,7 @@ export default function AddExpensePopup() {
   // Initialize Formik for the split options
   const formik = useFormik({
     initialValues: {
-      splitEqual: selectedItems.map(() => true),
+      splitEqual: selectedItems.map((item) => item.isCurrentUser ? true : true), // Current user always true, others default true
       splitAmounts: selectedItems.map(() => ""),
       splitPercentages: selectedItems.map(() => ""),
       splitShares: selectedItems.map(() => "")
@@ -402,15 +430,28 @@ export default function AddExpensePopup() {
                 )}
                 <span>{item.name}</span>
                 {/* {console.log(item)} */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedItems(prev => prev.filter(i => !(i.id === item.id && i.type === item.type)));
-                  }}
-                  className="ml-1 text-blue-600 hover:text-blue-800"
-                >
-                  ×
-                </button>
+                {/* Only show remove button if it's not the current user */}
+                {!item.isCurrentUser && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedItems(prev => prev.filter(i => !(i.id === item.id && i.type === item.type)));
+                    }}
+                    className="ml-1 text-blue-600 hover:text-blue-800"
+                  >
+                    ×
+                  </button>
+                )}
+                {/* Show a lock icon for current user to indicate they can't be removed */}
+                {item.isCurrentUser && (
+                  <div className="ml-1 text-gray-400" title="You (cannot be removed)">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <circle cx="12" cy="16" r="1"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -572,14 +613,19 @@ export default function AddExpensePopup() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <span className="font-normal">{participant.name}</span>
+                  <span className="font-normal">
+                    {participant.name}
+                    {participant.isCurrentUser && <span className="text-gray-500 text-xs ml-1">(You)</span>}
+                  </span>
                 </div>
                 <input
                   type="checkbox"
                   name={`splitEqual[${idx}]`}
-                  onChange={formik.handleChange}
+                  onChange={participant.isCurrentUser ? undefined : formik.handleChange}
                   checked={formik.values.splitEqual[idx]}
-                  className="w-5 h-5 accent-[#040b2b]"
+                  disabled={participant.isCurrentUser}
+                  className={`w-5 h-5 accent-[#040b2b] ${participant.isCurrentUser ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  title={participant.isCurrentUser ? "You are always included" : undefined}
                 />
               </div>
             ))}
@@ -638,7 +684,10 @@ export default function AddExpensePopup() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <span className="font-medium">{participant.name}</span>
+                      <span className="font-medium">
+                        {participant.name}
+                        {participant.isCurrentUser && <span className="text-gray-500 text-xs ml-1">(You)</span>}
+                      </span>
                     </div>
                     <div className="w-16">
                       <Input
@@ -705,7 +754,10 @@ export default function AddExpensePopup() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <span className="font-medium">{participant.name}</span>
+                      <span className="font-medium">
+                        {participant.name}
+                        {participant.isCurrentUser && <span className="text-gray-500 text-xs ml-1">(You)</span>}
+                      </span>
                     </div>
                     <div className="w-16">
                       <Input
@@ -771,7 +823,10 @@ export default function AddExpensePopup() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <span className="font-medium">{participant.name}</span>
+                    <span className="font-medium">
+                      {participant.name}
+                      {participant.isCurrentUser && <span className="text-gray-500 text-xs ml-1">(You)</span>}
+                    </span>
                   </div>
                   <div className="w-16">
                     <Input
@@ -860,8 +915,22 @@ export default function AddExpensePopup() {
           setStep(1);
           setSearchValue(""); // Clear search input when opening popup
           setSearchResults(null); // Clear search results when opening popup
-          setSelectedItems([]); // Clear selected items when opening popup
           setSelectedGroupId(null); // Clear selected group ID when opening popup
+          
+          // Reset selectedItems with current user
+          if (user && isLoggedIn()) {
+            const currentUserItem = {
+              id: user.user_Id,
+              type: 'user',
+              name: getFullName() || `${user.first_name} ${user.last_name}`.trim(),
+              avatar: null,
+              originalData: user,
+              isCurrentUser: true
+            };
+            setSelectedItems([currentUserItem]);
+          } else {
+            setSelectedItems([]); // Fallback if no user data
+          }
         }}
         className="absolute left-2 top-1  w-[70px] h-[70px] bg-[#040b2b] text-white flex items-center justify-center rounded-full shadow-md border-2 border-white"
       >

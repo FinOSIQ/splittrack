@@ -87,11 +87,7 @@ export default function Home() {
       )}
 
       <div className="ml-8 mt-2">
-        <HeaderProfile
-          userName={userData.userName}
-          loading={userLoading}
-          error={userError}
-        />
+        <HeaderProfile />
         
         <div className="h-[80vh] flex bg-white rounded-md md:mx-5 -mt-8 md:mt-4 overflow-hidden">
           {/* Left */}

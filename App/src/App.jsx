@@ -16,6 +16,7 @@ import SettleUp from './Views/SettleUpView';
 import AuthView from './Views/AuthView';
 import GuestEnrollment from './Views/GuestEnroll';
 import { Toaster } from 'sonner';
+import { UserProvider } from './contexts/UserContext'; // Import UserProvider
 
 function ProtectedRoute() {
   const { state } = useAuthContext();
@@ -27,7 +28,8 @@ function App() {
 
   return (
     <AuthProvider config={authConfig}>
-      <div className='w-screen mx-0 px-0'>
+      <UserProvider>
+        <div className='w-screen mx-0 px-0'>
 
         <Router>
           <Routes>
@@ -59,7 +61,8 @@ function App() {
           richColors={true}
           position="top-center"
         />
-      </div>
+        </div>
+      </UserProvider>
     </AuthProvider>
   )
 }
