@@ -11,13 +11,16 @@ public type ExpenseCreatePayload record {|
 
 public enum ParticipantRole {
     CREATOR = "creator",
-    MEMBER = "member"
+    MEMBER = "member",
+    GUEST = "guest"
 }
 
 public type ParticipantPayload record {|
     ParticipantRole participant_role;
     decimal owning_amount;
-    string userUser_Id;
+    string? userUser_Id;
+    string? firstName;
+    string? lastName;
 |};
 
 // Response type for your specific need
@@ -61,4 +64,32 @@ type GroupMemberBalance record {|
     string name;
     decimal owe_amount;
     string isMember;
+|};
+
+
+public type GuestUser record {|
+    string firstName;
+    string lastName;
+|};
+
+public type ExpenseSession record {|
+    string sessionId;
+    string status;
+    time:Utc createdAt; 
+    time:Utc expiresAt;
+    GuestUser[] guestUsers;  // ✅ Embedded guest users array with structured data
+|};
+
+type ExpenseJoinInfo record {
+    string sessionId;
+    string expenseTitle;
+    string createdBy;
+    boolean isValid;
+};
+
+
+type GuestJoinRequest record {|
+    string firstName;
+    string lastName;
+    string sessionId;
 |};

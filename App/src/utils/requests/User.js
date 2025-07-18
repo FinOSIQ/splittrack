@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 export const postUserData = async (token) => {
@@ -74,5 +73,45 @@ export const updateUserData = async (userData) => {
   } catch (error) {
     console.error("Error updating user data:", error);
     return error;
+  }
+};
+
+// Function to fetch user data using cookie authentication
+export const fetchUserByCookie = async () => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_user/v1/user_byCookie`;
+
+    // Make the GET request with credentials
+    const response = await axios.get(url, {
+      withCredentials: true, // Include cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Check if the response indicates success
+    if (response.data.status === 'success') {
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } else {
+      return {
+        success: false,
+        error: response.data.message || 'Failed to fetch user data',
+        data: null
+      };
+    }
+
+  } catch (error) {
+    console.error("Error fetching user data by cookie:", error);
+    
+    // Return a structured error response
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to fetch user data',
+      data: null
+    };
   }
 };

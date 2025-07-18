@@ -1,16 +1,105 @@
-import { useState } from "react";
+import { useState, useEffect,useCallback } from "react";
 import { QRCodeCanvas } from "qrcode.react";
+import { createSession, deleteSession } from "../utils/requests/expense";
+import { toast } from "sonner";
 
-export default function QrCodeScanner() {
+export default function QrCodeScanner({ selectedItems, setSelectedItems }) {
   const [showQr, setShowQr] = useState(false);
-  const [qrText] = useState("https://example.com");
+  const [qrText, setqrText] = useState("https://example.com");
+  const [sessionId, setSessionId] = useState(null);
+  
+  
+  // Polling function
+  const pollJoinExpense = useCallback(async (sessionId) => {
+    if (!showQr) return; // Don't poll if QR is not shown
+    
+    try {
+      const response = await fetch(`http://localhost:9090/api_expense/v1/joinExpense/${sessionId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.guestUsers && Array.isArray(data.guestUsers)) {
+          console.log("Guest users:", data.guestUsers);
+          
+          // Add each guest user to selectedItems as they are discovered
+          data.guestUsers.forEach(guestUser => {
+            const newSelectedItem = {
+              id: guestUser.firstName,
+              type: 'guest',
+              name: guestUser.firstName || guestUser.email || guestUser.name || "Unknown",
+              avatar: guestUser.avatar || null,
+              originalData: guestUser
+            };
 
-  const handleButtonClick = () => {
+            // Add to selected items (avoiding duplicates)
+            setSelectedItems(prev => {
+              // Check if item already exists
+              const exists = prev.some(existingItem =>
+                existingItem.id === newSelectedItem.id && existingItem.type === newSelectedItem.type
+              );
+
+              if (exists) return prev;
+              return [...prev, newSelectedItem];
+            });
+          });
+        }
+      } else {
+        console.error("Failed to fetch join expense data:", response.status);
+      }
+    } catch (error) {
+      console.error("Error polling join expense:", error);
+    }
+  }, [showQr, setSelectedItems]);
+
+  // Polling effect
+  useEffect(() => {
+    let intervalId;
+    
+    if (showQr && sessionId) {
+      // Start polling immediately
+      pollJoinExpense(sessionId);
+      
+      // Set up interval to poll every second
+      intervalId = setInterval(() => {
+        pollJoinExpense(sessionId);
+      }, 1000);
+    }
+
+    // Cleanup interval on unmount or when showQr/sessionId changes
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [showQr, sessionId, pollJoinExpense]);
+
+  const handleButtonClick = async () => {
+    const res = await createSession();
+    if (res && res.status == 201) {
+      setSessionId(res.data.sessionId);
+      setqrText(`http://localhost:5173/guest/${res.data.sessionId}`);
+      console.log("Session created with ID:", res.data.sessionId);
+    } else {
+      toast.error("Failed to create session. Please try again.");
+      console.log("Error creating session:", res);
+      return;
+    }
     setShowQr(true);
   };
 
-  const handleCloseQr = () => {
+  const handleCloseQr = async () => {
     setShowQr(false);
+    
+    // Delete session when QR popup is closed
+    if (sessionId) {
+      const res = await deleteSession(sessionId);
+      if (res && res.status === 200) {
+        setSessionId(null);
+        console.log("Session deleted successfully");
+      } else {
+        toast.error("Failed to delete session. Please try again.");
+        console.log("Error deleting session:", res);
+      }
+    }
   };
 
   return (
@@ -47,12 +136,22 @@ export default function QrCodeScanner() {
           <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center justify-center relative w-96 h-[70vh]">
             <QRCodeCanvas
               value={qrText}
-              size={370} // Ensures QR fits inside the modal size (adjust as needed)
+              size={370}
               bgColor="#ffffff"
               fgColor="#000000"
               level="H"
               marginSize={4}
             />
+            
+            {/* Display current selected items count */}
+            {selectedItems.filter(item => item.type === 'guest').length > 0 && (
+              <div className="mt-4 text-center">
+                <p className="text-sm text-gray-600">
+                  {selectedItems.filter(item => item.type === 'guest').length} guest user{selectedItems.filter(item => item.type === 'guest').length !== 1 ? 's' : ''} joined
+                </p>
+              </div>
+            )}
+            
             <button
               onClick={handleCloseQr}
               className="mt-4 px-4 py-2 bg-[#040b2b] text-white rounded-lg"

@@ -3,12 +3,12 @@ import splittrack_backend.interceptor as authInterceptor;
 import splittrack_backend.utils;
 
 import ballerina/http;
+import ballerina/io;
 import ballerina/log;
 import ballerina/persist;
 import ballerina/sql;
 import ballerina/time;
 import ballerina/uuid;
-import ballerina/io;
 
 final db:Client dbClient = check new ();
 
@@ -35,9 +35,7 @@ public function getExpenseService() returns http:Service {
     
     service object {
 
-
-        resource function post expense(http:Caller caller, http:Request req, @http:Payload ExpenseCreatePayload payload) returns http:Created & readonly|error? {
-
+        resource function post expense(http:Caller caller, http:Request req) returns http:Created & readonly|error? {
 
             http:Response response = new;
 
@@ -50,13 +48,45 @@ public function getExpenseService() returns http:Service {
                 return;
             }
 
+            // Get JSON payload manually to handle optional fields
+            json|error jsonPayload = req.getJsonPayload();
+            if jsonPayload is error {
+                response.statusCode = 400;
+                response.setJsonPayload({"status": "error", "message": "Invalid JSON payload"});
+                check caller->respond(response);
+                return;
+            }
+
+            // Manually construct the ExpenseCreatePayload with proper handling of optional fields
+            ExpenseCreatePayload payload;
+            do {
+                json expenseIdJson = check jsonPayload.expense_Id;
+                json nameJson = check jsonPayload.name;
+                json totalAmountJson = check jsonPayload.expense_total_amount;
+                json groupIdJson = check jsonPayload.usergroupGroup_Id;
+                json participantJson = check jsonPayload.participant;
+
+                payload = {
+                    expense_Id: expenseIdJson is () ? () : expenseIdJson.toString(),
+                    name: nameJson.toString(),
+                    expense_total_amount: <decimal>totalAmountJson,
+                    usergroupGroup_Id: groupIdJson is () ? () : groupIdJson.toString(),
+                    participant: check constructParticipants(<json[]>participantJson)
+                };
+            } on fail var e {
+                response.statusCode = 400;
+                response.setJsonPayload({"status": "error", "message": "Invalid payload structure: " + e.message()});
+                check caller->respond(response);
+                return;
+            }
+
             string? creatorId = utils:getCookieValue(req, "user_id");
             if creatorId == () {
                 return utils:sendErrorResponse(
                         caller,
                         http:STATUS_BAD_REQUEST,
                         "Invalid 'user_id' cookie",
-                        "Expected a valid 'user_id' cookie" 
+                        "Expected a valid 'user_id' cookie"
                 );
             }
 
@@ -140,17 +170,80 @@ public function getExpenseService() returns http:Service {
                         return;
                     }
                 }
-
                 time:Utc currentTime = time:utcNow();
+// Handle guest users - create user in database if participant role is guest
+                string? actualUserId = participant.userUser_Id;
+                if participant.participant_role == "guest" || participant.participant_role == GUEST {
+                    if participant.firstName is string && participant.lastName is string {
+                        string guestFirstName = <string>participant.firstName;
+                        string guestLastName = <string>participant.lastName;
+                        
+                        // Generate a unique user ID for the guest
+                        string guestUserId;
+                        while true {
+                            guestUserId = uuid:createType4AsString();
+                            db:User|persist:Error existingUser = dbClient->/users/[guestUserId];
+                            if existingUser is persist:NotFoundError {
+                                break; // Unique ID found
+                            } else if existingUser is persist:Error {
+                                log:printError("Database error checking guest user ID: " + existingUser.message());
+                                response.statusCode = 500;
+                                response.setJsonPayload({"status": "error", "message": "Database error checking guest user ID"});
+                                check caller->respond(response);
+                                return;
+                            }
+                        }
+
+                        // Create guest user in database
+                        db:User newGuestUser = {
+                            user_Id: guestUserId,
+                            email: null, // Default email for guest users
+                            first_name: guestFirstName,
+                            last_name: guestLastName,
+                            birthdate: "1900-01-01", // Default birthdate for guest users
+                            phone_number: null, // Default phone for guest users
+                            currency_pref: "USD", // Default currency
+                            status: 1
+                        };
+
+                        string[]|error guestUserResult = dbClient->/users.post([newGuestUser]);
+                        if guestUserResult is error {
+                            log:printError("Database error creating guest user: " + guestUserResult.message());
+                            response.statusCode = 500;
+                            response.setJsonPayload({"status": "error", "message": "Failed to create guest user in database"});
+                            check caller->respond(response);
+                            return;
+                        }
+
+                        actualUserId = guestUserId;
+                    } else {
+                        log:printError("Guest participant missing firstName or lastName");
+                        response.statusCode = 400;
+                        response.setJsonPayload({"status": "error", "message": "Guest participants must have firstName and lastName"});
+                        check caller->respond(response);
+                        return;
+                    }
+                }
+
+                // Ensure actualUserId is not null
+                if actualUserId is () {
+                    log:printError("Participant userUser_Id is null for non-guest participant");
+                    response.statusCode = 400;
+                    response.setJsonPayload({"status": "error", "message": "Non-guest participants must have a valid userUser_Id"});
+                    check caller->respond(response);
+                    return;
+                }
+
                 db:ExpenseParticipant newParticipant = {
                     participant_Id: participantId,
-                    participant_role: participant.userUser_Id == creatorId ? "Creator" : participant.participant_role,
+                    participant_role: actualUserId == creatorId ? "Creator" : participant.participant_role,
                     owning_amount: participant.owning_amount,
                     expenseExpense_Id: expenseId,
-                    userUser_Id: participant.userUser_Id,
-                    status: 1,
+                    userUser_Id: actualUserId,
+                    status: 1
                     created_at: currentTime,
                     updated_at: currentTime
+
                 };
 
                 string[]|error participantResult = dbClient->/expenseparticipants.post([newParticipant]);
@@ -312,7 +405,6 @@ public function getExpenseService() returns http:Service {
             res.setJsonPayload({"expense": updatedExpense});
             return res;
         }
-
 
         resource function get groupExpenses(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
 
@@ -1129,5 +1221,149 @@ public function getExpenseService() returns http:Service {
             return;
         }
 
+        // Create  session for expense
+        resource function post expense/session() returns ExpenseSession|http:BadRequest|http:InternalServerError {
+            ExpenseSession|error session = createExpenseSession();
+            if session is error {
+                log:printError("Failed to create session", session);
+                return http:INTERNAL_SERVER_ERROR;
+            }
+            return session;
+        }
+
+        // return session data by ID
+        resource function get joinExpense/[string sessionId](http:Caller caller) returns error? {
+            ExpenseSession|error session = getExpenseSession(sessionId);
+            if session is error {
+                return utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Session not found", "Session with ID " + sessionId + " does not exist or has expired");
+            }
+
+            // Return JSON response
+            http:Response res = new;
+            json payload = {
+                "sessionId": sessionId,
+                "guestUsers": session.guestUsers,
+                "isValid": session.status == "active"
+            };
+    
+            res.setJsonPayload(payload);
+            res.statusCode = http:STATUS_OK;
+            return caller->respond(res);
+        }
+
+        // Add guest to session via API
+        resource function post joinExpense(http:Caller caller, @http:Payload GuestJoinRequest request) returns error? {
+            GuestUser|error result = addGuestToSession(request.sessionId, request.firstName, request.lastName);
+            if result is error {
+                return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Failed to add guest", result.toString());
+            }
+
+            // Get updated session to return current guest list
+            any|error cachedValue = sessionCache.get(request.sessionId);
+            if cachedValue is error {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Session error", cachedValue.toString());
+            }
+
+            ExpenseSession session;
+            if cachedValue is ExpenseSession {
+                session = cachedValue;
+            } else {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Invalid session data");
+            }
+
+            http:Response res = new;
+            json payload = {
+                "message": "Guest added successfully",
+                "guestUser": {
+                    "firstName": result.firstName,
+                    "lastName": result.lastName
+                },
+                "totalGuests": session.guestUsers.length(),
+                "allGuests": session.guestUsers
+            };
+
+            res.setJsonPayload(payload);
+            res.statusCode = http:STATUS_CREATED;
+            return caller->respond(res);
+        }
+
+        // Delete session by ID
+        resource function delete session/[string sessionId](http:Caller caller) returns error? {
+            // Check if session exists first
+            any|error cachedValue = sessionCache.get(sessionId);
+            if cachedValue is error {
+                return utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Session not found", "Session with ID " + sessionId + " does not exist");
+            }
+
+            ExpenseSession session;
+            if cachedValue is ExpenseSession {
+                session = cachedValue;
+            } else {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Invalid session data");
+            }
+
+            // Check if session is already closed/inactive
+            if session.status == "closed" || session.status == "inactive" {
+                return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Session already closed", "Session with ID " + sessionId + " is already closed or inactive");
+            }
+
+            // Remove session from cache (permanent deletion)
+            error? removeResult = sessionCache.invalidate(sessionId);
+            if removeResult is error {
+                log:printError("Failed to delete session", removeResult);
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to delete session", removeResult.toString());
+            }
+
+            // Return success response
+            http:Response res = new;
+            json payload = {
+                "message": "Session deleted successfully",
+                "sessionId": sessionId,
+                "deletedAt": time:utcNow()
+            };
+
+            res.setJsonPayload(payload);
+            res.statusCode = http:STATUS_OK;
+            return caller->respond(res);
+        }
+
     };
+}
+
+// Helper function to construct ParticipantPayload array from JSON with optional fields
+function constructParticipants(json[] participantJsonArray) returns ParticipantPayload[]|error {
+    ParticipantPayload[] participants = [];
+    
+    foreach json participantJson in participantJsonArray {
+        json roleJson = check participantJson.participant_role;
+        json amountJson = check participantJson.owning_amount;
+        json userIdJson = check participantJson.userUser_Id;
+        
+        // Get optional fields
+        json|error firstNameResult = participantJson.firstName;
+        json|error lastNameResult = participantJson.lastName;
+        
+        string? firstName = ();
+        string? lastName = ();
+        
+        if firstNameResult is json && firstNameResult !is () {
+            firstName = firstNameResult.toString();
+        }
+        
+        if lastNameResult is json && lastNameResult !is () {
+            lastName = lastNameResult.toString();
+        }
+        
+        ParticipantPayload participant = {
+            participant_role: <ParticipantRole>roleJson,
+            owning_amount: <decimal>amountJson,
+            userUser_Id: userIdJson is () ? () : userIdJson.toString(),
+            firstName: firstName,
+            lastName: lastName
+        };
+        
+        participants.push(participant);
+    }
+    
+    return participants;
 }

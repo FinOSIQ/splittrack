@@ -23,11 +23,11 @@ PRIMARY KEY(account_Id)
 )`;
 sql:ParameterizedQuery query3 = `CREATE TABLE IF NOT EXISTS User (
 user_Id VARCHAR(191) NOT NULL,
-email VARCHAR(191) NOT NULL,
+email VARCHAR(191),
 first_name VARCHAR(191) NOT NULL,
 last_name VARCHAR(191) NOT NULL,
-phone_number VARCHAR(191) NOT NULL,
-birthdate VARCHAR(191) NOT NULL,
+phone_number VARCHAR(191),
+birthdate VARCHAR(191),
 currency_pref VARCHAR(191) NOT NULL,
 status INT NOT NULL,
 created_at TIMESTAMP NOT NULL,
@@ -104,7 +104,16 @@ user_id_2User_Id VARCHAR(191) NOT NULL,
 FOREIGN KEY(user_id_2User_Id) REFERENCES User(user_Id),
 PRIMARY KEY(friend_Id)
 )`;
-sql:ParameterizedQuery query10 = `CREATE TABLE IF NOT EXISTS ExpenseParticipant (
+sql:ParameterizedQuery query10 = `CREATE TABLE IF NOT EXISTS GuestUser (
+guest_user_id VARCHAR(191) NOT NULL,
+guest_name VARCHAR(191) NOT NULL,
+owning_amount DECIMAL(65,30) NOT NULL,
+status INT NOT NULL,
+expenseExpense_Id VARCHAR(191) NOT NULL,
+FOREIGN KEY(expenseExpense_Id) REFERENCES Expense(expense_Id),
+PRIMARY KEY(guest_user_id)
+)`;
+sql:ParameterizedQuery query11 = `CREATE TABLE IF NOT EXISTS ExpenseParticipant (
 participant_Id VARCHAR(191) NOT NULL,
 participant_role VARCHAR(191) NOT NULL,
 owning_amount DECIMAL(65,30) NOT NULL,
@@ -130,5 +139,6 @@ public function createTables() returns error? {
  _ = check dbClient->executeNativeSQL(query8);
  _ = check dbClient->executeNativeSQL(query9);
  _ = check dbClient->executeNativeSQL(query10);
+ _ = check dbClient->executeNativeSQL(query11);
     check dbClient.close();
 }

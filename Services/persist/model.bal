@@ -1,6 +1,7 @@
 import ballerina/persist as _;
 import ballerina/time;
 
+
 public type User record {|
     readonly string user_Id;
     string? email;
@@ -8,7 +9,7 @@ public type User record {|
     string last_name;
     string? phone_number;
     string? birthdate;
-    string? currency_pref;
+     string? currency_pref;
     FriendRequest[] friendRequests;
     UserGroupMember[] groupMembers;
     ExpenseParticipant[] expenseParticipants;
@@ -65,6 +66,7 @@ public type Expense record {|
     decimal expense_owe_amount;
     ExpenseParticipant[] expenseParticipants;
     Transaction[] transactions;
+    GuestUser[] guestUsers;
 	UserGroup usergroup;
     int status;
     time:Utc created_at;
@@ -111,6 +113,16 @@ public type Card record {|
     string card_cv;
     BankAccount bankAccount;
     int status;
-    time:Utc created_at;
+       time:Utc created_at;
     time:Utc updated_at;
+    |};
+
+
+
+public type GuestUser record {|
+    readonly string guest_user_id;
+    string guest_name;              
+    Expense expense;             
+    decimal owning_amount;          
+    int status;  
 |};
