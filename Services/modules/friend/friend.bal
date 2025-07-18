@@ -78,7 +78,7 @@ public function getFriendService() returns http:Service {
 
                     friendDetails.push({
                         name: fullName,
-                        email: otherUser.email ?: ""
+                        email: otherUser?.email ?: ""
                     });
                 }
 
@@ -133,7 +133,7 @@ public function getFriendService() returns http:Service {
                         }
                         senderName += lname;
                     }
-                    senderEmail = sender.email ?: "";
+                    senderEmail = sender?.email ?: "";
                 }
 
                 result.push({
