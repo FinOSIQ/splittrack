@@ -60,7 +60,7 @@ const Section = ({ title, data, type, onItemClick }) => (
             <hr className="flex-1 ml-4 border-gray-300" />
         </div>
         {data.map((item, index) => (
-            <div key={index} onClick={() => onItemClick(item, type)} className="cursor-pointer">
+            <div key={item.user_id || item.group_id || index} onClick={() => onItemClick(item, type)} className="cursor-pointer">
                 <UserCard 
                     img={item.img} 
                     name={item.name} 

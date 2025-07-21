@@ -26,7 +26,7 @@ public function getUserService() returns http:Service {
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,
             maxAge: 3600
-        }
+        } 
     }
     service object {
         resource function get sayHello(http:Caller caller, http:Request req) returns error? {
@@ -242,12 +242,12 @@ public function getUserService() returns http:Service {
             foreach db:UserWithRelations user in users {
                 json userInfo = {
                     "user_Id": user.user_Id,
-                    "email": user.email,
+                    "email": user?.email ?: (),
                     "first_name": user.first_name,
                     "last_name": user.last_name,
-                    "phone_number": user.phone_number,
-                    "birthdate": user.birthdate,
-                    "currency_pref": user.currency_pref,
+                    "phone_number": user?.phone_number ?: (),
+                    "birthdate": user?.birthdate ?: (),
+                    "currency_pref": user?.currency_pref ?: (),
                     "status": user.status,
                     "created_at": user.created_at,
                     "updated_at": user.updated_at
@@ -302,12 +302,12 @@ public function getUserService() returns http:Service {
             if user is db:UserWithRelations {
                 json userData = {
                     "user_Id": user.user_Id,
-                    "email": user.email,
+                    "email": user?.email ?: (),
                     "first_name": user.first_name,
                     "last_name": user.last_name,
-                    "phone_number": user.phone_number,
-                    "birthdate": user.birthdate,
-                    "currency_pref": user.currency_pref,
+                    "phone_number": user?.phone_number ?: (),
+                    "birthdate": user?.birthdate ?: (),
+                    "currency_pref": user?.currency_pref ?: (),
                     "status": user.status,
                     "created_at": user.created_at,
                     "updated_at": user.updated_at
@@ -360,7 +360,7 @@ public function getUserService() returns http:Service {
                     "user_Id": user is db:UserWithRelations ? user.user_Id : "",
                     "first_name": user is db:UserWithRelations ? user.first_name : "",
                     "last_name": user is db:UserWithRelations ? user.last_name : "",
-                    "currency_pref": user is db:UserWithRelations ? user.currency_pref : ""
+                    "currency_pref": user is db:UserWithRelations ? (user?.currency_pref ?: "") : ""
                 }
             });
             return caller->respond(response);
@@ -415,6 +415,38 @@ public function getUserService() returns http:Service {
                 "status": "success",
                 "message": "User deleted successfully",
                 "userId": id
+            });
+            return caller->respond(response);
+        }
+
+        // USER LOGOUT
+        resource function post logout(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
+            http:Response response = new;
+
+           
+
+            // Optional: Verify user is authenticated before logout
+            // This is optional since we want to allow logout even with expired tokens
+            string? userId = cookie_utils:getCookieValue(req, "user_id");
+
+            // Clear authentication cookies using the utility function
+            cookie_utils:clearAuthCookies(response);
+
+            // Log the logout action (optional)
+            if userId is string {
+                log:printInfo("User logged out successfully: " + userId);
+            } else {
+                log:printInfo("Anonymous logout - clearing any existing cookies");
+            }
+
+            response.statusCode = http:STATUS_OK;
+            response.setJsonPayload({
+                "status": "success",
+                "message": "Logged out successfully",
+                "data": {
+                    "logged_out": true,
+                    "timestamp": time:utcNow()
+                }
             });
             return caller->respond(response);
         }

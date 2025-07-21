@@ -203,7 +203,9 @@ public function getExpenseService() returns http:Service {
                             birthdate: "1900-01-01", // Default birthdate for guest users
                             phone_number: null, // Default phone for guest users
                             currency_pref: "USD", // Default currency
-                            status: 1
+                            status: 1,
+                            created_at: currentTime,
+                            updated_at: currentTime
                         };
 
                         string[]|error guestUserResult = dbClient->/users.post([newGuestUser]);
@@ -240,7 +242,7 @@ public function getExpenseService() returns http:Service {
                     owning_amount: participant.owning_amount,
                     expenseExpense_Id: expenseId,
                     userUser_Id: actualUserId,
-                    status: 1
+                    status: 1,
                     created_at: currentTime,
                     updated_at: currentTime
 
