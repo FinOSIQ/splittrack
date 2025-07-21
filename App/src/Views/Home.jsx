@@ -13,14 +13,22 @@ export default function Home() {
   // State for user data, group data, loading, and error
   const [userData, setUserData] = useState({ userName: 'Guest', balance: null });
   const [groups, setGroups] = useState([]);
+  //Oneli is the best.
   const [userLoading, setUserLoading] = useState(true);
   const [groupLoading, setGroupLoading] = useState(true);
   const [userError, setUserError] = useState(null);
   const [groupError, setGroupError] = useState(null);
   const [showFriendRequests, setShowFriendRequests] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const groupsListRef = useRef(null);
   const isMobile = useIsMobile();
+
+  // Filter groups based on search query
+  const filteredGroups = groups.filter(group =>
+    group.groupName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    group.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Animation effect for groups list
   useEffect(() => {
@@ -94,6 +102,28 @@ export default function Home() {
           
           {/* Left */}
           <div className="xl:w-[70%] lg:w-[60%] w-full p-4 flex flex-col">
+            {/* Search Bar */}
+            <div className="bg-[#f1f2f9] rounded-lg flex items-center px-4 border border-gray-300 focus-within:border-blue-500 mb-4 h-12">
+              <svg
+                className="w-5 h-5 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+                <circle cx="10" cy="10" r="7"></circle>
+              </svg>
+              <input
+                type="text"
+                placeholder="Search Groups, Friends, Users ..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent outline-none text-gray-900 placeholder-gray-500 text-sm pl-2"
+              />
+            </div>
+
             <h2 className="text-2xl font-bold mb-4">Groups</h2>
 
             {/* Balance card on mobile above groups list */}
@@ -126,12 +156,12 @@ export default function Home() {
                   <div className="col-span-2 text-center text-red-500 text-lg">
                     Error: {groupError}
                   </div>
-                ) : groups.length === 0 ? (
+                ) : filteredGroups.length === 0 ? (
                   <div className="col-span-2 text-center text-[#040b2b] text-lg">
-                    No groups found
+                    {searchQuery ? 'No groups match your search' : 'No groups found'}
                   </div>
                 ) : (
-                  groups.map((group, index) => (
+                  filteredGroups.map((group, index) => (
                     <GroupCard key={index} group={group} />
                   ))
                 )}
