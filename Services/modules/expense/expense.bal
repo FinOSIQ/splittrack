@@ -561,8 +561,8 @@ public function getExpenseService() returns http:Service {
                 summaries.push({
                     groupId: groupId,
                     groupName: group.name,
-                    created_at: group?.created_at ?: time:utcNow(),
-                    updated_at: group?.updated_at ?: time:utcNow(),
+                    created_at: group.created_at,
+                    updated_at: group.updated_at,
                     participantNames: participantNames,
                     netAmount: netAmount
                 });
@@ -1093,11 +1093,7 @@ public function getExpenseService() returns http:Service {
                 return;
             }
 
-            // Explicit type check
-            db:UserGroupMember[] groupMembers = [];
-            if groupMembersResult is db:UserGroupMember[] {
-                groupMembers = groupMembersResult;
-            }
+            db:UserGroupMember[] groupMembers = groupMembersResult;
 
             // Create a map to track which users are group members
             map<boolean> groupMemberMap = {};
@@ -1120,11 +1116,7 @@ public function getExpenseService() returns http:Service {
                 return;
             }
 
-            // Explicit type check
-            db:Expense[] expenses = [];
-            if expensesResult is db:Expense[] {
-                expenses = expensesResult;
-            }
+            db:Expense[] expenses = expensesResult;
 
             // Map to track balances (positive = owed to user, negative = user owes)
             map<decimal> balanceMap = {};
@@ -1149,11 +1141,7 @@ public function getExpenseService() returns http:Service {
                     return;
                 }
 
-                // Explicit type check
-                db:ExpenseParticipant[] participants = [];
-                if participantsResult is db:ExpenseParticipant[] {
-                    participants = participantsResult;
-                }
+                db:ExpenseParticipant[] participants = participantsResult;
 
                 // Find the creator user ID
                 string? creatorUserId = ();
