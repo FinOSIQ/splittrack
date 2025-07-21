@@ -78,8 +78,12 @@ public function getFriendService() returns http:Service {
                     }
 
                     friendDetails.push({
-                        name: fullName,
-                        email: otherUser?.email ?: ""
+                        "friend_Id": friend.user_id_1User_Id == userId ? friend.user_id_2User_Id : friend.user_id_1User_Id,
+                        "name": fullName,
+                        "email": otherUser?.email ?: "",
+                        "phone_number": otherUser?.phone_number ?: "",
+                        "status": friend.status,
+                        "created_at": friend?.created_at is time:Utc ? friend?.created_at.toString() : ()
                     });
                 }
 
@@ -138,10 +142,14 @@ public function getFriendService() returns http:Service {
                 }
 
                 result.push({
-
-                    senderName: senderName,
-                    senderEmail: senderEmail,
-                    senderImage: "placeholder.png" // Replace with actual image URL if available
+                    "requestId": fr.friendReq_ID,
+                    "senderId": fr.send_user_idUser_Id,
+                    "receiverId": fr.receive_user_Id,
+                    "senderName": senderName,
+                    "senderEmail": senderEmail,
+                    "senderImage": "placeholder.png", // Replace with actual image URL if available
+                    "status": fr.status,
+                    "created_at": fr?.created_at is time:Utc ? fr?.created_at.toString() : ()
                 });
             }
 
@@ -387,17 +395,19 @@ public function getFriendService() returns http:Service {
             json[] expenseDetails = [];
 
             foreach string expenseId in expenseIds {
-                // Get expense details including name and total amount
-                sql:ParameterizedQuery expenseQuery = `SELECT name, expense_total_amount FROM Expense WHERE expense_Id = ${expenseId} AND status = 1`;
-                stream<record {| string name; decimal expense_total_amount; |}, sql:Error?> expenseStream = utils:Client->query(expenseQuery);
+                // Get expense details including name, total amount, and creation date
+                sql:ParameterizedQuery expenseQuery = `SELECT name, expense_total_amount, created_at FROM Expense WHERE expense_Id = ${expenseId} AND status = 1`;
+                stream<record {| string name; decimal expense_total_amount; time:Utc? created_at; |}, sql:Error?> expenseStream = utils:Client->query(expenseQuery);
                 var expenseResult = expenseStream.next();
                 check expenseStream.close(); // Important: Close the stream
                 
                 string expenseName = "";
                 decimal expenseTotalAmount = 0d;
-                if expenseResult is record {|record {|string name; decimal expense_total_amount;|} value;|} {
+                time:Utc? createdAt = ();
+                if expenseResult is record {|record {|string name; decimal expense_total_amount; time:Utc? created_at;|} value;|} {
                     expenseName = expenseResult.value.name;
                     expenseTotalAmount = expenseResult.value.expense_total_amount;
+                    createdAt = expenseResult.value.created_at;
                 }
 
                 // Get all participants for this expense
@@ -438,16 +448,19 @@ public function getFriendService() returns http:Service {
                     netAmount -= currentUserAmount;
                 }
 
-                // Add to details with expense name and total amount
-                expenseDetails.push({
+                // Add to details with expense name, total amount, and creation date
+                json expenseDetail = {
                     "expenseId": expenseId,
                     "expenseName": expenseName,
                     "expenseTotalAmount": expenseTotalAmount,
                     "currentUserRole": currentUserRole,
                     "currentUserAmount": currentUserAmount,
                     "friendRole": friendRole,
-                    "friendAmount": friendAmount
-                });
+                    "friendAmount": friendAmount,
+                    "createdAt": createdAt is time:Utc ? createdAt.toString() : ()
+                };
+
+                expenseDetails.push(expenseDetail);
             }
 
             // Prepare response
