@@ -108,6 +108,39 @@ export const joinExpense = async (guestData) => {
  }
 };
 
+// Function to fetch expense details by ID
+export const getExpenseById = async (expenseId) => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/expense/${expenseId}`;
+    
+    console.log('Fetching expense with ID:', expenseId);
+    
+    const response = await axios.get(url, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('Expense response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching expense:", error);
+    console.error("Response data:", error.response?.data);
+    console.error("Response status:", error.response?.status);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Unauthorized. Please login again.');
+    } else if (error.response?.status === 404) {
+      throw new Error('Expense not found.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error(`Failed to fetch expense: ${error.message}`);
+    }
+  }
+};
+
 
 
 

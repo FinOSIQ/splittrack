@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../Components/NavBar.jsx';
 import HeaderProfile from '../Components/HeaderProfile.jsx';
 import OwedCard from '../Components/OwedCard.jsx';
 import PaidCard from '../Components/PaidCard.jsx';
 import { getFriendExpense } from '../utils/requests/Friend.js';
 import { generateDetailedReport } from '../utils/pdfGenerator.js';
+import { parseBalDateTime, getMonthDay } from '../utils/dateUtils.js';
 
 
 const FriendView = () => {
@@ -15,6 +16,47 @@ const FriendView = () => {
     const [error, setError] = useState(null);
     const [generatingReport, setGeneratingReport] = useState(false);
     const { friendId } = useParams(); // Get friendId from URL parameters
+    const navigate = useNavigate(); // For navigation to ExpenseView
+
+    // Function to group expenses by month and sort by date
+    const groupExpensesByMonth = (expenses) => {
+        if (!expenses || expenses.length === 0) return {};
+
+        // Sort expenses by date (most recent first)
+        const sortedExpenses = expenses.sort((a, b) => {
+            const dateA = a.createdAt ? parseBalDateTime(a.createdAt) : new Date();
+            const dateB = b.createdAt ? parseBalDateTime(b.createdAt) : new Date();
+            return dateB - dateA;
+        });
+
+        // Group by month-year
+        const groupedExpenses = {};
+        sortedExpenses.forEach(expense => {
+            const date = expense.createdAt ? parseBalDateTime(expense.createdAt) : new Date();
+            const monthYear = date.toLocaleDateString('en-US', { 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            
+            if (!groupedExpenses[monthYear]) {
+                groupedExpenses[monthYear] = [];
+            }
+            
+            const monthDay = getMonthDay(expense.createdAt);
+            groupedExpenses[monthYear].push({
+                ...expense,
+                dateDay: monthDay.day,
+                dateMonth: monthDay.month
+            });
+        });
+
+        return groupedExpenses;
+    };
+
+    // Function to navigate to expense details
+    const handleExpenseClick = (expenseId) => {
+        navigate(`/expense/${expenseId}`);
+    };
 
     const handleGenerateReport = async () => {
         if (!friendData) {
@@ -186,51 +228,71 @@ const FriendView = () => {
                                     <div className="text-[#040b2b] text-base font-medium font-['Poppins'] mt-8">
                                         Expenses with {friendData.friend_Name || 'Friend'}
                                     </div>
-                                    <div className="mt-4 space-y-4">
-                                        {friendData.details.map((expense, index) => {
-                                            const isCurrentUserCreator = expense.currentUserRole === 'creator';
-                                            const isFriendCreator = expense.friendRole === 'creator';
-                                            
-                                            let description = '';
-                                            let amount = '';
-                                            let isOwed = true;
-                                            
-                                            if (isCurrentUserCreator && !isFriendCreator) {
-                                                // Current user is creator, friend owes them
-                                                description = `${friendData.friend_Name} owes you`;
-                                                amount = `${expense.friendAmount?.toFixed(2) || '0.00'}`;
-                                                isOwed = true;
-                                            } else if (isFriendCreator && !isCurrentUserCreator) {
-                                                // Friend is creator, current user owes them
-                                                description = `You owe ${friendData.friend_Name}`;
-                                                amount = `${expense.currentUserAmount?.toFixed(2) || '0.00'}`;
-                                                isOwed = false;
-                                            } else {
-                                                // Handle edge cases
-                                                description = 'Shared expense';
-                                                amount = '0.00';
-                                                isOwed = true;
-                                            }
-                                            
-                                            return (
-                                                <OwedCard
-                                                    key={expense.expenseId || index}
-                                                    dateMonth="Dec"
-                                                    dateDay={String(new Date().getDate())}
-                                                    title={expense.expenseName || 'Expense'}
-                                                    description={description}
-                                                    amount={`${amount}`}
-                                                    totalAmount={expense.expenseTotalAmount?.toFixed(2) || '0.00'}
-                                                    isOwed={isOwed}
-                                                    friendName={friendData.friend_Name}
-                                                    currentUserRole={expense.currentUserRole}
-                                                    friendRole={expense.friendRole}
-                                                    currentUserAmount={expense.currentUserAmount?.toFixed(2) || '0.00'}
-                                                    friendAmount={expense.friendAmount?.toFixed(2) || '0.00'}
-                                                />
-                                            );
-                                        })}
-                                    </div>
+                                    
+                                    {/* Group expenses by month */}
+                                    {(() => {
+                                        const groupedExpenses = groupExpensesByMonth(friendData.details);
+                                        return Object.entries(groupedExpenses).map(([monthYear, expenses]) => (
+                                            <div key={monthYear} className="mt-6">
+                                                {/* Month Header */}
+                                                <div className="text-[#61677d] text-sm font-semibold font-['Poppins'] mb-4 border-b border-gray-200 pb-2">
+                                                    {monthYear}
+                                                </div>
+                                                
+                                                {/* Expenses for this month */}
+                                                <div className="space-y-4">
+                                                    {expenses.map((expense, index) => {
+                                                        const isCurrentUserCreator = expense.currentUserRole === 'creator';
+                                                        const isFriendCreator = expense.friendRole === 'creator';
+                                                        
+                                                        let description = '';
+                                                        let amount = '';
+                                                        let isOwed = true;
+                                                        
+                                                        if (isCurrentUserCreator && !isFriendCreator) {
+                                                            // Current user is creator, friend owes them
+                                                            description = `${friendData.friend_Name} owes you`;
+                                                            amount = `${expense.friendAmount?.toFixed(2) || '0.00'}`;
+                                                            isOwed = true;
+                                                        } else if (isFriendCreator && !isCurrentUserCreator) {
+                                                            // Friend is creator, current user owes them
+                                                            description = `You owe ${friendData.friend_Name}`;
+                                                            amount = `${expense.currentUserAmount?.toFixed(2) || '0.00'}`;
+                                                            isOwed = false;
+                                                        } else {
+                                                            // Both are creators (split expense) or other scenario
+                                                            description = `Split expense`;
+                                                            amount = `${expense.currentUserAmount?.toFixed(2) || '0.00'}`;
+                                                            isOwed = expense.currentUserAmount >= expense.friendAmount;
+                                                        }
+                                                        
+                                                        return (
+                                                            <div 
+                                                                key={expense.expenseId || index}
+                                                                onClick={() => handleExpenseClick(expense.expenseId)}
+                                                                className="cursor-pointer hover:bg-gray-50 transition-colors duration-200 rounded-lg"
+                                                            >
+                                                                <OwedCard
+                                                                    dateMonth={expense.dateMonth || 'Dec'}
+                                                                    dateDay={String(expense.dateDay || new Date().getDate())}
+                                                                    title={expense.expenseName || 'Expense'}
+                                                                    description={description}
+                                                                    amount={`${amount}`}
+                                                                    totalAmount={expense.expenseTotalAmount?.toFixed(2) || '0.00'}
+                                                                    isOwed={isOwed}
+                                                                    friendName={friendData.friend_Name}
+                                                                    currentUserRole={expense.currentUserRole}
+                                                                    friendRole={expense.friendRole}
+                                                                    currentUserAmount={expense.currentUserAmount?.toFixed(2) || '0.00'}
+                                                                    friendAmount={expense.friendAmount?.toFixed(2) || '0.00'}
+                                                                />
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ));
+                                    })()}
                                 </div>
                             ) : (
                                 <div className="text-center py-8">
