@@ -8,6 +8,7 @@ import ballerina/io;
 import splittrack_backend.search;
 import splittrack_backend.groups;
 import splittrack_backend.bankAccount;
+import splittrack_backend.settleup;
 
 // Configure the main listener
 listener http:Listener httpListener = new (9090);
@@ -19,6 +20,7 @@ public function main() returns error? {
     check httpListener.attach(groups:getGroupService(), "api_group/v1");
     check httpListener.attach(search:getSearchService(), "api_search/v1");
     check httpListener.attach(bankAccount:getBankAccountService(), "api_bank/v1");
+    check httpListener.attach(settleup:getSettleUpService(), "api_settleup/v1");
     check executeSqlScript();
 
     check httpListener.start();

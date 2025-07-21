@@ -32,6 +32,7 @@ export default function AllFriends() {
       }
 
       try {
+
         const userId = user.user_Id;
         const response = await axios.get(`http://localhost:9090/api_friend/v1/friends/${userId}`);
         

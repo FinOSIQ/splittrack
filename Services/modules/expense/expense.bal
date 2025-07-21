@@ -171,13 +171,13 @@ public function getExpenseService() returns http:Service {
                     }
                 }
                 time:Utc currentTime = time:utcNow();
-// Handle guest users - create user in database if participant role is guest
+                // Handle guest users - create user in database if participant role is guest
                 string? actualUserId = participant.userUser_Id;
                 if participant.participant_role == "guest" || participant.participant_role == GUEST {
                     if participant.firstName is string && participant.lastName is string {
                         string guestFirstName = <string>participant.firstName;
                         string guestLastName = <string>participant.lastName;
-                        
+
                         // Generate a unique user ID for the guest
                         string guestUserId;
                         while true {
@@ -316,8 +316,9 @@ public function getExpenseService() returns http:Service {
                 // Other database errors
                 return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, expenseDetails.toString());
             }
-            
+
             http:Response res = new;
+
             
             // Explicitly fetch participants for this expense
             stream<db:ExpenseParticipant, persist:Error?> participantsStream = dbClient->/expenseparticipants(
@@ -391,6 +392,7 @@ public function getExpenseService() returns http:Service {
             }
             
             // Build response data with enhanced participant information
+
             json expenseData = {
                 "expense_Id": expenseDetails.expense_Id,
                 "name": expenseDetails.name,
@@ -403,7 +405,7 @@ public function getExpenseService() returns http:Service {
                 "transactions": expenseDetails?.transactions ?: (),
                 "usergroup": expenseDetails?.usergroup ?: ()
             };
-            
+
             json payload = {
                 "status": "success",
                 "message": "Expense retrieved successfully",
@@ -629,14 +631,14 @@ public function getExpenseService() returns http:Service {
                 // Net amount: what others owe to user minus what user owes
                 decimal netAmount = othersOwe - userOwes;
 
-               summaries.push({
+                summaries.push({
                     groupId: groupId,
                     groupName: group.name,
-                    created_at: group?.created_at ?: time:utcNow(),
-                    updated_at: group?.updated_at ?: time:utcNow(),
+                    created_at: group.created_at,
+                    updated_at: group.updated_at,
                     participantNames: participantNames,
                     netAmount: netAmount
-   });
+                });
             }
 
             response.statusCode = 200;
@@ -1164,11 +1166,7 @@ public function getExpenseService() returns http:Service {
                 return;
             }
 
-            // Explicit type check
-            db:UserGroupMember[] groupMembers = [];
-            if groupMembersResult is db:UserGroupMember[] {
-                groupMembers = groupMembersResult;
-            }
+            db:UserGroupMember[] groupMembers = groupMembersResult;
 
             // Create a map to track which users are group members
             map<boolean> groupMemberMap = {};
@@ -1191,11 +1189,7 @@ public function getExpenseService() returns http:Service {
                 return;
             }
 
-            // Explicit type check
-            db:Expense[] expenses = [];
-            if expensesResult is db:Expense[] {
-                expenses = expensesResult;
-            }
+            db:Expense[] expenses = expensesResult;
 
             // Map to track balances (positive = owed to user, negative = user owes)
             map<decimal> balanceMap = {};
@@ -1220,11 +1214,7 @@ public function getExpenseService() returns http:Service {
                     return;
                 }
 
-                // Explicit type check
-                db:ExpenseParticipant[] participants = [];
-                if participantsResult is db:ExpenseParticipant[] {
-                    participants = participantsResult;
-                }
+                db:ExpenseParticipant[] participants = participantsResult;
 
                 // Find the creator user ID
                 string? creatorUserId = ();
@@ -1318,7 +1308,7 @@ public function getExpenseService() returns http:Service {
                 "guestUsers": session.guestUsers,
                 "isValid": session.status == "active"
             };
-    
+
             res.setJsonPayload(payload);
             res.statusCode = http:STATUS_OK;
             return caller->respond(res);
@@ -1406,27 +1396,27 @@ public function getExpenseService() returns http:Service {
 // Helper function to construct ParticipantPayload array from JSON with optional fields
 function constructParticipants(json[] participantJsonArray) returns ParticipantPayload[]|error {
     ParticipantPayload[] participants = [];
-    
+
     foreach json participantJson in participantJsonArray {
         json roleJson = check participantJson.participant_role;
         json amountJson = check participantJson.owning_amount;
         json userIdJson = check participantJson.userUser_Id;
-        
+
         // Get optional fields
         json|error firstNameResult = participantJson.firstName;
         json|error lastNameResult = participantJson.lastName;
-        
+
         string? firstName = ();
         string? lastName = ();
-        
+
         if firstNameResult is json && firstNameResult !is () {
             firstName = firstNameResult.toString();
         }
-        
+
         if lastNameResult is json && lastNameResult !is () {
             lastName = lastNameResult.toString();
         }
-        
+
         ParticipantPayload participant = {
             participant_role: <ParticipantRole>roleJson,
             owning_amount: <decimal>amountJson,
@@ -1434,9 +1424,9 @@ function constructParticipants(json[] participantJsonArray) returns ParticipantP
             firstName: firstName,
             lastName: lastName
         };
-        
+
         participants.push(participant);
     }
-    
+
     return participants;
 }
