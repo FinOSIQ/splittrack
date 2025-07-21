@@ -242,15 +242,16 @@ public function getUserService() returns http:Service {
             foreach db:UserWithRelations user in users {
                 json userInfo = {
                     "user_Id": user.user_Id,
-                    "email": user?.email ?: (),
+                      "email": user?.email ?: (),
                     "first_name": user.first_name,
                     "last_name": user.last_name,
                     "phone_number": user?.phone_number ?: (),
                     "birthdate": user?.birthdate ?: (),
                     "currency_pref": user?.currency_pref ?: (),
+
                     "status": user.status,
-                    "created_at": user.created_at,
-                    "updated_at": user.updated_at
+                    "created_at": user?.created_at ?: (),
+                    "updated_at": user?.updated_at ?: ()
                 };
                 userData.push(userInfo);
             }
@@ -302,15 +303,15 @@ public function getUserService() returns http:Service {
             if user is db:UserWithRelations {
                 json userData = {
                     "user_Id": user.user_Id,
-                    "email": user?.email ?: (),
+                         "email": user?.email ?: (),
                     "first_name": user.first_name,
                     "last_name": user.last_name,
                     "phone_number": user?.phone_number ?: (),
                     "birthdate": user?.birthdate ?: (),
                     "currency_pref": user?.currency_pref ?: (),
                     "status": user.status,
-                    "created_at": user.created_at,
-                    "updated_at": user.updated_at
+                    "created_at": user?.created_at ?: (),
+                    "updated_at": user?.updated_at ?: ()
                 };
                 
                 response.setJsonPayload({
@@ -360,7 +361,8 @@ public function getUserService() returns http:Service {
                     "user_Id": user is db:UserWithRelations ? user.user_Id : "",
                     "first_name": user is db:UserWithRelations ? user.first_name : "",
                     "last_name": user is db:UserWithRelations ? user.last_name : "",
-                    "currency_pref": user is db:UserWithRelations ? (user?.currency_pref ?: "") : ""
+                    "currency_pref": user is db:UserWithRelations ? (user?.currency_pref ?: "USD") : "USD"
+
                 }
             });
             return caller->respond(response);
