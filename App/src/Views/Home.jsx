@@ -91,6 +91,7 @@ export default function Home() {
         <HeaderProfile />
         
         <div className="h-[80vh] flex bg-white rounded-md md:mx-5 -mt-8 md:mt-4 overflow-hidden">
+          
           {/* Left */}
           <div className="xl:w-[70%] lg:w-[60%] w-full p-4 flex flex-col">
             <h2 className="text-2xl font-bold mb-4">Groups</h2>
