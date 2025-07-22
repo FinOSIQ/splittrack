@@ -1,24 +1,22 @@
+// In your Home.jsx file, replace the Friend Requests section with Recent Activity
+
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import gsap from 'gsap';
 import GroupCard from '../Components/GroupCard';
 import HeaderProfile from '../Components/HeaderProfile';
 import YourBalanceCard from '../Components/YourBalanceCard';
-import FriendReqComponent from '../Components/FriendReqComponent';
+import RecentActivityComponent from '../Components/RecentActivityComponent'; // Import the new component
 import NavBar from '../Components/NavBar';
 import MobileOverlay from "../Components/MobileOverlay";
 import useIsMobile from '../utils/useIsMobile';
+import { fetchGroupExpenses } from '../utils/requests/expense';
 
 export default function Home() {
-  // State for user data, group data, loading, and error
-  const [userData, setUserData] = useState({ userName: 'Guest', balance: null });
+  // State for group data, loading, and error
   const [groups, setGroups] = useState([]);
-  //Oneli is the best.
-  const [userLoading, setUserLoading] = useState(true);
   const [groupLoading, setGroupLoading] = useState(true);
-  const [userError, setUserError] = useState(null);
   const [groupError, setGroupError] = useState(null);
-  const [showFriendRequests, setShowFriendRequests] = useState(false);
+  const [showRecentActivity, setShowRecentActivity] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
   const groupsListRef = useRef(null);
@@ -41,51 +39,32 @@ export default function Home() {
     }
   }, [groups]);
 
-  // Fetch user expense summary
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await axios.get(
-          'http://localhost:9090/api_expense/v1/userExpenseSummary',
-          { withCredentials: true }
-        );
-        setUserData({
-          userName: response.data.summary.userName,
-          balance: response.data.summary.netAmount,
-        });
-        setUserLoading(false);
-        console.log(response);
-        
-      } catch (err) {
-        setUserError(err.message || 'Failed to fetch user data');
-        setUserLoading(false);
-        console.error('Error fetching user data:', err.response ? err.response.data : err.message);
-      }
-    };
-
-    fetchUserData();
-  }, []); // Empty dependency array to run once on mount
-
   // Fetch group expenses
   useEffect(() => {
-    const fetchGroupData = async () => {
+    const loadGroupData = async () => {
       try {
-        const response = await axios.get(
-          'http://localhost:9090/api_expense/v1/groupExpenses',
-          { withCredentials: true }
-        );
-        setGroups(response.data.groups || []);
-        console.log('Groups data:', response.data.groups); 
-        setGroupLoading(false);
+        setGroupLoading(true);
+        setGroupError(null);
+        
+        const response = await fetchGroupExpenses();
+        
+        if (response && response.groups) {
+          setGroups(response.groups);
+        } else {
+          setGroups([]);
+        }
+        console.log('Groups data:', response.groups); 
       } catch (err) {
-        setGroupError(err.message || 'Failed to fetch group data');
+        console.error('Error loading group data:', err);
+        setGroupError(err.message || 'Failed to load groups');
+        setGroups([]);
+      } finally {
         setGroupLoading(false);
-        console.error('Error fetching group data:', err.response ? err.response.data : err.message);
       }
     };
 
-    fetchGroupData();
-  }, []); // Empty dependency array to run once on mount
+    loadGroupData();
+  }, []);
 
   return (
     <>
@@ -98,12 +77,14 @@ export default function Home() {
       <div className="ml-0 lg:ml-14 mt-2 px-2 lg:px-0">
         <HeaderProfile />
         
-        <div className={`${isMobile ? 'min-h-screen' : 'h-[80vh]'} flex bg-white rounded-md mx-1 lg:mx-5 -mt-8 md:mt-4 ${isMobile ? '' : 'overflow-hidden'} lg:h-[100vh] lg:overflow-hidden md:min-h-screen md:overflow-auto`}>
+        {/* Fixed height container to prevent overflow */}
+        <div className={`${isMobile ? 'min-h-screen' : 'h-[calc(100vh-140px)]'} flex bg-white rounded-md mx-1 lg:mx-5 -mt-8 md:mt-4 overflow-hidden`}>
           
-          {/* Left */}
-          <div className={`xl:w-[70%] lg:w-[60%] w-full p-2 lg:p-4 flex flex-col ${isMobile ? '' : 'min-h-0'} lg:min-h-0 md:min-h-0`}>
-            {/* Search Bar */}
-            <div className="bg-[#f1f2f9] rounded-lg flex items-center px-4 border border-gray-300 focus-within:border-blue-500 mb-4 h-12">
+          {/* Left Section - Groups */}
+          <div className={`xl:w-[70%] lg:w-[60%] w-full p-2 lg:p-4 flex flex-col min-h-0`}>
+            
+            {/* Search Bar - Fixed */}
+            <div className="bg-[#f1f2f9] rounded-lg flex items-center px-4 border border-gray-300 focus-within:border-blue-500 mb-4 h-12 flex-shrink-0">
               <svg
                 className="w-5 h-5 text-gray-500"
                 fill="none"
@@ -124,23 +105,20 @@ export default function Home() {
               />
             </div>
 
-            <h2 className="text-2xl font-bold mb-4 hidden lg:block">Groups</h2>
+            {/* Groups Heading - Fixed */}
+            <h2 className="text-2xl font-bold mb-4 hidden lg:block flex-shrink-0">Groups</h2>
 
-            {/* Balance card on mobile above groups list */}
-            <div className="block lg:hidden mb-4">
-              <YourBalanceCard
-                balance={userData.balance}
-                loading={userLoading}
-                error={userError}
-              />
+            {/* Balance card on mobile above groups list - Fixed */}
+            <div className="block lg:hidden mb-4 flex-shrink-0">
+              <YourBalanceCard />
               
-              {/* Friend Requests Button on mobile */}
+              {/* Recent Activity Button on mobile */}
               <div className="mt-3 flex justify-end">
                 <button 
-                  className=" py-1.5 px-3 rounded-lg text-sm font-medium"
-                  onClick={() => setShowFriendRequests(true)}
+                  className="py-1.5 px-3 rounded-lg text-sm font-medium text-[#040b2b] hover:bg-gray-100 transition-colors"
+                  onClick={() => setShowRecentActivity(true)}
                 >
-                  Friend Requests
+                  Recent Activity
                 </button>
               </div>
 
@@ -148,19 +126,19 @@ export default function Home() {
               <h2 className="text-2xl font-bold mb-4 mt-6">Groups</h2>
             </div>
 
-            {/* Groups list */}
-            <div className={`${isMobile ? '' : 'flex-1 overflow-y-auto scrollable-div'} lg:flex-1 lg:overflow-y-auto lg:scrollable-div md:block md:overflow-visible`}>
+            {/* Groups list - Scrollable */}
+            <div className="flex-1 overflow-y-auto min-h-0">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {groupLoading ? (
-                  <div className="col-span-1 lg:col-span-2 text-center text-[#040b2b] text-lg">
+                  <div className="col-span-1 lg:col-span-2 text-center text-[#040b2b] text-lg py-8">
                     Loading groups...
                   </div>
                 ) : groupError ? (
-                  <div className="col-span-1 lg:col-span-2 text-center text-red-500 text-lg">
+                  <div className="col-span-1 lg:col-span-2 text-center text-red-500 text-lg py-8">
                     Error: {groupError}
                   </div>
                 ) : filteredGroups.length === 0 ? (
-                  <div className="col-span-1 lg:col-span-2 text-center text-[#040b2b] text-lg">
+                  <div className="col-span-1 lg:col-span-2 text-center text-[#040b2b] text-lg py-8">
                     {searchQuery ? 'No groups match your search' : 'No groups found'}
                   </div>
                 ) : (
@@ -173,37 +151,53 @@ export default function Home() {
 
           </div>
 
-          {/* Desktop Right */}
-          <div className="xl:w-[30%] lg:w-[40%] hidden lg:flex flex-col p-4 bg-[#f1f2f9] rounded-2xl">
-            <h2 className="text-2xl font-bold mb-4">Your Balance</h2>
-            <YourBalanceCard
-              balance={userData.balance}
-              loading={userLoading}
-              error={userError}
-            />
-            <div className="mt-6 flex-1 overflow-y-auto scrollable-div">
-              <FriendReqComponent />
+          {/* Desktop Right - Recent Activity instead of Friend Requests - Fixed */}
+          <div className="xl:w-[30%] lg:w-[40%] hidden lg:flex flex-col p-4 bg-[#f1f2f9] rounded-2xl min-h-0">
+            
+            {/* Balance Section - Fixed */}
+            <div className="flex-shrink-0">
+              <h2 className="text-2xl font-bold mb-4">Your Balance</h2>
+              <YourBalanceCard />
+            </div>
+            
+            {/* Recent Activity Section - Scrollable */}
+            <div className="mt-6 flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                <h3 className="text-lg font-medium text-[#040b2b]">Recent Activity</h3>
+                <button className="text-xs text-blue-600 hover:text-blue-800">
+                  Refresh
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <RecentActivityComponent />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile Modal for Friend Requests */}
-      {showFriendRequests && (
+      {/* Mobile Modal for Recent Activity */}
+      {showRecentActivity && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setShowFriendRequests(false)}
+          onClick={() => setShowRecentActivity(false)}
         >
           <div
             className="bg-[#f1f2f9] w-11/12 max-w-sm rounded-2xl overflow-hidden flex flex-col max-h-[80vh]"
             onClick={e => e.stopPropagation()}
           >
-            {/* Scrollable friend requests */}
+            {/* Scrollable recent activity */}
             <div className="p-4 flex-1 overflow-y-auto">
-              <h3 className="text-lg font-medium mb-4">
-                Friend Requests
-              </h3>
-              <FriendReqComponent />
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">Recent Activity</h3>
+                <button
+                  onClick={() => setShowRecentActivity(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✖
+                </button>
+              </div>
+              <RecentActivityComponent />
             </div>
           </div>
         </div>

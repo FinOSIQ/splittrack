@@ -1,22 +1,57 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchUserExpenseSummary } from '../utils/requests/expense';
 
-const YourBalanceCard = ({ balance, loading, error }) => {
+const YourBalanceCard = () => {
+  const [balance, setBalance] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch user balance data
+  useEffect(() => {
+    const loadUserBalance = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetchUserExpenseSummary();
+        
+        if (response && response.summary) {
+          setBalance(response.summary.netAmount);
+        } else {
+          setBalance(0);
+        }
+      } catch (err) {
+        console.error('Error loading user balance:', err);
+        setError(err.message || 'Failed to load balance');
+        setBalance(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserBalance();
+  }, []);
+
   // Format balance for display
   const formatBalance = (amount) => {
-    return amount !== null
-      ? `${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} LKR`
-      : '0.00 LKR';
+    const absAmount = Math.abs(parseFloat(amount || 0));
+    return `${absAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} LKR`;
+  };
+
+  // Determine text color based on balance (red for negative/debt, green for positive/owed)
+  const getBalanceColor = (amount) => {
+    const numAmount = parseFloat(amount || 0);
+    return numAmount < 0 ? '#ff4444' : '#83fb62'; // Red for debt, green for owed
   };
 
   return (
-
     <div className="px-0 py-4">
       <div
         className="
           w-full h-[135px]
           rounded-xl
           p-4
-          flex items-center 
+          flex items-center
           bg-[radial-gradient(at_top_left,_#dddbff,_#040B2B)]
         "
       >
@@ -24,7 +59,6 @@ const YourBalanceCard = ({ balance, loading, error }) => {
           <div className="text-white text-sm font-normal font-['Poppins']">
             Your Balance
           </div>
-
           {loading ? (
             <div className="text-[#83fb62] text-2xl font-bold font-['Poppins']">
               Loading...
@@ -34,21 +68,23 @@ const YourBalanceCard = ({ balance, loading, error }) => {
               Error: {error}
             </div>
           ) : (
-            <div className="text-[#83fb62] text-2xl font-bold font-['Poppins']">
+            <div 
+              className="text-2xl font-bold font-['Poppins']"
+              style={{ color: getBalanceColor(balance) }}
+            >
               {formatBalance(balance)}
             </div>
           )}
-
           <div
             className="
-              px-[15px] 
+              px-[15px]
               py-[7px]
               border-dotted
-              bg-[#f1f2f9]/0 
-              rounded-[12px] 
-              shadow-[0px_2px_0px_0px_rgba(0,0,0,0.02)] 
-              border border-[#d9d9d9] 
-              flex justify-center items-center gap-2.5 
+              bg-[#f1f2f9]/0
+              rounded-[12px]
+              shadow-[0px_2px_0px_0px_rgba(0,0,0,0.02)]
+              border border-[#d9d9d9]
+              flex justify-center items-center gap-2.5
               overflow-hidden
             "
           >
