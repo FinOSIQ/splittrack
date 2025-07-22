@@ -8,6 +8,20 @@ import { getFriendExpense } from '../utils/requests/Friend.js';
 import { generateDetailedReport } from '../utils/pdfGenerator.js';
 import { parseBalDateTime, getMonthDay } from '../utils/dateUtils.js';
 
+// Function to generate avatar for API data
+const generateAvatar = (name) => {
+  const firstLetter = name.charAt(0).toUpperCase();
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+  ];
+  const colorIndex = firstLetter.charCodeAt(0) % colors.length;
+  
+  return {
+    letter: firstLetter,
+    backgroundColor: colors[colorIndex]
+  };
+};
 
 const FriendView = () => {
     const [activeTab, setActiveTab] = useState('expenses'); // Changed default to expenses
@@ -149,11 +163,17 @@ const FriendView = () => {
                                 <div className="flex items-start justify-between">
                                     <div className="flex flex-col">
                                         <div className="flex items-center space-x-4 mb-4">
-                                            <img
-                                                src="src/images/profile.png"
-                                                alt="profile"
-                                                className="w-[64px] h-[58px] "
-                                            />
+                                            {(() => {
+                                                const avatar = generateAvatar(friendData?.friend_Name || 'Unknown');
+                                                return (
+                                                    <div 
+                                                        className="w-[64px] h-[58px] rounded-full flex items-center justify-center text-white text-xl font-bold"
+                                                        style={{ backgroundColor: avatar.backgroundColor }}
+                                                    >
+                                                        {avatar.letter}
+                                                    </div>
+                                                );
+                                            })()}
                                             <div>
                                                 <div className="text-[#040b2b] text-lg font-normal font-['Inter']">
                                                     {friendData?.friend_Name || 'Unknown Friend'}
