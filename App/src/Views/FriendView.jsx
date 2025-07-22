@@ -1,20 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../Components/NavBar.jsx';
 import HeaderProfile from '../Components/HeaderProfile.jsx';
 import OwedCard from '../Components/OwedCard.jsx';
 import PaidCard from '../Components/PaidCard.jsx';
 import { getFriendExpense } from '../utils/requests/Friend.js';
 import { generateDetailedReport } from '../utils/pdfGenerator.js';
+import { parseBalDateTime, getMonthDay } from '../utils/dateUtils.js';
 
+// Function to generate avatar for API data
+const generateAvatar = (name) => {
+  const firstLetter = name.charAt(0).toUpperCase();
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+  ];
+  const colorIndex = firstLetter.charCodeAt(0) % colors.length;
+  
+  return {
+    letter: firstLetter,
+    backgroundColor: colors[colorIndex]
+  };
+};
 
 const FriendView = () => {
-    const [activeTab, setActiveTab] = useState('settleup');
+    const [activeTab, setActiveTab] = useState('expenses'); // Changed default to expenses
     const [friendData, setFriendData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [generatingReport, setGeneratingReport] = useState(false);
     const { friendId } = useParams(); // Get friendId from URL parameters
+    const navigate = useNavigate(); // For navigation to ExpenseView
+
+    // Function to group expenses by month and sort by date
+    const groupExpensesByMonth = (expenses) => {
+        if (!expenses || expenses.length === 0) return {};
+
+        // Sort expenses by date (most recent first)
+        const sortedExpenses = expenses.sort((a, b) => {
+            const dateA = a.createdAt ? parseBalDateTime(a.createdAt) : new Date();
+            const dateB = b.createdAt ? parseBalDateTime(b.createdAt) : new Date();
+            return dateB - dateA;
+        });
+
+        // Group by month-year
+        const groupedExpenses = {};
+        sortedExpenses.forEach(expense => {
+            const date = expense.createdAt ? parseBalDateTime(expense.createdAt) : new Date();
+            const monthYear = date.toLocaleDateString('en-US', { 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            
+            if (!groupedExpenses[monthYear]) {
+                groupedExpenses[monthYear] = [];
+            }
+            
+            const monthDay = getMonthDay(expense.createdAt);
+            groupedExpenses[monthYear].push({
+                ...expense,
+                dateDay: monthDay.day,
+                dateMonth: monthDay.month
+            });
+        });
+
+        return groupedExpenses;
+    };
+
+    // Function to navigate to settle up view
+    const handleSettleUpClick = () => {
+        navigate(`/settleup/${friendId}`);
+    };
+
+    // Function to navigate to expense details
+    const handleExpenseClick = (expenseId) => {
+        navigate(`/expense/${expenseId}`);
+    };
 
     const handleGenerateReport = async () => {
         if (!friendData) {
@@ -85,7 +146,7 @@ const FriendView = () => {
                     <div className="w-full rounded-xl bg-[#f1f2f9] p-4">
 
 
-                        <div className="bg-[#f1f2f9] p-2 flex flex-col space-y-8">
+                        <div className="bg-[#f1f2f9] p-8 flex flex-col space-y-8">
                             {loading ? (
                                 <div className="flex justify-center items-center py-8">
                                     <div className="text-[#040b2b] text-lg font-normal font-['Inter']">
@@ -99,73 +160,77 @@ const FriendView = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-4">
-                                        <img
-                                            src="src/images/profile.png"
-                                            alt="profile"
-                                            className="w-[64px] h-[58px] "
-                                        />
-                                        <div>
-                                            <div className="text-[#040b2b] text-lg font-normal font-['Inter']">
-                                                {friendData?.friend_Name || 'Unknown Friend'}
+                                <div className="flex items-start justify-between">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center space-x-4 mb-4">
+                                            {(() => {
+                                                const avatar = generateAvatar(friendData?.friend_Name || 'Unknown');
+                                                return (
+                                                    <div 
+                                                        className="w-[64px] h-[58px] rounded-full flex items-center justify-center text-white text-xl font-bold"
+                                                        style={{ backgroundColor: avatar.backgroundColor }}
+                                                    >
+                                                        {avatar.letter}
+                                                    </div>
+                                                );
+                                            })()}
+                                            <div>
+                                                <div className="text-[#040b2b] text-lg font-normal font-['Inter']">
+                                                    {friendData?.friend_Name || 'Unknown Friend'}
+                                                </div>
+                                                <div className=" text-[#5c5470] text-xs font-normal font-['Inter']">
+                                                    Friend ID: {friendData?.friend_Id || 'N/A'}
+                                                </div>
                                             </div>
-                                            <div className=" text-[#5c5470] text-xs font-normal font-['Inter']">
-                                                Friend ID: {friendData?.friend_Id || 'N/A'}
-                                            </div>
+                                        </div>
+                                        
+                                        {/* Tabs moved below the name and Friend ID */}
+                                        <div className="flex gap-4">
+                                            <button
+                                                onClick={() => setActiveTab('expenses')}
+                                                className={`px-6 py-2 rounded-2xl text-sm transition ${activeTab === 'expenses' ? 'bg-[#040B2B] text-white' : 'bg-gray-200 text-[#040B2B]'
+                                                    }`}
+                                            >
+                                                Expenses
+                                            </button>
+                                            <button
+                                                onClick={() => setActiveTab('report')}
+                                                className={`px-6 py-2 rounded-2xl text-sm transition ${activeTab === 'report' ? 'bg-[#040B2B] text-white' : 'bg-gray-200 text-[#040B2B]'
+                                                    }`}
+                                            >
+                                                Report
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {/* Owed amount section (Aligned across from profile) */}
-                                    <div className="ml-1 text-right mt-2">
+                                    {/* Owed amount and Settle Up button in top right */}
+                                    <div className="text-right">
                                         {friendData?.netAmount !== undefined && (
                                             <>
-                                                <span className="text-[#040B2B] text-base font-semibold font-['Inter']">
-                                                    {friendData.netAmount >= 0 ? 'You Are Owed' : 'You Owe'}
-                                                    <br />
-                                                </span>
-                                                <span className={`text-lg font-bold font-['Inter'] ${
-                                                    friendData.netAmount >= 0 ? 'text-[#83DB62]' : 'text-[#FF6B6B]'
-                                                }`}>
-                                                    {Math.abs(friendData.netAmount).toFixed(2)} LKR
-                                                </span>
+                                                <div className="mb-3">
+                                                    <span className="text-[#040B2B] text-base font-semibold font-['Inter']">
+                                                        {friendData.netAmount >= 0 ? 'You Are Owed' : 'You Owe'}
+                                                        <br />
+                                                    </span>
+                                                    <span className={`text-lg font-bold font-['Inter'] ${
+                                                        friendData.netAmount >= 0 ? 'text-[#83DB62]' : 'text-[#FF6B6B]'
+                                                    }`}>
+                                                        {Math.abs(friendData.netAmount).toFixed(2)} LKR
+                                                    </span>
+                                                </div>
+                                                
+                                                {/* Settle Up Button below the amount */}
+                                                <button
+                                                    onClick={handleSettleUpClick}
+                                                    className="bg-[#040B2B] text-white px-6 py-2 rounded-2xl text-sm font-medium hover:bg-[#0a1654] transition-colors duration-200"
+                                                >
+                                                    Settle Up
+                                                </button>
                                             </>
                                         )}
                                     </div>
                                 </div>
                             )}
-
-
-
-                           
-                            
-
-                            {/* Responsive Buttons */}
-                            <div className="mt-6">
-                                <div className="flex justify-center flex-wrap gap-8 w-full">
-                                    <button
-                                        onClick={() => setActiveTab('settleup')}
-                                        className={`w-[200px] sm:w-[240px] md:w-[280px] py-2 rounded-2xl text-sm transition ${activeTab === 'settleup' ? 'bg-[#040B2B] text-white' : 'bg-gray-200 text-[#040B2B]'
-                                            }`}
-                                    >
-                                        Settle Up
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('expenses')}
-                                        className={`w-[200px] sm:w-[240px] md:w-[280px] py-2 rounded-2xl text-sm transition ${activeTab === 'expenses' ? 'bg-[#040B2B] text-white' : 'bg-gray-200 text-[#040B2B]'
-                                            }`}
-                                    >
-                                          Expenses
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('report')}
-                                        className={`w-[200px] sm:w-[240px] md:w-[280px] py-2 rounded-2xl text-sm transition ${activeTab === 'report' ? 'bg-[#040B2B] text-white' : 'bg-gray-200 text-[#040B2B]'
-                                            }`}
-                                    >
-                                        Report
-                                    </button>
-                                </div>
-                            </div>
 
 
                         </div>
@@ -179,58 +244,76 @@ const FriendView = () => {
 
 
                 <div className="bg-white p-4 mt-4 mx-2 sm:mx-4 md:mx-6 lg:mx-8">
-                    {activeTab === 'settleup' && (
+                    {activeTab === 'expenses' && (
                         <div className="space-y-8 w-full">
                             {friendData?.details && friendData.details.length > 0 ? (
                                 <div>
-                                    <div className="text-[#040b2b] text-base font-medium font-['Poppins'] mt-8">
-                                        Expenses with {friendData.friend_Name || 'Friend'}
-                                    </div>
-                                    <div className="mt-4 space-y-4">
-                                        {friendData.details.map((expense, index) => {
-                                            const isCurrentUserCreator = expense.currentUserRole === 'creator';
-                                            const isFriendCreator = expense.friendRole === 'creator';
-                                            
-                                            let description = '';
-                                            let amount = '';
-                                            let isOwed = true;
-                                            
-                                            if (isCurrentUserCreator && !isFriendCreator) {
-                                                // Current user is creator, friend owes them
-                                                description = `${friendData.friend_Name} owes you`;
-                                                amount = `${expense.friendAmount?.toFixed(2) || '0.00'}`;
-                                                isOwed = true;
-                                            } else if (isFriendCreator && !isCurrentUserCreator) {
-                                                // Friend is creator, current user owes them
-                                                description = `You owe ${friendData.friend_Name}`;
-                                                amount = `${expense.currentUserAmount?.toFixed(2) || '0.00'}`;
-                                                isOwed = false;
-                                            } else {
-                                                // Handle edge cases
-                                                description = 'Shared expense';
-                                                amount = '0.00';
-                                                isOwed = true;
-                                            }
-                                            
-                                            return (
-                                                <OwedCard
-                                                    key={expense.expenseId || index}
-                                                    dateMonth="Dec"
-                                                    dateDay={String(new Date().getDate())}
-                                                    title={expense.expenseName || 'Expense'}
-                                                    description={description}
-                                                    amount={`${amount}`}
-                                                    totalAmount={expense.expenseTotalAmount?.toFixed(2) || '0.00'}
-                                                    isOwed={isOwed}
-                                                    friendName={friendData.friend_Name}
-                                                    currentUserRole={expense.currentUserRole}
-                                                    friendRole={expense.friendRole}
-                                                    currentUserAmount={expense.currentUserAmount?.toFixed(2) || '0.00'}
-                                                    friendAmount={expense.friendAmount?.toFixed(2) || '0.00'}
-                                                />
-                                            );
-                                        })}
-                                    </div>
+                                    
+                                    
+                                    {/* Group expenses by month */}
+                                    {(() => {
+                                        const groupedExpenses = groupExpensesByMonth(friendData.details);
+                                        return Object.entries(groupedExpenses).map(([monthYear, expenses]) => (
+                                            <div key={monthYear} className="mt-2">
+                                                {/* Month Header */}
+                                                <div className="text-[#61677d] text-sm font-semibold font-['Poppins'] mb-4 border-b border-gray-200 pb-2">
+                                                    {monthYear}
+                                                </div>
+                                                
+                                                {/* Expenses for this month */}
+                                                <div className="space-y-4">
+                                                    {expenses.map((expense, index) => {
+                                                        const isCurrentUserCreator = expense.currentUserRole === 'creator';
+                                                        const isFriendCreator = expense.friendRole === 'creator';
+                                                        
+                                                        let description = '';
+                                                        let amount = '';
+                                                        let isOwed = true;
+                                                        
+                                                        if (isCurrentUserCreator && !isFriendCreator) {
+                                                            // Current user is creator, friend owes them
+                                                            description = `${friendData.friend_Name} owes you`;
+                                                            amount = `${expense.friendAmount?.toFixed(2) || '0.00'}`;
+                                                            isOwed = true;
+                                                        } else if (isFriendCreator && !isCurrentUserCreator) {
+                                                            // Friend is creator, current user owes them
+                                                            description = `You owe ${friendData.friend_Name}`;
+                                                            amount = `${expense.currentUserAmount?.toFixed(2) || '0.00'}`;
+                                                            isOwed = false;
+                                                        } else {
+                                                            // Both are creators (split expense) or other scenario
+                                                            description = `Split expense`;
+                                                            amount = `${expense.currentUserAmount?.toFixed(2) || '0.00'}`;
+                                                            isOwed = expense.currentUserAmount >= expense.friendAmount;
+                                                        }
+                                                        
+                                                        return (
+                                                            <div 
+                                                                key={expense.expenseId || index}
+                                                                onClick={() => handleExpenseClick(expense.expenseId)}
+                                                                className="cursor-pointer hover:bg-gray-50 transition-colors duration-200 rounded-lg"
+                                                            >
+                                                                <OwedCard
+                                                                    dateMonth={expense.dateMonth || 'Dec'}
+                                                                    dateDay={String(expense.dateDay || new Date().getDate())}
+                                                                    title={expense.expenseName || 'Expense'}
+                                                                    description={description}
+                                                                    amount={`${amount}`}
+                                                                    totalAmount={expense.expenseTotalAmount?.toFixed(2) || '0.00'}
+                                                                    isOwed={isOwed}
+                                                                    friendName={friendData.friend_Name}
+                                                                    currentUserRole={expense.currentUserRole}
+                                                                    friendRole={expense.friendRole}
+                                                                    currentUserAmount={expense.currentUserAmount?.toFixed(2) || '0.00'}
+                                                                    friendAmount={expense.friendAmount?.toFixed(2) || '0.00'}
+                                                                />
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ));
+                                    })()}
                                 </div>
                             ) : (
                                 <div className="text-center py-8">
@@ -239,16 +322,6 @@ const FriendView = () => {
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    )}
-                    
-                    {activeTab === 'expenses' && (
-                        <div className="space-y-8 w-full">
-                            <div className="text-center py-8">
-                                <div className="text-[#61677d] text-base font-normal font-['Poppins']">
-                                    Expenses tab content coming soon...
-                                </div>
-                            </div>
                         </div>
                     )}
                     

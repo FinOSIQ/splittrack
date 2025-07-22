@@ -90,7 +90,7 @@ function searchDatabase(string value, string[] types, string? userId) returns Se
         response.friends = searchFriends(userId,value);
     }
     if types.indexOf("groups") != () {
-        response.groups = searchGroups(value);
+        response.groups = searchGroups(value, userId);
     }
 
     return response;
@@ -129,11 +129,23 @@ function searchFriends(string? userId, string value) returns json|error {
     return  check utils:streamToJson(resultStream);
 }
 
-// Fixed function for searching groups
-function searchGroups(string value) returns json|error {
+// Fixed function for searching groups - only returns groups where current user is a member
+function searchGroups(string value, string? userId) returns json|error {
+    if userId == () {
+        return {"error": "userId is required for groups search"};
+    }
+
     string searchTerm = "%" + value + "%";
-    sql:ParameterizedQuery query = `SELECT group_id, name FROM usergroup 
-                                    WHERE name LIKE ${searchTerm}`;
+    
+    // Query to find groups where the user is a member and group name matches search term
+    sql:ParameterizedQuery query = `SELECT DISTINCT ug.group_Id, ug.name 
+                                    FROM UserGroup ug
+                                    INNER JOIN UserGroupMember ugm ON ug.group_Id = ugm.groupGroup_Id
+                                    WHERE ugm.userUser_Id = ${userId} 
+                                    AND ugm.status = 1
+                                    AND ug.status = 1
+                                    AND ug.name LIKE ${searchTerm}`;
+    
     stream<utils:JsonRecord, error?> resultStream = utils:Client->query(query);
     return  check utils:streamToJson(resultStream);
 }

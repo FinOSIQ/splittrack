@@ -13,14 +13,22 @@ export default function Home() {
   // State for user data, group data, loading, and error
   const [userData, setUserData] = useState({ userName: 'Guest', balance: null });
   const [groups, setGroups] = useState([]);
+  //Oneli is the best.
   const [userLoading, setUserLoading] = useState(true);
   const [groupLoading, setGroupLoading] = useState(true);
   const [userError, setUserError] = useState(null);
   const [groupError, setGroupError] = useState(null);
   const [showFriendRequests, setShowFriendRequests] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const groupsListRef = useRef(null);
   const isMobile = useIsMobile();
+
+  // Filter groups based on search query
+  const filteredGroups = groups.filter(group =>
+    group.groupName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    group.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Animation effect for groups list
   useEffect(() => {
@@ -87,13 +95,36 @@ export default function Home() {
         <NavBar />
       )}
 
-      <div className="ml-8 mt-2">
+      <div className="ml-0 lg:ml-14 mt-2 px-2 lg:px-0">
         <HeaderProfile />
         
-        <div className="h-[80vh] flex bg-white rounded-md md:mx-5 -mt-8 md:mt-4 overflow-hidden">
+        <div className={`${isMobile ? 'min-h-screen' : 'h-[80vh]'} flex bg-white rounded-md mx-1 lg:mx-5 -mt-8 md:mt-4 ${isMobile ? '' : 'overflow-hidden'} lg:h-[100vh] lg:overflow-hidden md:min-h-screen md:overflow-auto`}>
+          
           {/* Left */}
-          <div className="xl:w-[70%] lg:w-[60%] w-full p-4 flex flex-col">
-            <h2 className="text-2xl font-bold mb-4">Groups</h2>
+          <div className={`xl:w-[70%] lg:w-[60%] w-full p-2 lg:p-4 flex flex-col ${isMobile ? '' : 'min-h-0'} lg:min-h-0 md:min-h-0`}>
+            {/* Search Bar */}
+            <div className="bg-[#f1f2f9] rounded-lg flex items-center px-4 border border-gray-300 focus-within:border-blue-500 mb-4 h-12">
+              <svg
+                className="w-5 h-5 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+                <circle cx="10" cy="10" r="7"></circle>
+              </svg>
+              <input
+                type="text"
+                placeholder="Search Groups, Friends, Users ..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent outline-none text-gray-900 placeholder-gray-500 text-sm pl-2"
+              />
+            </div>
+
+            <h2 className="text-2xl font-bold mb-4 hidden lg:block">Groups</h2>
 
             {/* Balance card on mobile above groups list */}
             <div className="block lg:hidden mb-4">
@@ -112,29 +143,33 @@ export default function Home() {
                   Friend Requests
                 </button>
               </div>
+
+              {/* Groups heading for mobile/tablet */}
+              <h2 className="text-2xl font-bold mb-4 mt-6">Groups</h2>
             </div>
 
             {/* Groups list */}
-
-              <div className="grid grid-cols-2 gap-4">
+            <div className={`${isMobile ? '' : 'flex-1 overflow-y-auto scrollable-div'} lg:flex-1 lg:overflow-y-auto lg:scrollable-div md:block md:overflow-visible`}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {groupLoading ? (
-                  <div className="col-span-2 text-center text-[#040b2b] text-lg">
+                  <div className="col-span-1 lg:col-span-2 text-center text-[#040b2b] text-lg">
                     Loading groups...
                   </div>
                 ) : groupError ? (
-                  <div className="col-span-2 text-center text-red-500 text-lg">
+                  <div className="col-span-1 lg:col-span-2 text-center text-red-500 text-lg">
                     Error: {groupError}
                   </div>
-                ) : groups.length === 0 ? (
-                  <div className="col-span-2 text-center text-[#040b2b] text-lg">
-                    No groups found
+                ) : filteredGroups.length === 0 ? (
+                  <div className="col-span-1 lg:col-span-2 text-center text-[#040b2b] text-lg">
+                    {searchQuery ? 'No groups match your search' : 'No groups found'}
                   </div>
                 ) : (
-                  groups.map((group, index) => (
+                  filteredGroups.map((group, index) => (
                     <GroupCard key={index} group={group} />
                   ))
                 )}
               </div>
+            </div>
 
           </div>
 
