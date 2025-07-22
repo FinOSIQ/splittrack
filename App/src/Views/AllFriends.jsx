@@ -10,14 +10,14 @@ import gsap from "gsap";
 
 export default function AllFriends() {
   const [activeTab, setActiveTab] = useState("friends");
-  const [friends, setFriends] = useState([]); // This will store friend details from backend
+  const [friends, setFriends] = useState([]); 
   const contentRef = useRef(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     async function fetchFriends() {
       try {
-        const userId = "711ca4dc"; // your user id
+        const userId = "711ca4dc"; 
         const response = await axios.get(`http://localhost:9090/api_friend/v1/friends/${userId}`);
         
         setFriends(response.data.friends || []);
@@ -47,7 +47,6 @@ export default function AllFriends() {
       }
     };
 
-    // Initial check and add event listener
     handleResize();
     window.addEventListener("resize", handleResize);
 
