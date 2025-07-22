@@ -319,7 +319,80 @@ public function getExpenseService() returns http:Service {
 
             http:Response res = new;
 
-            // Build response data with timestamps
+            
+            // Explicitly fetch participants for this expense
+            stream<db:ExpenseParticipant, persist:Error?> participantsStream = dbClient->/expenseparticipants(
+                whereClause = sql:queryConcat(`expenseExpense_Id = ${expenseId}`)
+            );
+            db:ExpenseParticipant[]|persist:Error participantRecords = from var p in participantsStream
+                select p;
+
+            if participantRecords is persist:Error {
+                log:printError("Database error fetching expense participants: " + participantRecords.message());
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to fetch expense participants");
+            }
+            
+            // Enhanced participant data with user information
+            json[] enhancedParticipants = [];
+            
+            foreach db:ExpenseParticipant participant in participantRecords {
+                // Fetch user details for each participant
+                db:UserWithRelations|error userDetails = dbClient->/users/[participant.userUser_Id]();
+                
+                map<json> participantData = {
+                    "participant_Id": participant.participant_Id,
+                    "participant_role": participant.participant_role,
+                    "owning_amount": participant.owning_amount,
+                    "expenseExpense_Id": participant.expenseExpense_Id,
+                    "userUser_Id": participant.userUser_Id,
+                    "status": participant.status,
+                    "created_at": participant?.created_at ?: (),
+                    "updated_at": participant?.updated_at ?: ()
+                };
+                
+                // Add user information if available
+                if userDetails is db:UserWithRelations {
+                    participantData = {
+                        "participant_Id": participant.participant_Id,
+                        "participant_role": participant.participant_role,
+                        "owning_amount": participant.owning_amount,
+                        "expenseExpense_Id": participant.expenseExpense_Id,
+                        "userUser_Id": participant.userUser_Id,
+                        "status": participant.status,
+                        "created_at": participant?.created_at ?: (),
+                        "updated_at": participant?.updated_at ?: (),
+                        "user": {
+                            "user_Id": userDetails.user_Id,
+                            "first_name": userDetails?.first_name ?: "",
+                            "last_name": userDetails?.last_name ?: "",
+                            "email": userDetails?.email ?: ""
+                        }
+                    };
+                } else {
+                    // If user details not found, still include basic structure
+                    participantData = {
+                        "participant_Id": participant.participant_Id,
+                        "participant_role": participant.participant_role,
+                        "owning_amount": participant.owning_amount,
+                        "expenseExpense_Id": participant.expenseExpense_Id,
+                        "userUser_Id": participant.userUser_Id,
+                        "status": participant.status,
+                        "created_at": participant?.created_at ?: (),
+                        "updated_at": participant?.updated_at ?: (),
+                        "user": {
+                            "user_Id": participant.userUser_Id,
+                            "first_name": "Unknown",
+                            "last_name": "User",
+                            "email": ""
+                        }
+                    };
+                }
+                
+                enhancedParticipants.push(participantData);
+            }
+            
+            // Build response data with enhanced participant information
+
             json expenseData = {
                 "expense_Id": expenseDetails.expense_Id,
                 "name": expenseDetails.name,
@@ -328,9 +401,9 @@ public function getExpenseService() returns http:Service {
                 "status": expenseDetails.status,
                 "created_at": expenseDetails?.created_at ?: (),
                 "updated_at": expenseDetails?.updated_at ?: (),
-                "expenseParticipants": expenseDetails.expenseParticipants,
-                "transactions": expenseDetails.transactions,
-                "usergroup": expenseDetails.usergroup
+                "expenseParticipants": enhancedParticipants,
+                "transactions": expenseDetails?.transactions ?: (),
+                "usergroup": expenseDetails?.usergroup ?: ()
             };
 
             json payload = {
@@ -561,8 +634,8 @@ public function getExpenseService() returns http:Service {
                 summaries.push({
                     groupId: groupId,
                     groupName: group.name,
-                    created_at: group.created_at,
-                    updated_at: group.updated_at,
+                    created_at: group.created_at ?: time:utcNow(),
+                    updated_at: group.updated_at ?: time:utcNow(),
                     participantNames: participantNames,
                     netAmount: netAmount
                 });

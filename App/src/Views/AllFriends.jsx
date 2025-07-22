@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
 import FriendCard from "../Components/FriendCard";
 import FriendReqComponent from "../Components/FriendReqComponent";
 import HeaderProfile from "../Components/HeaderProfile";
@@ -7,6 +10,7 @@ import MobileOverlay from "../Components/MobileOverlay";
 import useIsMobile from '../utils/useIsMobile';
 import useUserData from '../hooks/useUserData';
 import { getFriends } from '../utils/requests/Friend';
+
 import gsap from "gsap";
 
 export default function AllFriends() {
@@ -15,6 +19,14 @@ export default function AllFriends() {
   const contentRef = useRef(null);
   const isMobile = useIsMobile();
   const { user, loading } = useUserData();
+
+  
+    const navigate = useNavigate();
+
+  // Function to handle friend card click and navigate to FriendView
+  const handleFriendClick = (friendId) => {
+    navigate(`/friend/${friendId}`);
+  };
   
 
   useEffect(() => {
@@ -25,8 +37,9 @@ export default function AllFriends() {
       }
 
       try {
-        const userId = user.user_Id;
+                const userId = user.user_Id;
         const response = await getFriends(userId);
+
         
         setFriends(response.friends || []);
       } catch (error) {
@@ -128,11 +141,13 @@ export default function AllFriends() {
                 <div ref={contentRef}>
                     
                   {activeTab === "friends" &&
-                    friends.map(friend => (
+                    friends.map((friend, index) => (
                       <FriendCard
+                        key={friend.friend_Id || index}
                         name={friend.name}
                         email={friend.email}
                         img={"https://placehold.co/60x60"}
+                        onClick={() => handleFriendClick(friend.friend_Id)}
                       />
                     ))}
 
@@ -153,6 +168,6 @@ export default function AllFriends() {
           </div>
         </div>
       </div>
-    </>
-  );
+    </>
+  );
 }

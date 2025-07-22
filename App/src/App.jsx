@@ -48,6 +48,7 @@ function App() {
 
 
             <Route path="/expense" element={<ExpenseView />} />
+            <Route path="/expense/:expenseId" element={<ExpenseView />} />
             <Route path="/allfriends" element={<AllFriends />} />
             <Route path="/ocr" element={<OCRscanner />} />
             <Route path="/friend/:friendId" element={<FriendView />} />
