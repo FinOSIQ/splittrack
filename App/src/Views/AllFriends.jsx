@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
 import FriendCard from "../Components/FriendCard";
 import FriendReqComponent from "../Components/FriendReqComponent";
 import HeaderProfile from "../Components/HeaderProfile";
@@ -8,6 +9,8 @@ import NavBar from '../Components/NavBar';
 import MobileOverlay from "../Components/MobileOverlay";
 import useIsMobile from '../utils/useIsMobile';
 import useUserData from '../hooks/useUserData';
+import { getFriends } from '../utils/requests/Friend';
+
 import gsap from "gsap";
 
 export default function AllFriends() {
@@ -16,7 +19,9 @@ export default function AllFriends() {
   const contentRef = useRef(null);
   const isMobile = useIsMobile();
   const { user, loading } = useUserData();
-  const navigate = useNavigate();
+
+  
+    const navigate = useNavigate();
 
   // Function to handle friend card click and navigate to FriendView
   const handleFriendClick = (friendId) => {
@@ -32,13 +37,14 @@ export default function AllFriends() {
       }
 
       try {
+                const userId = user.user_Id;
+        const response = await getFriends(userId);
 
-        const userId = user.user_Id;
-        const response = await axios.get(`http://localhost:9090/api_friend/v1/friends/${userId}`);
         
-        setFriends(response.data.friends || []);
+        setFriends(response.friends || []);
       } catch (error) {
         console.error("Failed to fetch friends:", error);
+        // You might want to show a toast notification or error state here
       }
     }
 
