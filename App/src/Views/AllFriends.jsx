@@ -13,6 +13,21 @@ import { getFriends } from '../utils/requests/Friend';
 
 import gsap from "gsap";
 
+// Function to generate avatar for API data
+const generateAvatar = (name) => {
+  const firstLetter = name.charAt(0).toUpperCase();
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+  ];
+  const colorIndex = firstLetter.charCodeAt(0) % colors.length;
+  
+  return {
+    letter: firstLetter,
+    backgroundColor: colors[colorIndex]
+  };
+};
+
 export default function AllFriends() {
   const [activeTab, setActiveTab] = useState("friends");
   const [friends, setFriends] = useState([]); // This will store friend details from backend
@@ -147,6 +162,7 @@ export default function AllFriends() {
                         name={friend.name}
                         email={friend.email}
                         img={"https://placehold.co/60x60"}
+                        avatar={generateAvatar(friend.name || 'Unknown')}
                         onClick={() => handleFriendClick(friend.friend_Id)}
                       />
                     ))}

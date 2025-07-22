@@ -13,6 +13,24 @@ import GroupImage from '../images/group.png';
 import ProfileImage from '../images/profile.png'; 
 import ExpenseImage from '../images/plate.png'; // Adjust the path as necessary
 
+// Generate avatar with consistent colors
+const generateAvatar = (name) => {
+  if (!name) return { letter: 'G', backgroundColor: '#6B7280' };
+  
+  const colors = [
+    '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16',
+    '#22C55E', '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9'
+  ];
+  
+  const firstLetter = name.charAt(0).toUpperCase();
+  const colorIndex = firstLetter.charCodeAt(0) % colors.length;
+  
+  return {
+    letter: firstLetter,
+    backgroundColor: colors[colorIndex]
+  };
+};
+
 const GroupView = () => {
     const [activeTab, setActiveTab] = useState('expenses');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -154,11 +172,17 @@ const GroupView = () => {
                         <div className="bg-[#f1f2f9] p-2 flex flex-col space-y-4">
                             <div className="flex items-center justify-between flex-wrap">
                                 <div className="flex items-center space-x-4">
-                                    <img
-                                        src={GroupImage}
-                                        alt="Group"
-                                        className="w-[64px] h-[58px]"
-                                    />
+                                    {(() => {
+                                        const groupAvatar = generateAvatar(groupDetails?.group?.name || 'Group');
+                                        return (
+                                            <div 
+                                                className="w-[64px] h-[58px] rounded-lg flex items-center justify-center text-white text-2xl font-bold"
+                                                style={{ backgroundColor: groupAvatar.backgroundColor }}
+                                            >
+                                                {groupAvatar.letter}
+                                            </div>
+                                        );
+                                    })()}
                                     <div>
 
                                         <div className=" text-[#040b2b] text-lg font-normal font-['Inter']">
@@ -247,12 +271,20 @@ const GroupView = () => {
                                 </button>
                             </div>
                             <div className="mt-4 space-y-3">
-                                {members.map((member, index) => (
-                                    <div key={index} className="flex items-center space-x-3 p-2 border-b">
-                                        <img src={ProfileImage} alt={member.name} className="w-10 h-10 rounded-full" />
-                                        <span className="text-[#040b2b] text-lg">{member.name}</span>
-                                    </div>
-                                ))}
+                                {members.map((member, index) => {
+                                    const memberAvatar = generateAvatar(member.name);
+                                    return (
+                                        <div key={index} className="flex items-center space-x-3 p-2 border-b">
+                                            <div 
+                                                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                                                style={{ backgroundColor: memberAvatar.backgroundColor }}
+                                            >
+                                                {memberAvatar.letter}
+                                            </div>
+                                            <span className="text-[#040b2b] text-lg">{member.name}</span>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>

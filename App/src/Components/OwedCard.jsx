@@ -1,7 +1,71 @@
 // OwedCard.jsx
 import React from 'react';
-import ExpenseImage from '../images/plate.png'; // Adjust the path as necessary
 
+// Function to generate emoji-based icon for expenses
+const generateExpenseEmoji = (title) => {
+  const titleLower = title.toLowerCase();
+  
+  // Food/Restaurant
+  if (titleLower.includes('restaurant') || titleLower.includes('dinner') || 
+      titleLower.includes('lunch') || titleLower.includes('food')) {
+    return '🍽️';
+  }
+  if (titleLower.includes('coffee') || titleLower.includes('cafe')) {
+    return '☕';
+  }
+  if (titleLower.includes('pizza')) return '🍕';
+  if (titleLower.includes('burger')) return '🍔';
+  
+  // Travel/Hotel
+  if (titleLower.includes('hotel') || titleLower.includes('resort')) {
+    return '🏨';
+  }
+  if (titleLower.includes('flight') || titleLower.includes('airplane')) {
+    return '✈️';
+  }
+  if (titleLower.includes('trip') || titleLower.includes('travel')) {
+    return '🧳';
+  }
+  
+  // Transport
+  if (titleLower.includes('gas') || titleLower.includes('fuel')) {
+    return '⛽';
+  }
+  if (titleLower.includes('taxi') || titleLower.includes('uber') || titleLower.includes('car')) {
+    return '🚗';
+  }
+  
+  // Shopping/Groceries
+  if (titleLower.includes('groceries') || titleLower.includes('grocery')) {
+    return '🛒';
+  }
+  if (titleLower.includes('shopping') || titleLower.includes('store')) {
+    return '🛍️';
+  }
+  
+  // Entertainment
+  if (titleLower.includes('movie') || titleLower.includes('cinema')) {
+    return '🎬';
+  }
+  if (titleLower.includes('concert') || titleLower.includes('music')) {
+    return '🎵';
+  }
+  
+  // Health/Medical
+  if (titleLower.includes('hospital') || titleLower.includes('doctor') || 
+      titleLower.includes('medical') || titleLower.includes('pharmacy')) {
+    return '🏥';
+  }
+  
+  // Bills/Utilities
+  if (titleLower.includes('electric') || titleLower.includes('water') || 
+      titleLower.includes('internet') || titleLower.includes('phone')) {
+    return '📄';
+  }
+  
+  // Default expense icon
+  return '💰';
+};
 
 const OwedCard = ({ 
   dateMonth = 'Dec', 
@@ -37,7 +101,9 @@ const OwedCard = ({
           <div className="text-[#040b2b] text-base font-normal font-['Poppins'] leading-[24.94px]">{dateMonth}</div>
           <div className="text-center text-[#040b2b] text-base font-normal font-['Poppins'] leading-[24.94px]">{dateDay}</div>
         </div>
-        <img src={ExpenseImage} alt="Expense" className="w-[74px] h-[67px]" />
+        <div className="w-[74px] h-[67px] flex items-center justify-center bg-gray-100 rounded-lg">
+          <span className="text-3xl">{generateExpenseEmoji(title)}</span>
+        </div>
         <div className="ml-4">
           <div className="text-[#040b2b] text-sm font-normal font-['Poppins'] leading-[24.94px]">{title}</div>
           
