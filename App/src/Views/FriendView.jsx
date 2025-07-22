@@ -67,9 +67,88 @@ const FriendView = () => {
         return groupedExpenses;
     };
 
+    // Function to combine and group expenses and transactions by month
+    const groupExpensesAndTransactionsByMonth = (expenses) => {
+        if (!expenses || expenses.length === 0) return {};
+
+        const allItems = [];
+
+        // Process expenses
+        expenses.forEach(expense => {
+            const monthDay = getMonthDay(expense.createdAt);
+            allItems.push({
+                type: 'expense',
+                id: expense.expenseId,
+                date: parseBalDateTime(expense.createdAt),
+                dateDay: monthDay.day,
+                dateMonth: monthDay.month,
+                ...expense
+            });
+
+            // Process transactions within this expense
+            if (expense.transactions && expense.transactions.length > 0) {
+                expense.transactions.forEach(transaction => {
+                    const transactionMonthDay = getMonthDay(transaction.created_at);
+                    allItems.push({
+                        type: 'transaction',
+                        id: transaction.transaction_Id,
+                        date: parseBalDateTime(transaction.created_at),
+                        dateDay: transactionMonthDay.day,
+                        dateMonth: transactionMonthDay.month,
+                        expenseName: expense.expenseName, // Link to parent expense
+                        ...transaction
+                    });
+                });
+            }
+        });
+
+        // Sort all items by date (most recent first)
+        const sortedItems = allItems.sort((a, b) => b.date - a.date);
+
+        // Group by month-year
+        const groupedItems = {};
+        sortedItems.forEach(item => {
+            const monthYear = item.date.toLocaleDateString('en-US', { 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            
+            if (!groupedItems[monthYear]) {
+                groupedItems[monthYear] = [];
+            }
+            
+            groupedItems[monthYear].push(item);
+        });
+
+        return groupedItems;
+    };
+
+    // Helper function to generate transaction description
+    const getTransactionDescription = (transaction) => {
+        const payerName = transaction.payee_name || 'Someone';
+        if (transaction.payee_IdUser_Id === friendData?.user_Id) {
+            return `You paid LKR ${transaction.payed_amount?.toFixed(2) || '0.00'}`;
+        } else {
+            return `${payerName} paid LKR ${transaction.payed_amount?.toFixed(2) || '0.00'}`;
+        }
+    };
+
     // Function to navigate to settle up view
     const handleSettleUpClick = () => {
-        navigate(`/settleup/${friendId}`);
+        // Get the friend's user_Id (not friend_Id) and console log it
+        const friendUserId = friendData?.user_Id;
+        console.log('Friend User ID (user_Id):', friendUserId);
+        console.log('Friend ID (friend_Id):', friendData?.friend_Id);
+        console.log('Full Friend Data:', friendData);
+        
+        // Navigate to SettleUpView and pass the correct user_Id
+        navigate('/settleup', { 
+            state: { 
+                friendUserId: friendUserId,  // Pass user_Id, not friend_Id
+                friendName: friendData?.friend_Name,
+                friendData: friendData
+            } 
+        });
     };
 
     // Function to navigate to expense details
@@ -248,67 +327,90 @@ const FriendView = () => {
                         <div className="space-y-8 w-full">
                             {friendData?.details && friendData.details.length > 0 ? (
                                 <div>
-                                    
-                                    
-                                    {/* Group expenses by month */}
+                                    {/* Group expenses and transactions by month */}
                                     {(() => {
-                                        const groupedExpenses = groupExpensesByMonth(friendData.details);
-                                        return Object.entries(groupedExpenses).map(([monthYear, expenses]) => (
+                                        const groupedItems = groupExpensesAndTransactionsByMonth(friendData.details);
+                                        return Object.entries(groupedItems).map(([monthYear, items]) => (
                                             <div key={monthYear} className="mt-2">
                                                 {/* Month Header */}
                                                 <div className="text-[#61677d] text-sm font-semibold font-['Poppins'] mb-4 border-b border-gray-200 pb-2">
                                                     {monthYear}
                                                 </div>
                                                 
-                                                {/* Expenses for this month */}
+                                                {/* Items for this month (expenses and transactions) */}
                                                 <div className="space-y-4">
-                                                    {expenses.map((expense, index) => {
-                                                        const isCurrentUserCreator = expense.currentUserRole === 'creator';
-                                                        const isFriendCreator = expense.friendRole === 'creator';
-                                                        
-                                                        let description = '';
-                                                        let amount = '';
-                                                        let isOwed = true;
-                                                        
-                                                        if (isCurrentUserCreator && !isFriendCreator) {
-                                                            // Current user is creator, friend owes them
-                                                            description = `${friendData.friend_Name} owes you`;
-                                                            amount = `${expense.friendAmount?.toFixed(2) || '0.00'}`;
-                                                            isOwed = true;
-                                                        } else if (isFriendCreator && !isCurrentUserCreator) {
-                                                            // Friend is creator, current user owes them
-                                                            description = `You owe ${friendData.friend_Name}`;
-                                                            amount = `${expense.currentUserAmount?.toFixed(2) || '0.00'}`;
-                                                            isOwed = false;
-                                                        } else {
-                                                            // Both are creators (split expense) or other scenario
-                                                            description = `Split expense`;
-                                                            amount = `${expense.currentUserAmount?.toFixed(2) || '0.00'}`;
-                                                            isOwed = expense.currentUserAmount >= expense.friendAmount;
+                                                    {items.map((item, index) => {
+                                                        if (item.type === 'expense') {
+                                                            // Render expense using OwedCard
+                                                            const isCurrentUserCreator = item.currentUserRole === 'creator';
+                                                            const isFriendCreator = item.friendRole === 'creator';
+                                                            
+                                                            let description = '';
+                                                            let amount = '';
+                                                            let isOwed = true;
+                                                            
+                                                            if (isCurrentUserCreator && !isFriendCreator) {
+                                                                // Current user is creator, friend owes them
+                                                                description = `${friendData.friend_Name} owes you`;
+                                                                amount = `${item.friendAmount?.toFixed(2) || '0.00'}`;
+                                                                isOwed = true;
+                                                            } else if (isFriendCreator && !isCurrentUserCreator) {
+                                                                // Friend is creator, current user owes them
+                                                                description = `You owe ${friendData.friend_Name}`;
+                                                                amount = `${item.currentUserAmount?.toFixed(2) || '0.00'}`;
+                                                                isOwed = false;
+                                                            } else {
+                                                                // Both are creators (split expense) or other scenario
+                                                                description = `Split expense`;
+                                                                amount = `${item.currentUserAmount?.toFixed(2) || '0.00'}`;
+                                                                isOwed = item.currentUserAmount >= item.friendAmount;
+                                                            }
+                                                            
+                                                            return (
+                                                                <div 
+                                                                    key={item.expenseId || index}
+                                                                    onClick={() => handleExpenseClick(item.expenseId)}
+                                                                    className="cursor-pointer hover:bg-gray-50 transition-colors duration-200 rounded-lg"
+                                                                >
+                                                                    <OwedCard
+                                                                        dateMonth={item.dateMonth || 'Dec'}
+                                                                        dateDay={String(item.dateDay || new Date().getDate())}
+                                                                        title={item.expenseName || 'Expense'}
+                                                                        description={description}
+                                                                        amount={`${amount}`}
+                                                                        totalAmount={item.expenseTotalAmount?.toFixed(2) || '0.00'}
+                                                                        isOwed={isOwed}
+                                                                        friendName={friendData.friend_Name}
+                                                                        currentUserRole={item.currentUserRole}
+                                                                        friendRole={item.friendRole}
+                                                                        currentUserAmount={item.currentUserAmount?.toFixed(2) || '0.00'}
+                                                                        friendAmount={item.friendAmount?.toFixed(2) || '0.00'}
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        } else if (item.type === 'transaction') {
+                                                            // Render transaction using PaidCard
+                                                            const transactionDescription = getTransactionDescription(item);
+                                                            const transactionTitle = `${item.expenseName} - Settlement`;
+                                                            
+                                                            return (
+                                                                <div 
+                                                                    key={item.transaction_Id || index}
+                                                                    className="hover:bg-gray-50 transition-colors duration-200 rounded-lg"
+                                                                >
+                                                                    <PaidCard
+                                                                        dateMonth={item.dateMonth || 'Dec'}
+                                                                        dateDay={String(item.dateDay || new Date().getDate())}
+                                                                        image="src/images/Frame.png"
+                                                                        title={transactionTitle}
+                                                                        description={transactionDescription}
+                                                                        amount={`${item.payed_amount?.toFixed(2) || '0.00'} LKR`}
+                                                                    />
+                                                                </div>
+                                                            );
                                                         }
                                                         
-                                                        return (
-                                                            <div 
-                                                                key={expense.expenseId || index}
-                                                                onClick={() => handleExpenseClick(expense.expenseId)}
-                                                                className="cursor-pointer hover:bg-gray-50 transition-colors duration-200 rounded-lg"
-                                                            >
-                                                                <OwedCard
-                                                                    dateMonth={expense.dateMonth || 'Dec'}
-                                                                    dateDay={String(expense.dateDay || new Date().getDate())}
-                                                                    title={expense.expenseName || 'Expense'}
-                                                                    description={description}
-                                                                    amount={`${amount}`}
-                                                                    totalAmount={expense.expenseTotalAmount?.toFixed(2) || '0.00'}
-                                                                    isOwed={isOwed}
-                                                                    friendName={friendData.friend_Name}
-                                                                    currentUserRole={expense.currentUserRole}
-                                                                    friendRole={expense.friendRole}
-                                                                    currentUserAmount={expense.currentUserAmount?.toFixed(2) || '0.00'}
-                                                                    friendAmount={expense.friendAmount?.toFixed(2) || '0.00'}
-                                                                />
-                                                            </div>
-                                                        );
+                                                        return null;
                                                     })}
                                                 </div>
                                             </div>

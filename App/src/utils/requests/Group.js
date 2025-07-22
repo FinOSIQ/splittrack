@@ -37,3 +37,39 @@ export const getGroupDetails = async (groupId) => {
   }
 };
 
+// Function to fetch group member balance summary
+export const getGroupMemberBalanceSummary = async (groupId) => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_group/v1/groupMemberBalanceSummary/${groupId}`;
+    
+    console.log('Fetching group member balance summary with:', { 
+      groupId, 
+      url 
+    });   
+    
+    const response = await axios.get(url, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    });
+
+    console.log('Group member balance summary response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching group member balance summary:", error);
+    console.error("Response data:", error.response?.data);
+    console.error("Response status:", error.response?.status);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Unauthorized. Please login again.');
+    } else if (error.response?.status === 404) {
+      throw new Error('Group not found.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error(`Failed to fetch group member balance summary: ${error.message}`);
+    }
+  }
+};
+
