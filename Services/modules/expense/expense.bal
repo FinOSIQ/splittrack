@@ -634,8 +634,8 @@ public function getExpenseService() returns http:Service {
                 summaries.push({
                     groupId: groupId,
                     groupName: group.name,
-                    created_at: group.created_at,
-                    updated_at: group.updated_at,
+                    created_at: group.created_at ?: time:utcNow(),
+                    updated_at: group.updated_at ?: time:utcNow(),
                     participantNames: participantNames,
                     netAmount: netAmount
                 });
