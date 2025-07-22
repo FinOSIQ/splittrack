@@ -90,64 +90,129 @@ public function getFriendService() returns http:Service {
             check caller->respond(res);
         }
 
-        // Get friend requests received by a user
-        resource function get friendrequests/[string userId](http:Caller caller, http:Request req) returns error? {
-            string userIdStr = userId;
+        
 
-            stream<db:FriendRequestWithRelations, error?> friendRequestsStream = dbClient->/friendrequests(db:FriendRequestWithRelations);
 
-            db:FriendRequestWithRelations[] filteredRequests = [];
 
-            error? e = friendRequestsStream.forEach(function(db:FriendRequestWithRelations fr) {
-                if fr.receive_user_Id == userIdStr && fr.status == "pending" {
-                    filteredRequests.push(fr);
-                }
-            });
 
-            if e is error {
-                http:Response res = new;
-                res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
-                res.setJsonPayload({"error": "Error iterating friend requests"});
-                check caller->respond(res);
-                return;
-            }
+ // Get friend requests received by a user
+resource function get friendrequests/[string userId](http:Caller caller, http:Request req) returns error? {
+    string userIdStr = userId;
 
-            json[] result = [];
+    // Fetch all friend requests with relations
+    stream<db:FriendRequestWithRelations, error?> friendRequestsStream = dbClient->/friendrequests(db:FriendRequestWithRelations);
 
-            foreach var fr in filteredRequests {
-                db:UserOptionalized? sender = fr.send_user_Id;
+    db:FriendRequestWithRelations[] filteredRequests = [];
 
-                string senderName = "";
-                string senderEmail = "";
-
-                if sender is db:UserOptionalized {
-                    string? fname = sender.first_name;
-                    string? lname = sender.last_name;
-                    if fname is string {
-                        senderName += fname;
-                    }
-                    if lname is string {
-                        if senderName.length() > 0 {
-                            senderName += " ";
-                        }
-                        senderName += lname;
-                    }
-                    senderEmail = sender.email ?: "";
-                }
-
-                result.push({
-
-                    senderName: senderName,
-                    senderEmail: senderEmail,
-                    senderImage: "placeholder.png" // Replace with actual image URL if available
-                });
-            }
-
-            http:Response res = new;
-            res.statusCode = http:STATUS_OK;
-            res.setJsonPayload({friendRequests: result});
-            check caller->respond(res);
+    // Filter friend requests where receiver matches and status is pending
+    error? e = friendRequestsStream.forEach(function(db:FriendRequestWithRelations fr) {
+        if fr.receive_user_Id == userIdStr && fr.status == "pending" {
+            filteredRequests.push(fr);
         }
+    });
+
+    if e is error {
+        http:Response res = new;
+        res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+        res.setJsonPayload({"error": "Error iterating friend requests"});
+        check caller->respond(res);
+        return;
+    }
+
+    json[] result = [];
+
+    // Construct the JSON response array including friendReq_ID
+    foreach var fr in filteredRequests {
+        db:UserOptionalized? sender = fr.send_user_Id;
+
+        string senderName = "";
+        string senderEmail = "";
+
+        if sender is db:UserOptionalized {
+            string? fname = sender.first_name;
+            string? lname = sender.last_name;
+            if fname is string {
+                senderName += fname;
+            }
+            if lname is string {
+                if senderName.length() > 0 {
+                    senderName += " ";
+                }
+                senderName += lname;
+            }
+            senderEmail = sender.email ?: "";
+        }
+
+        result.push({
+            friendReq_ID: fr.friendReq_ID,  // This line is crucial for frontend ID
+            senderName: senderName,
+            senderEmail: senderEmail,
+            senderImage: "placeholder.png" // Replace with actual image URL if available
+        });
+    }
+
+    http:Response res = new;
+    res.statusCode = http:STATUS_OK;
+    res.setJsonPayload({friendRequests: result});
+    check caller->respond(res);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         // Send a friend request
         resource function post friendrequests/send(http:Caller caller, http:Request req) returns error? {
@@ -216,128 +281,103 @@ public function getFriendService() returns http:Service {
 
         //Accept or decline frined
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         resource function put friendRequests/[string requestId](http:Caller caller, http:Request req) returns error? {
-    json|error payload = req.getJsonPayload();
-    if (payload is error) {
-        http:Response res = new;
-        res.statusCode = http:STATUS_BAD_REQUEST;
-        res.setJsonPayload({"error": "Invalid JSON body"});
-        check caller->respond(res);
-        return;
-    }
-
-    string status = "";
-    if payload is map<any> {
-        var statusValue = payload["status"];
-        if (statusValue is string) {
-            status = statusValue;
-            if (status != "accepted" && status != "declined") {
+            json|error payload = req.getJsonPayload();
+            if (payload is error) {
                 http:Response res = new;
                 res.statusCode = http:STATUS_BAD_REQUEST;
-                res.setJsonPayload({"error": "Status must be 'accepted' or 'declined'"});
+                res.setJsonPayload({"error": "Invalid JSON body"});
                 check caller->respond(res);
                 return;
             }
-        } else {
-            http:Response res = new;
-            res.statusCode = http:STATUS_BAD_REQUEST;
-            res.setJsonPayload({"error": "Missing or invalid 'status' field"});
-            check caller->respond(res);
-            return;
-        }
-    }
 
-    sql:ParameterizedQuery whereClause = `friendReq_ID = ${requestId}`;
-    stream<db:FriendRequest, error?> requestStream = dbClient->/friendrequests.get(db:FriendRequest, whereClause);
+            string status = "";
+            if payload is map<any> {
+                var statusValue = payload["status"];
+                if (statusValue is string) {
+                    status = statusValue;
+                    if (status != "accepted" && status != "declined") {
+                        http:Response res = new;
+                        res.statusCode = http:STATUS_BAD_REQUEST;
+                        res.setJsonPayload({"error": "Status must be 'accepted' or 'declined'"});
+                        check caller->respond(res);
+                        return;
+                    }
+                } else {
+                    http:Response res = new;
+                    res.statusCode = http:STATUS_BAD_REQUEST;
+                    res.setJsonPayload({"error": "Missing or invalid 'status' field"});
+                    check caller->respond(res);
+                    return;
+                }
+            }
 
-    db:FriendRequest? existingRequest = ();
-    var nextResult = check requestStream.next();
+            sql:ParameterizedQuery whereClause = `friendReq_ID = ${requestId}`;
+            stream<db:FriendRequest, error?> requestStream = dbClient->/friendrequests.get(db:FriendRequest, whereClause);
 
-    if nextResult is record {db:FriendRequest value;} {
-        existingRequest = nextResult.value;
-    }
+            db:FriendRequest? existingRequest = ();
+            var nextResult = check requestStream.next();
 
-    if existingRequest is db:FriendRequest {
-        string sendUserId = existingRequest.send_user_idUser_Id;
-        string receiveUserId = existingRequest.receive_user_Id;
+            if nextResult is record {db:FriendRequest value;} {
+                existingRequest = nextResult.value;
+            }
 
-        // *** NEW: Delete the friend request from FriendRequest table ***
-        sql:ParameterizedQuery deleteQuery = `DELETE FROM FriendRequest WHERE friendReq_ID = ${requestId}`;
-        var deleteResult = dbClient->executeNativeSQL(deleteQuery);
-        if deleteResult is error {
-            http:Response res = new;
-            res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
-            res.setJsonPayload({"error": "Failed to delete friend request"});
-            check caller->respond(res);
-            return;
-        }
+            if existingRequest is db:FriendRequest {
+                string sendUserId = existingRequest.send_user_idUser_Id;
+                string receiveUserId = existingRequest.receive_user_Id;
 
-        // *** NEW: Insert into friendrequestupdate table with updated status ***
-        sql:ParameterizedQuery insertUpdateQuery = `INSERT INTO FriendRequestUpdate (friendReq_ID, status) VALUES (${requestId}, ${status})`;
-        var insertUpdateResult = dbClient->executeNativeSQL(insertUpdateQuery);
-        if insertUpdateResult is error {
-            http:Response res = new;
-            res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
-            res.setJsonPayload({"error": "Failed to log friend request update"});
-            check caller->respond(res);
-            return;
-        }
+                // Remove the DELETE query below
+                // sql:ParameterizedQuery deleteQuery = `DELETE FROM FriendRequest WHERE friendReq_ID = ${requestId}`;
+                // var deleteResult = dbClient->executeNativeSQL(deleteQuery);
+                // if deleteResult is error {
+                //     http:Response res = new;
+                //     res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                //     res.setJsonPayload({"error": "Failed to delete friend request"});
+                //     check caller->respond(res);
+                //     return;
+                // }
 
-        if status == "accepted" {
-            string newFriendId = uuid:createType4AsString().toString();
-            string friend_Id = "fr-" + newFriendId.substring(0, 8);
+                // Update the FriendRequest status
+                sql:ParameterizedQuery updateQuery = `UPDATE FriendRequest SET status = ${status} WHERE friendReq_ID = ${requestId}`;
+                var updateResult = dbClient->executeNativeSQL(updateQuery);
+                if updateResult is error {
+                    http:Response res = new;
+                    res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                    res.setJsonPayload({"error": "Failed to update friend request status"});
+                    check caller->respond(res);
+                    return;
+                }
 
-            sql:ParameterizedQuery insertFriendQuery = `INSERT INTO Friend 
-                (friend_Id, user_id_1User_Id, user_id_2User_Id, status) 
-                VALUES (${friend_Id}, ${sendUserId}, ${receiveUserId}, 1)`;
+                if status == "accepted" {
+                    string newFriendId = uuid:createType4AsString().toString();
+                    string friend_Id = "fr-" + newFriendId.substring(0, 8);
 
-            var insertFriendResult = dbClient->executeNativeSQL(insertFriendQuery);
-            if insertFriendResult is error {
+                    sql:ParameterizedQuery insertFriendQuery = `INSERT INTO Friend 
+            (friend_Id, user_id_1User_Id, user_id_2User_Id, status) 
+            VALUES (${friend_Id}, ${sendUserId}, ${receiveUserId}, 1)`;
+
+                    var insertFriendResult = dbClient->executeNativeSQL(insertFriendQuery);
+                    if insertFriendResult is error {
+                        http:Response res = new;
+                        res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                        res.setJsonPayload({"error": "Failed to insert new friend"});
+                        check caller->respond(res);
+                        return;
+                    }
+                }
+
                 http:Response res = new;
-                res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
-                res.setJsonPayload({"error": "Failed to insert new friend"});
+                res.statusCode = http:STATUS_NO_CONTENT;
+                check caller->respond(res);
+                return;
+            } else {
+                http:Response res = new;
+                res.statusCode = http:STATUS_NOT_FOUND;
+                res.setJsonPayload({"error": "Friend request not found"});
                 check caller->respond(res);
                 return;
             }
         }
-
-        http:Response res = new;
-        res.statusCode = http:STATUS_NO_CONTENT;
-        check caller->respond(res);
-        return;
-    } else {
-        http:Response res = new;
-        res.statusCode = http:STATUS_NOT_FOUND;
-        res.setJsonPayload({"error": "Friend request not found"});
-        check caller->respond(res);
-        return;
-    }
-}
 
     };
 }

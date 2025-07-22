@@ -17,7 +17,7 @@ export default function AllFriends() {
   useEffect(() => {
     async function fetchFriends() {
       try {
-        const userId = "d57bce76"; // your user id
+        const userId = "711ca4dc"; // your user id
         const response = await axios.get(`http://localhost:9090/api_friend/v1/friends/${userId}`);
         
         setFriends(response.data.friends || []);
