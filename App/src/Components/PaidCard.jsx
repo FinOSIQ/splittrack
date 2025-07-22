@@ -17,14 +17,21 @@ const PaidCard = ({
           <div className="text-[#040b2b] text-base font-normal font-['Poppins'] leading-[24.94px]">{dateMonth}</div>
           <div className="text-center text-[#040b2b] text-base font-normal font-['Poppins'] leading-[24.94px]">{dateDay}</div>
         </div>
-        <img src={image} alt="Expense" className="w-[74px] h-[67px]" />
+        <div className="w-[74px] h-[67px] flex items-center justify-center bg-green-100 rounded-lg">
+          <span className="text-xl font-semibold text-green-700">paid</span>
+        </div>
         <div className="ml-4">
           <div className="text-[#040b2b] text-sm font-normal font-['Poppins'] leading-[24.94px]">{title}</div>
           <div className="text-[#61677d] text-xs font-light font-['Poppins'] leading-[24.94px]">{description}</div>
         </div>
       </div>
 
-      
+      {/* Amount section */}
+      <div className="text-right">
+        <div className="text-[#22C55E] text-base font-semibold font-['Poppins']">
+          {amount}
+        </div>
+      </div>
     </div>
   );
 };
