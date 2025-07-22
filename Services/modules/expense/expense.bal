@@ -319,7 +319,6 @@ public function getExpenseService() returns http:Service {
 
             http:Response res = new;
 
-            
             // Explicitly fetch participants for this expense
             stream<db:ExpenseParticipant, persist:Error?> participantsStream = dbClient->/expenseparticipants(
                 whereClause = sql:queryConcat(`expenseExpense_Id = ${expenseId}`)
@@ -331,14 +330,14 @@ public function getExpenseService() returns http:Service {
                 log:printError("Database error fetching expense participants: " + participantRecords.message());
                 return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to fetch expense participants");
             }
-            
+
             // Enhanced participant data with user information
             json[] enhancedParticipants = [];
-            
+
             foreach db:ExpenseParticipant participant in participantRecords {
                 // Fetch user details for each participant
                 db:UserWithRelations|error userDetails = dbClient->/users/[participant.userUser_Id]();
-                
+
                 map<json> participantData = {
                     "participant_Id": participant.participant_Id,
                     "participant_role": participant.participant_role,
@@ -349,7 +348,7 @@ public function getExpenseService() returns http:Service {
                     "created_at": participant?.created_at ?: (),
                     "updated_at": participant?.updated_at ?: ()
                 };
-                
+
                 // Add user information if available
                 if userDetails is db:UserWithRelations {
                     participantData = {
@@ -387,10 +386,10 @@ public function getExpenseService() returns http:Service {
                         }
                     };
                 }
-                
+
                 enhancedParticipants.push(participantData);
             }
-            
+
             // Build response data with enhanced participant information
 
             json expenseData = {
@@ -1390,6 +1389,238 @@ public function getExpenseService() returns http:Service {
             return caller->respond(res);
         }
 
+        // recent activity endpoint
+        resource function get recentActivity(http:Caller caller, http:Request req) returns error? {
+            http:Response response = new;
+
+            // Get user ID from cookie
+            string? userId = utils:getCookieValue(req, "user_id");
+            if userId == () {
+                response.statusCode = 400;
+                response.setJsonPayload({
+                    "status": "error",
+                    "message": "User ID not found in request"
+                });
+                check caller->respond(response);
+                return;
+            }
+
+            json[] activities = [];
+
+            // Get recent expenses (last 30 days)
+            sql:ParameterizedQuery expenseQuery = `
+        SELECT 
+            ep.expenseExpense_Id,
+            ep.participant_role,
+            ep.owning_amount,
+            ep.created_at,
+            e.name as expense_name,
+            e.expense_total_amount,
+            e.usergroupGroup_Id
+        FROM ExpenseParticipant ep
+        JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
+        WHERE ep.userUser_Id = ${userId}
+        AND ep.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        ORDER BY ep.created_at DESC
+        LIMIT 10
+    `;
+
+            stream<record {}, persist:Error?> expenseStream = dbClient->queryNativeSQL(expenseQuery);
+
+            error? expenseErr = from record {} row in expenseStream
+                do {
+                    string expenseId = <string>row["expenseExpense_Id"];
+                    string participantRole = <string>row["participant_role"];
+                    decimal owingAmount = <decimal>row["owning_amount"];
+                    string expenseName = <string>row["expense_name"];
+                    decimal totalAmount = <decimal>row["expense_total_amount"];
+
+                    // Handle nullable group ID
+                    string? groupId = ();
+                    if row.hasKey("usergroupGroup_Id") && row["usergroupGroup_Id"] !is () {
+                        groupId = <string>row["usergroupGroup_Id"];
+                    }
+
+                    string description = "";
+
+                    if participantRole == "Creator" || participantRole == "creator" {
+                        // User created the expense - implement scenarios 1, 2, 3
+
+                        // Get all participants count
+                        sql:ParameterizedQuery participantCountQuery = `
+                    SELECT COUNT(*) as total_participants
+                    FROM ExpenseParticipant 
+                    WHERE expenseExpense_Id = ${expenseId}
+                `;
+
+                        stream<record {}, persist:Error?> countStream = dbClient->queryNativeSQL(participantCountQuery);
+                        int totalParticipants = 1; // default
+
+                        check from record {} countRow in countStream
+                        do {
+                            totalParticipants = <int>countRow["total_participants"];
+                        };
+
+                        if groupId is string {
+                            // Get group name
+                            sql:ParameterizedQuery groupQuery = `SELECT name FROM UserGroup WHERE group_Id = ${groupId}`;
+                            stream<record {}, persist:Error?> groupStream = dbClient->queryNativeSQL(groupQuery);
+
+                            string groupName = "Unknown Group";
+                            check from record {} groupRow in groupStream
+                            do {
+                                groupName = <string>groupRow["name"];
+                            };
+
+                            // Check if there are non-group participants
+                            sql:ParameterizedQuery nonGroupQuery = `
+                        SELECT COUNT(*) as non_group_count
+                        FROM ExpenseParticipant ep
+                        LEFT JOIN UserGroupMember ugm ON ep.userUser_Id = ugm.userUser_Id AND ugm.groupGroup_Id = ${groupId}
+                        WHERE ep.expenseExpense_Id = ${expenseId} 
+                        AND ep.userUser_Id != ${userId}
+                        AND ugm.userUser_Id IS NULL
+                    `;
+
+                            stream<record {}, persist:Error?> nonGroupStream = dbClient->queryNativeSQL(nonGroupQuery);
+                            int nonGroupCount = 0;
+
+                            check from record {} ngRow in nonGroupStream
+                            do {
+                                nonGroupCount = <int>ngRow["non_group_count"];
+                            };
+
+                            int groupMemberCount = totalParticipants - nonGroupCount;
+
+                            if nonGroupCount > 0 {
+                                // Scenario 2: Group + non-group users
+                                description = string `You created ${expenseName} for $${totalAmount} with ${groupMemberCount} people from ${groupName} and ${nonGroupCount} others`;
+                            } else {
+                                // Scenario 1: Group expense only  
+                                description = string `You created ${expenseName} for $${totalAmount} with ${totalParticipants} people in ${groupName}`;
+                            }
+                        } else {
+                            // Scenario 3: Just users, no group
+                            description = string `You created ${expenseName} for $${totalAmount} with ${totalParticipants} people`;
+                        }
+
+                    } else {
+                        // Scenario 4: Someone added you - get creator name
+                        sql:ParameterizedQuery creatorQuery = `
+                    SELECT u.first_name
+                    FROM ExpenseParticipant ep
+                    JOIN User u ON ep.userUser_Id = u.user_Id
+                    WHERE ep.expenseExpense_Id = ${expenseId}
+                    AND (ep.participant_role = 'Creator' OR ep.participant_role = 'creator')
+                `;
+
+                        stream<record {}, persist:Error?> creatorStream = dbClient->queryNativeSQL(creatorQuery);
+                        string creatorName = "Someone";
+
+                        check from record {} creatorRow in creatorStream
+                        do {
+                            creatorName = <string>creatorRow["first_name"];
+                        };
+
+                        description = string `You were added to ${expenseName} by ${creatorName} - you owe $${owingAmount}`;
+                    }
+
+                    json activity = {
+                        "activityType": "expense",
+                        "id": expenseId,
+                        "timestamp": <string>row["created_at"],
+                        "description": description
+                    };
+
+                    activities.push(activity);
+                };
+
+            if expenseErr is error {
+                log:printError("Error processing expenses: " + expenseErr.message());
+                response.statusCode = 500;
+                response.setJsonPayload({"status": "error", "message": "Failed to fetch expense activities"});
+                check caller->respond(response);
+                return;
+            }
+
+            // CORRECTED TRANSACTION LOGIC
+            sql:ParameterizedQuery transactionQuery = `
+        SELECT 
+            t.transaction_Id,
+            t.payed_amount,
+            t.created_at,
+            t.payee_idUser_Id,
+            t.expenseExpense_Id,
+            e.name as expense_name,
+            payer.first_name as payer_name,
+            creator.first_name as creator_name,
+            creator.user_Id as creator_id
+        FROM Transaction t
+        JOIN Expense e ON t.expenseExpense_Id = e.expense_Id
+        JOIN User payer ON t.payee_idUser_Id = payer.user_Id
+        JOIN ExpenseParticipant ep_creator ON e.expense_Id = ep_creator.expenseExpense_Id 
+            AND (ep_creator.participant_role = 'Creator' OR ep_creator.participant_role = 'creator')
+        JOIN User creator ON ep_creator.userUser_Id = creator.user_Id
+        WHERE (t.payee_idUser_Id = ${userId} OR ep_creator.userUser_Id = ${userId})
+        AND t.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        ORDER BY t.created_at DESC
+        LIMIT 10
+    `;
+
+            stream<record {}, persist:Error?> transactionStream = dbClient->queryNativeSQL(transactionQuery);
+
+            error? transactionErr = from record {} row in transactionStream
+                do {
+                    string transactionId = <string>row["transaction_Id"];
+                    decimal payedAmount = <decimal>row["payed_amount"];
+                    string expenseName = <string>row["expense_name"];
+                    string payerName = <string>row["payer_name"];
+                    string creatorName = <string>row["creator_name"];
+                    string payerId = <string>row["payee_idUser_Id"];
+                    string creatorId = <string>row["creator_id"];
+
+                    string description = "";
+
+                    if payerId == userId {
+                        // Scenario 5: You made the payment (you are the payer)
+                        description = string `You paid ${creatorName} $${payedAmount} for ${expenseName}`;
+                    } else if creatorId == userId {
+                        // Scenario 6: Someone paid you (you are the creator who received payment)
+                        description = string `${payerName} paid you $${payedAmount} for ${expenseName}`;
+                    }
+
+                    // Only add if description was set (user is involved in this transaction)
+                    if description != "" {
+                        json activity = {
+                            "activityType": "transaction",
+                            "id": transactionId,
+                            "timestamp": <string>row["created_at"],
+                            "description": description
+                        };
+
+                        activities.push(activity);
+                    }
+                };
+
+            if transactionErr is error {
+                log:printError("Error processing transactions: " + transactionErr.message());
+                response.statusCode = 500;
+                response.setJsonPayload({"status": "error", "message": "Failed to fetch transaction activities"});
+                check caller->respond(response);
+                return;
+            }
+
+            // Send response
+            response.statusCode = 200;
+            response.setJsonPayload({
+                "status": "success",
+                "totalActivities": activities.length(),
+                "activities": activities
+            });
+            check caller->respond(response);
+            return;
+        }
+
     };
 }
 
@@ -1430,3 +1661,4 @@ function constructParticipants(json[] participantJsonArray) returns ParticipantP
 
     return participants;
 }
+

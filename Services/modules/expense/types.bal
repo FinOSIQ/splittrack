@@ -93,3 +93,4 @@ type GuestJoinRequest record {|
     string lastName;
     string sessionId;
 |};
+
