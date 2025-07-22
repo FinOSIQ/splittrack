@@ -5,7 +5,7 @@ export default function FriendReqComponent() {
   const [friendRequests, setFriendRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const userId = "711ca4dc"; // replace with actual logged-in user ID
+  const userId = "711ca4dc"; 
 
   useEffect(() => {
     const fetchFriendRequests = async () => {
@@ -36,7 +36,7 @@ export default function FriendReqComponent() {
       });
 
       if (response.status === 204) {
-        // Success — update UI without alert
+      
         setFriendRequests(prev => prev.filter(req => req.friendReq_ID !== requestId));
       } else {
         let errorMessage = "Unknown error";
@@ -44,7 +44,7 @@ export default function FriendReqComponent() {
           const errData = await response.json();
           errorMessage = errData.error || errorMessage;
         } catch (e) {
-          // Server returned no JSON body
+         
         }
         console.error(`Failed to ${action} friend request: ${errorMessage}`);
       }
