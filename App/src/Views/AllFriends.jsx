@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import axios from "axios";
 import FriendCard from "../Components/FriendCard";
 import FriendReqComponent from "../Components/FriendReqComponent";
 import HeaderProfile from "../Components/HeaderProfile";
 import NavBar from '../Components/NavBar';
 import MobileOverlay from "../Components/MobileOverlay";
 import useIsMobile from '../utils/useIsMobile';
+import useUserData from '../hooks/useUserData';
+import { getFriends } from '../utils/requests/Friend';
 import gsap from "gsap";
 
 export default function AllFriends() {
@@ -13,21 +14,29 @@ export default function AllFriends() {
   const [friends, setFriends] = useState([]); // This will store friend details from backend
   const contentRef = useRef(null);
   const isMobile = useIsMobile();
+  const { user, loading } = useUserData();
+  
 
   useEffect(() => {
     async function fetchFriends() {
+      // Don't fetch if user data is still loading or user is not available
+      if (loading || !user?.user_Id) {
+        return;
+      }
+
       try {
-        const userId = "bfb196b4-30ac-4d38-8afc-b3c223b2d9aa"; // your user id
-        const response = await axios.get(`http://localhost:9090/api_friend/v1/friends/${userId}`);
+        const userId = user.user_Id;
+        const response = await getFriends(userId);
         
-        setFriends(response.data.friends || []);
+        setFriends(response.friends || []);
       } catch (error) {
         console.error("Failed to fetch friends:", error);
+        // You might want to show a toast notification or error state here
       }
     }
 
     fetchFriends();
-  }, []);
+  }, [user, loading]);
 
   useEffect(() => {
     if (contentRef.current) {

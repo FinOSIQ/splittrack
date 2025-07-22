@@ -70,11 +70,12 @@ export default function GuestEnrollment() {
           
           <div className="relative z-10">
             {/* Logo */}
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
-                <UsersIcon className="w-6 h-6 text-gray-900" />
-              </div>
-              <span className="ml-3 text-2xl font-bold">SplitTrack</span>
+            <div className="flex items-center justify-center -mt-4">
+              <img 
+                src="/SplitTrack-White.png" 
+                alt="SplitTrack Logo" 
+                className="h-32 w-auto object-contain"
+              />
             </div>
             
             <h1 className="text-2xl font-bold text-center mb-2">Join as Guest</h1>

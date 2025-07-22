@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import OwedCardSettleup from './OwedCardSettleup';
 import { settleUpPayments } from '../utils/requests/SettleUp';
+import { toast } from 'sonner';
 
 export default function TransactionHistoryComponent({
   transactions = [],
@@ -149,14 +150,14 @@ export default function TransactionHistoryComponent({
         }
         
         // Show success message
-        alert('Payment processed successfully!');
+        toast.success('Payment Processed successfully!');
       } else {
         throw new Error(response?.message || 'Payment failed');
       }
       
     } catch (error) {
       console.error('Payment error:', error);
-      alert(`Payment failed: ${error.message}`);
+      toast.error(`Payment failed: ${error.message}`);
     } finally {
       setIsProcessingPayment(false);
     }

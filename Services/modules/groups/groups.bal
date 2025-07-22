@@ -378,7 +378,9 @@ public function getGroupService() returns http:Service {
             e.expense_total_amount,
             e.expense_owe_amount,
             e.usergroupGroup_Id,
-            e.status
+            e.status,
+            e.created_at,
+            e.updated_at
         FROM 
             Expense e
         WHERE 
@@ -392,6 +394,8 @@ public function getGroupService() returns http:Service {
                 decimal expense_owe_amount;
                 string usergroupGroup_Id;
                 int status;
+                time:Utc? created_at;
+                time:Utc? updated_at;
             |}, error?> expensesStream = utils:Client->query(expensesQuery);
 
             // Use forEach instead of query expression to avoid null pointer
@@ -402,6 +406,8 @@ public function getGroupService() returns http:Service {
                         decimal expense_owe_amount;
                         string usergroupGroup_Id;
                         int status;
+                        time:Utc? created_at;
+                        time:Utc? updated_at;
                     |} expense) {
                 // For each expense, get participants - ensure expParticipants array is initialized
                 json[] expParticipants = [];
@@ -448,13 +454,75 @@ public function getGroupService() returns http:Service {
                     io:println("Error in expParticipantsStream.forEach: ", e3.toString());
                 }
 
+                // Get transactions for this expense
+                json[] expenseTransactions = [];
+
+                sql:ParameterizedQuery transactionsQuery = `
+            SELECT 
+                t.transaction_Id,
+                t.payed_amount,
+                t.payee_IdUser_Id,
+                t.status,
+                t.created_at,
+                t.updated_at,
+                u.first_name,
+                u.last_name
+            FROM 
+                Transaction t
+            JOIN 
+                User u ON t.payee_IdUser_Id = u.user_Id
+            WHERE 
+                t.expenseExpense_Id = ${expense.expense_Id} AND t.status = 1
+        `;
+
+                stream<record {|
+                    string transaction_Id;
+                    decimal payed_amount;
+                    string payee_IdUser_Id;
+                    int status;
+                    time:Utc? created_at;
+                    time:Utc? updated_at;
+                    string first_name;
+                    string last_name;
+                |}, error?> transactionsStream = utils:Client->query(transactionsQuery);
+
+                // Use forEach instead of query expression to avoid null pointer
+                error? e4 = transactionsStream.forEach(function(record {|
+                            string transaction_Id;
+                            decimal payed_amount;
+                            string payee_IdUser_Id;
+                            int status;
+                            time:Utc? created_at;
+                            time:Utc? updated_at;
+                            string first_name;
+                            string last_name;
+                        |} txn) {
+
+                    expenseTransactions.push({
+                        "transaction_Id": txn.transaction_Id,
+                        "payed_amount": txn.payed_amount,
+                        "payee_IdUser_Id": txn.payee_IdUser_Id,
+                        "payee_name": txn.first_name + " " + txn.last_name,
+                        "status": txn.status,
+                        "created_at": txn.created_at,
+                        "updated_at": txn.updated_at
+                    });
+                });
+                if e4 is error {
+                    io:println("Error in transactionsStream.forEach: ", e4.toString());
+                }
+
                 expenses.push({
                     "expense_Id": expense.expense_Id,
                     "name": expense.name,
                     "expense_total_amount": expense.expense_total_amount,
                     "expense_owe_amount": expense.expense_owe_amount,
                     "usergroupGroup_Id": expense.usergroupGroup_Id,
-                    "participant": expParticipants
+                    "status": expense.status,
+                    "created_at": expense.created_at,
+                    "updated_at": expense.updated_at,
+                    "participant": expParticipants,
+                    "transactions": expenseTransactions
                 });
             });
             if e2 is error {
@@ -466,6 +534,8 @@ public function getGroupService() returns http:Service {
                 "group_Id": groupId,
                 "name": groupBase.name,
                 "status": groupBase.status,
+                "created_at": groupBase.created_at,
+                "updated_at": groupBase.updated_at,
                 "groupMembers": participants,
                 "expenses": expenses
             };

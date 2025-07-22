@@ -361,8 +361,9 @@ public function getUserService() returns http:Service {
                     "user_Id": user is db:UserWithRelations ? user.user_Id : "",
                     "first_name": user is db:UserWithRelations ? user.first_name : "",
                     "last_name": user is db:UserWithRelations ? user.last_name : "",
-                    "currency_pref": user is db:UserWithRelations ? (user?.currency_pref ?: "USD") : "USD"
-
+                    "currency_pref": user is db:UserWithRelations ? (user?.currency_pref ?: "USD") : "USD",
+                    "created_at": user is db:UserWithRelations ? (user?.created_at ?: ()) : (),
+                    "updated_at": user is db:UserWithRelations ? (user?.updated_at ?: ()) : ()
                 }
             });
             return caller->respond(response);
