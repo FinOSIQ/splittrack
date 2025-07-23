@@ -49,18 +49,28 @@ export default function GroupCard({ group }) {
   const amountStyling = getAmountStyling(group.netAmount);
 
   // Get first two participants and count of additional ones
-  const displayedParticipants = group.participantNames.slice(0, 2);
-  const extraParticipants = group.participantNames.length - 2;
+  const displayedParticipants = (group.participantNames || []).slice(0, 2);
+  const extraParticipants = Math.max(0, (group.participantNames || []).length - 2);
 
-  // Handle navigation to group view
+  // Handle navigation to group view or expense view
   const handleViewDetails = () => {
-    // Navigate to group view with the group ID as a URL parameter
-    navigate(`/group/${group.groupId}`);
+    if (group.isNonGroupExpense) {
+      // Navigate to expense view for non-group expenses
+      navigate(`/expense/${group.groupId}`);
+    } else {
+      // Navigate to group view with the group ID as a URL parameter
+      navigate(`/group/${group.groupId}`);
+    }
   };
 
   // Handle card click (entire card clickable)
   const handleCardClick = () => {
-    navigate(`/group/${group.groupId}`);
+    if (group.isNonGroupExpense) {
+      // Navigate to expense view for non-group expenses
+      navigate(`/expense/${group.groupId}`);
+    } else {
+      navigate(`/group/${group.groupId}`);
+    }
   };
 
   return (
@@ -89,11 +99,19 @@ export default function GroupCard({ group }) {
       <hr className="border-t border-[#f1f2f9] my-2 flex-shrink-0" />
       
       <div className="text-xs text-[#5c5470] mb-2 flex-1 overflow-hidden">
-        {displayedParticipants.map((name, index) => (
-          <p key={index} className="truncate">{name.trim()}</p>
-        ))}
-        {extraParticipants > 0 && (
-          <p className="font-light">+{extraParticipants} more</p>
+        {displayedParticipants.length > 0 ? (
+          <>
+            {displayedParticipants.map((name, index) => (
+              <p key={index} className="truncate">{name.trim()}</p>
+            ))}
+            {extraParticipants > 0 && (
+              <p className="font-light">+{extraParticipants} more</p>
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-[#5c5470]">
+            {group.isNonGroupExpense ? 'Individual expense' : 'No participants'}
+          </p>
         )}
       </div>
       
