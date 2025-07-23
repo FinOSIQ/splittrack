@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { EllipsisHorizontalIcon } from "@heroicons/react/24/solid";
 
-export default function FriendCard({ img, name, email }) {
+export default function FriendCard({ img, name, email, onClick, avatar }) {
     const [isDropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -20,9 +20,18 @@ export default function FriendCard({ img, name, email }) {
 
     return (
         <div className="flex items-center justify-between p-2 mx-2 pb-3 border-b border-gray-200 ">
-            {/* Left Section: Avatar & Info */}
-            <div className="flex items-center space-x-4">
-                <img src={img} alt={name} className="w-10 h-10 rounded-full" />
+            {/* Left Section: Avatar & Info - Made clickable */}
+            <div className="flex items-center space-x-4 cursor-pointer flex-1" onClick={onClick}>
+                {avatar ? (
+                    <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                        style={{ backgroundColor: avatar.backgroundColor }}
+                    >
+                        {avatar.letter}
+                    </div>
+                ) : (
+                    <img src={img} alt={name} className="w-10 h-10 rounded-full" />
+                )}
                 <div>
                     <p className="text-sm font-normal leading-normal text-gray-900">{name}</p>
                     <p className="text-xs text-gray-500">{email}</p>

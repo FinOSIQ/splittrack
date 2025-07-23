@@ -8,7 +8,7 @@ public isolated function setAuthCookies(http:Response response, string accessTok
         path = "/",
         httpOnly = true,
         secure = true,
-        maxAge = 86400
+        maxAge =  2592000
     );
 
     // Create user ID cookie with all properties set in the constructor
@@ -16,7 +16,7 @@ public isolated function setAuthCookies(http:Response response, string accessTok
         path = "/",
         httpOnly = true,
         secure = true,
-        maxAge = 86400
+        maxAge = 2592000
     );
 
     // Add cookies to response
@@ -25,8 +25,8 @@ public isolated function setAuthCookies(http:Response response, string accessTok
 
     // Add manual Set-Cookie headers to reinforce the HttpOnly flag
     // This ensures the headers are explicitly set
-    string accessTokenHeader = "access_token=" + accessToken + "; Path=/; HttpOnly; Secure; Max-Age=3600";
-    string userIdHeader = "user_id=" + userId + "; Path=/; HttpOnly; Secure; Max-Age=3600";
+    string accessTokenHeader = "access_token=" + accessToken + "; Path=/; HttpOnly; Secure; Max-Age=2592000";
+    string userIdHeader = "user_id=" + userId + "; Path=/; HttpOnly; Secure; Max-Age=2592000";
 
     // Override any existing cookie headers to ensure HttpOnly is set
     response.setHeader("Set-Cookie", accessTokenHeader);
@@ -45,3 +45,17 @@ public isolated function getCookieValue(http:Request request, string name) retur
 
     return ();
 }
+
+// Function to invalidate and delete authentication cookies
+public isolated function clearAuthCookies(http:Response response) {
+    
+    // Use only manual Set-Cookie headers to delete cookies
+    // Ballerina doesn't allow empty string values in Cookie objects
+    string expiredAccessTokenHeader = "access_token=; Path=/; HttpOnly; Secure; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    string expiredUserIdHeader = "user_id=; Path=/; HttpOnly; Secure; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+    // Set the cookie headers to delete cookies
+    response.setHeader("Set-Cookie", expiredAccessTokenHeader);
+    response.addHeader("Set-Cookie", expiredUserIdHeader);
+}
+

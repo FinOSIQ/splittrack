@@ -1,33 +1,71 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
 import FriendCard from "../Components/FriendCard";
 import FriendReqComponent from "../Components/FriendReqComponent";
 import HeaderProfile from "../Components/HeaderProfile";
 import NavBar from '../Components/NavBar';
 import MobileOverlay from "../Components/MobileOverlay";
 import useIsMobile from '../utils/useIsMobile';
+import useUserData from '../hooks/useUserData';
+import { getFriends } from '../utils/requests/Friend';
+
 import gsap from "gsap";
+
+// Function to generate avatar for API data
+const generateAvatar = (name) => {
+  const firstLetter = name.charAt(0).toUpperCase();
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+  ];
+  const colorIndex = firstLetter.charCodeAt(0) % colors.length;
+  
+  return {
+    letter: firstLetter,
+    backgroundColor: colors[colorIndex]
+  };
+};
 
 export default function AllFriends() {
   const [activeTab, setActiveTab] = useState("friends");
   const [friends, setFriends] = useState([]); 
   const contentRef = useRef(null);
   const isMobile = useIsMobile();
+  const { user, loading } = useUserData();
+
+  
+    const navigate = useNavigate();
+
+  // Function to handle friend card click and navigate to FriendView
+  const handleFriendClick = (friendId) => {
+    navigate(`/friend/${friendId}`);
+  };
+  
 
   useEffect(() => {
     async function fetchFriends() {
+      // Don't fetch if user data is still loading or user is not available
+      if (loading || !user?.user_Id) {
+        return;
+      }
+
       try {
-        const userId = "711ca4dc"; 
-        const response = await axios.get(`http://localhost:9090/api_friend/v1/friends/${userId}`);
         
-        setFriends(response.data.friends || []);
+               const userId = user.user_Id;
+        const response = await getFriends(userId);
+
+        
+        setFriends(response.friends || []);
       } catch (error) {
         console.error("Failed to fetch friends:", error);
+        // You might want to show a toast notification or error state here
       }
     }
 
     fetchFriends();
-  }, []);
+  }, [user, loading]);
 
   useEffect(() => {
     if (contentRef.current) {
@@ -118,11 +156,14 @@ export default function AllFriends() {
                 <div ref={contentRef}>
                     
                   {activeTab === "friends" &&
-                    friends.map(friend => (
+                    friends.map((friend, index) => (
                       <FriendCard
+                        key={friend.friend_Id || index}
                         name={friend.name}
                         email={friend.email}
                         img={"https://placehold.co/60x60"}
+                        avatar={generateAvatar(friend.name || 'Unknown')}
+                        onClick={() => handleFriendClick(friend.friend_Id)}
                       />
                     ))}
 
@@ -143,6 +184,6 @@ export default function AllFriends() {
           </div>
         </div>
       </div>
-    </>
-  );
+    </>
+  );
 }

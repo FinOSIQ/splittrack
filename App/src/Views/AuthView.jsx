@@ -1,6 +1,6 @@
 import React,{useEffect} from 'react';
 import { useAuthContext } from "@asgardeo/auth-react"; 
-import fetchUserData from '../utils/requests/authenticate';
+import { postUserData } from '../utils/requests/User';
 
 export default function AuthView () {
 
@@ -13,12 +13,14 @@ export default function AuthView () {
                     const accessToken = await getAccessToken();
                     console.log("Access Token: ", accessToken);
                     
-                    const res = await fetchUserData(accessToken);
+                    const res = await postUserData(accessToken);
                     
                     if (res.status === 200) {
                         window.location.href = "/home";
                     } else {
-                        console.log(error);
+                        console.log(res);
+                        // window.location.href = "/";
+                        
                         
                     }
                 } catch (error) {

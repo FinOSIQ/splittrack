@@ -7,6 +7,7 @@ import ballerina/http;
 import ballerina/io;
 import ballerina/log;
 import ballerina/persist;
+import ballerina/time;
 
 final db:Client dbClient = check new ();
 
@@ -25,7 +26,7 @@ public function getUserService() returns http:Service {
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,
             maxAge: 3600
-        }
+        } 
     }
     service object {
         resource function get sayHello(http:Caller caller, http:Request req) returns error? {
@@ -118,6 +119,7 @@ public function getUserService() returns http:Service {
                 response.setJsonPayload({"status": "success", "message": "User already exists", "userId": id});
                 return caller->respond(response);
             } else if existingUser is persist:NotFoundError {
+                time:Utc currentTime = time:utcNow();
                 db:User newUser = {
                     user_Id: id,
                     email: email,
@@ -126,7 +128,9 @@ public function getUserService() returns http:Service {
                     birthdate: birthdate,
                     phone_number: phoneNumber,
                     currency_pref: "USD",
-                    status: 1
+                    status: 1,
+                    created_at: currentTime,
+                    updated_at: currentTime
                 };
 
                 string[]|error result = dbClient->/users.post([newUser]);
@@ -208,7 +212,8 @@ public function getUserService() returns http:Service {
                 last_name: payload.last_name,
                 phone_number: payload.phone_number,
                 birthdate: payload.birthdate,
-                currency_pref: payload.currency_pref
+                currency_pref: payload.currency_pref,
+                updated_at: time:utcNow()
             };
 
             db:User|persist:Error result = dbClient->/users/[id].put(updateData);
@@ -232,11 +237,31 @@ public function getUserService() returns http:Service {
             db:UserWithRelations[] users = check from db:UserWithRelations user in userStream
                 select user;
 
+            // Build response data with timestamps
+            json[] userData = [];
+            foreach db:UserWithRelations user in users {
+                json userInfo = {
+                    "user_Id": user.user_Id,
+                      "email": user?.email ?: (),
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "phone_number": user?.phone_number ?: (),
+                    "birthdate": user?.birthdate ?: (),
+                    "currency_pref": user?.currency_pref ?: (),
+
+                    "status": user.status,
+                    "created_at": user?.created_at ?: (),
+                    "updated_at": user?.updated_at ?: ()
+                };
+                userData.push(userInfo);
+            }
+
             response.statusCode = http:STATUS_OK;
             response.setJsonPayload({
                 "status": "success",
                 "message": "Users retrieved successfully",
-                "data": users
+                "data": userData,
+                "count": userData.length()
             });
             return caller->respond(response);
         }
@@ -273,10 +298,73 @@ public function getUserService() returns http:Service {
             }
 
             response.statusCode = http:STATUS_OK;
+            
+            // Build response data with timestamps
+            if user is db:UserWithRelations {
+                json userData = {
+                    "user_Id": user.user_Id,
+                         "email": user?.email ?: (),
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "phone_number": user?.phone_number ?: (),
+                    "birthdate": user?.birthdate ?: (),
+                    "currency_pref": user?.currency_pref ?: (),
+                    "status": user.status,
+                    "created_at": user?.created_at ?: (),
+                    "updated_at": user?.updated_at ?: ()
+                };
+                
+                response.setJsonPayload({
+                    "status": "success",
+                    "message": "User retrieved successfully",
+                    "data": userData
+                });
+            } else {
+                response.setJsonPayload({
+                    "status": "success",
+                    "message": "User retrieved successfully",
+                    "data": {}
+                });
+            }
+            return caller->respond(response);
+        }
+
+        // GET USER BY COOKIE (readonly)
+        resource function get user_byCookie(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
+            http:Response response = new;
+
+            string? id = cookie_utils:getCookieValue(req, "user_id");
+
+            if id is () {
+                response.statusCode = http:STATUS_BAD_REQUEST;
+                response.setJsonPayload({"status": "error", "message": "User ID cookie not found"});
+                return caller->respond(response);
+            }
+
+            db:UserWithRelations|persist:Error user = dbClient->/users/[id];
+            if user is persist:NotFoundError {
+                response.statusCode = http:STATUS_NOT_FOUND;
+                response.setJsonPayload({"status": "error", "message": "User not found"});
+                return caller->respond(response);
+            } else if user is persist:Error {
+                response.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                response.setJsonPayload({"status": "error", "message": "Database error"});
+                return caller->respond(response);
+            }
+
+            // Return only the requested fields
+            response.statusCode = http:STATUS_OK;
             response.setJsonPayload({
                 "status": "success",
                 "message": "User retrieved successfully",
-                "data": user is db:UserWithRelations ? user.toJson() : {}
+                "data": {
+                    "user_Id": user is db:UserWithRelations ? user.user_Id : "",
+                    "first_name": user is db:UserWithRelations ? user.first_name : "",
+                    "last_name": user is db:UserWithRelations ? user.last_name : "",
+                    "currency_pref": user is db:UserWithRelations ? (user?.currency_pref ?: "USD") : "USD",
+                    "created_at": user is db:UserWithRelations ? (user?.created_at ?: ()) : (),
+                    "updated_at": user is db:UserWithRelations ? (user?.updated_at ?: ()) : ()
+                }
             });
             return caller->respond(response);
         }
@@ -314,7 +402,8 @@ public function getUserService() returns http:Service {
             }
 
             db:UserUpdate updateData = {
-                status: 0
+                status: 0,
+                updated_at: time:utcNow()
             };
 
             db:User|persist:Error result = dbClient->/users/[id].put(updateData);
@@ -329,6 +418,38 @@ public function getUserService() returns http:Service {
                 "status": "success",
                 "message": "User deleted successfully",
                 "userId": id
+            });
+            return caller->respond(response);
+        }
+
+        // USER LOGOUT
+        resource function post logout(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
+            http:Response response = new;
+
+           
+
+            // Optional: Verify user is authenticated before logout
+            // This is optional since we want to allow logout even with expired tokens
+            string? userId = cookie_utils:getCookieValue(req, "user_id");
+
+            // Clear authentication cookies using the utility function
+            cookie_utils:clearAuthCookies(response);
+
+            // Log the logout action (optional)
+            if userId is string {
+                log:printInfo("User logged out successfully: " + userId);
+            } else {
+                log:printInfo("Anonymous logout - clearing any existing cookies");
+            }
+
+            response.statusCode = http:STATUS_OK;
+            response.setJsonPayload({
+                "status": "success",
+                "message": "Logged out successfully",
+                "data": {
+                    "logged_out": true,
+                    "timestamp": time:utcNow()
+                }
             });
             return caller->respond(response);
         }
