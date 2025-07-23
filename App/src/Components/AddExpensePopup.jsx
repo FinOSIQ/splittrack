@@ -99,7 +99,7 @@ export default function AddExpensePopup() {
     // console.log("selected items:", selectedItems);
     
     const selectedGroups = selectedItems.filter(item => item.type === 'group');
-    // console.log("selected grps:",selectedGroups);
+    console.log("selected grps:",selectedGroups);
     
     
     if (selectedGroups.length === 0) {
@@ -117,9 +117,9 @@ export default function AddExpensePopup() {
 
       for (const group of selectedGroups) {
         try {
-          
+          // console.log("Fetching group details for group:", group);
           const groupDetails = await getGroupDetails(group.id);
-          console.log("Fetched group details:", groupDetails.group.groupMembers);
+          console.log("Fetched group details:", groupDetails);
           groupId = group.id; // Store the group ID for submission
           
           // Remove the group from selected items
