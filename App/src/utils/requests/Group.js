@@ -1,5 +1,51 @@
 import axios from 'axios';
 
+// Function to create a new group
+export const createGroup = async (groupData) => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_group/v1/groups`;
+    
+    console.log('Creating group with:', { 
+      groupData, 
+      url 
+    });   
+    
+    // Make the POST request with proper authentication
+    const response = await axios.post(url, groupData, {
+      withCredentials: true, // This will automatically include all cookies
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    });
+
+    console.log('Create group response:', response.data);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error creating group:", error);
+    console.error("Response data:", error.response?.data);
+    console.error("Response status:", error.response?.status);
+    
+    // Handle specific error cases and return error object
+    let errorMessage = 'Failed to create group';
+    
+    if (error.response?.status === 401) {
+      errorMessage = 'Unauthorized. Please login again.';
+    } else if (error.response?.status === 400) {
+      errorMessage = error.response?.data?.message || 'Invalid group data.';
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else {
+      errorMessage = `Failed to create group: ${error.message}`;
+    }
+    
+    return { 
+      success: false, 
+      error: errorMessage,
+      status: error.response?.status 
+    };
+  }
+};
+
 // Function to fetch group details by ID
 export const getGroupDetails = async (groupId) => {
   try {
