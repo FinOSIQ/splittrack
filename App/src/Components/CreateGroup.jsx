@@ -52,7 +52,7 @@ export default function CreateGroupModal() {
         try {
             const searchData = await fetchSearchData(
                 searchValue, 
-                "users,friends", // Search for users and friends
+                "friends", // Search for friends only
                 user.user_Id, 
                 source.token
             );
@@ -279,12 +279,20 @@ export default function CreateGroupModal() {
                                 )}
 
                                 {/* Search Results Dropdown */}
-                                {friendInput && (searchResults.friends?.length > 0 || searchResults.users?.length > 0) && (
-                                    <div className="absolute top-12 left-0 right-0 mt-1 bg-white shadow-lg rounded-md overflow-y-auto z-50 border border-gray-200">
+                                {friendInput && (searchResults.friends?.length > 0) && (
+                                    <div className="absolute top-12 left-0 right-0 mt-1 bg-white shadow-lg rounded-md overflow-hidden z-50 border border-gray-200">
                                         <SearchResults
                                             searchData={searchResults}
                                             onItemClick={handleSearchItemClick}
                                         />
+                                    </div>
+                                )}
+
+                                {/* No results message */}
+                                {friendInput && searchResults && 
+                                 (!searchResults.friends || searchResults.friends.length === 0) && (
+                                    <div className="absolute top-12 left-0 right-0 mt-1 bg-white shadow-lg rounded-md border border-gray-200 p-4 text-center text-gray-500 text-sm">
+                                        No friends found for "{friendInput}"
                                     </div>
                                 )}
                             </div>

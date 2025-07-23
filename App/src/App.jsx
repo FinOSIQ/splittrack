@@ -17,6 +17,7 @@ import AuthView from './Views/AuthView';
 import GuestEnrollment from './Views/GuestEnroll';
 import { Toaster } from 'sonner';
 import { UserProvider } from './contexts/UserContext'; // Import UserProvider
+import { ToastProvider } from './Components/ToastProvider'; // Import ToastProvider
 
 function ProtectedRoute() {
   const { state } = useAuthContext();
@@ -29,7 +30,8 @@ function App() {
   return (
     <AuthProvider config={authConfig}>
       <UserProvider>
-        <div className='w-screen mx-0 px-0'>
+        <ToastProvider>
+          <div className='w-screen mx-0 px-0'>
 
         <Router>
           <Routes>
@@ -64,6 +66,7 @@ function App() {
           position="top-center"
         />
         </div>
+        </ToastProvider>
       </UserProvider>
     </AuthProvider>
   )
