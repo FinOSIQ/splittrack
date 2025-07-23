@@ -415,6 +415,158 @@ public function getExpenseService() returns http:Service {
             return caller->respond(res);
         }
 
+        // get non-group expense by id
+        resource function get nonGroupExpense/[string expenseId](http:Caller caller, http:Request req) returns error? {
+            // Get user ID from cookie for validation
+            string? userId = utils:getCookieValue(req, "user_id");
+            if userId == () {
+                return utils:sendErrorResponse(
+                        caller,
+                        http:STATUS_BAD_REQUEST,
+                        "Invalid 'user_id' cookie",
+                        "Expected a valid 'user_id' cookie"
+                );
+            }
+
+            // Fetch expense details
+            db:ExpenseWithRelations|error expenseDetails = dbClient->/expenses/[expenseId]();
+            if expenseDetails is error {
+                // Check if the error is a "not found" error
+                if expenseDetails is persist:NotFoundError {
+                    _ = check utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Expense not found", "Expense with ID " + expenseId + " does not exist");
+                    return;
+                }
+                // Other database errors
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, expenseDetails.toString());
+            }
+
+            // Check if expense has a group (non-group expenses should have null usergroupGroup_Id)
+            if expenseDetails?.usergroup is db:UserGroup {
+                // This expense belongs to a group, check if user is a member
+                db:UserGroup usergroup = <db:UserGroup>expenseDetails?.usergroup;
+                string groupId = usergroup.group_Id;
+
+                stream<db:UserGroupMember, persist:Error?> groupMembers = dbClient->/usergroupmembers(
+                    whereClause = sql:queryConcat(`groupGroup_Id = ${groupId} AND userUser_Id = ${userId}`)
+                );
+                db:UserGroupMember[]|persist:Error groupMemberRecords = from var m in groupMembers
+                    select m;
+
+                if groupMemberRecords is persist:Error {
+                    log:printError("Database error checking group membership: " + groupMemberRecords.message());
+                    return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to check group membership");
+                }
+
+                // If user is a member of the group, this is not a non-group expense for them
+                if groupMemberRecords.length() > 0 {
+                    return utils:sendErrorResponse(
+                            caller,
+                            http:STATUS_BAD_REQUEST,
+                            "Invalid expense type",
+                            "This expense belongs to a group where you are a member"
+                    );
+                }
+            }
+
+            // Verify user is a participant in this expense
+            stream<db:ExpenseParticipant, persist:Error?> userParticipationStream = dbClient->/expenseparticipants(
+                whereClause = sql:queryConcat(`expenseExpense_Id = ${expenseId} AND userUser_Id = ${userId}`)
+            );
+            db:ExpenseParticipant[]|persist:Error userParticipationRecords = from var p in userParticipationStream
+                select p;
+
+            if userParticipationRecords is persist:Error {
+                log:printError("Database error checking user participation: " + userParticipationRecords.message());
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to check user participation");
+            }
+
+            if userParticipationRecords.length() == 0 {
+                return utils:sendErrorResponse(
+                        caller,
+                        http:STATUS_FORBIDDEN,
+                        "Access denied",
+                        "You are not a participant in this expense"
+                );
+            }
+
+            http:Response res = new;
+
+            // Explicitly fetch participants for this expense
+            stream<db:ExpenseParticipant, persist:Error?> participantsStream = dbClient->/expenseparticipants(
+                whereClause = sql:queryConcat(`expenseExpense_Id = ${expenseId}`)
+            );
+            db:ExpenseParticipant[]|persist:Error participantRecords = from var p in participantsStream
+                select p;
+
+            if participantRecords is persist:Error {
+                log:printError("Database error fetching expense participants: " + participantRecords.message());
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to fetch expense participants");
+            }
+
+            // Enhanced participant data with user information
+            json[] enhancedParticipants = [];
+
+            foreach db:ExpenseParticipant participant in participantRecords {
+                // Fetch user details for each participant
+                db:UserWithRelations|error userDetails = dbClient->/users/[participant.userUser_Id]();
+
+                map<json> participantData = {
+                    "participant_Id": participant.participant_Id,
+                    "participant_role": participant.participant_role,
+                    "owning_amount": participant.owning_amount,
+                    "expenseExpense_Id": participant.expenseExpense_Id,
+                    "userUser_Id": participant.userUser_Id,
+                    "status": participant.status,
+                    "created_at": participant.created_at is time:Utc ? participant.created_at.toString() : "",
+                    "updated_at": participant.updated_at is time:Utc ? participant.updated_at.toString() : ""
+                };
+
+                // Add user information if available
+                if userDetails is db:UserWithRelations {
+                    participantData["user"] = {
+                        "user_Id": userDetails.user_Id,
+                        "first_name": userDetails?.first_name ?: "",
+                        "last_name": userDetails?.last_name ?: "",
+                        "email": userDetails?.email ?: ""
+                    };
+                } else {
+                    // If user details not found, still include basic structure
+                    participantData["user"] = {
+                        "user_Id": participant.userUser_Id,
+                        "first_name": "Unknown",
+                        "last_name": "User",
+                        "email": ""
+                    };
+                }
+
+                enhancedParticipants.push(participantData);
+            }
+
+            // Build response data with enhanced participant information
+            json expenseData = {
+                "expense_Id": expenseDetails.expense_Id,
+                "name": expenseDetails.name,
+                "expense_total_amount": expenseDetails.expense_total_amount,
+                "expense_owe_amount": expenseDetails.expense_owe_amount,
+                "status": expenseDetails.status,
+                "created_at": expenseDetails?.created_at is time:Utc ? expenseDetails?.created_at.toString() : "",
+                "updated_at": expenseDetails?.updated_at is time:Utc ? expenseDetails?.updated_at.toString() : "",
+                "expenseParticipants": enhancedParticipants,
+                "transactions": expenseDetails?.transactions ?: [],
+                "usergroup": (), // Always null for non-group expenses
+                "isNonGroupExpense": true // Flag to indicate this is a non-group expense
+            };
+
+            json payload = {
+                "status": "success",
+                "message": "Non-group expense retrieved successfully",
+                "data": expenseData
+            };
+            res.setJsonPayload(payload);
+            res.statusCode = http:STATUS_OK;
+            return caller->respond(res);
+        }
+
         // update expense
         resource function put expenses/[string expenseId](http:Caller caller, http:Request req) returns error?|http:Response {
             json payload = check req.getJsonPayload();
@@ -831,9 +983,18 @@ public function getExpenseService() returns http:Service {
         }
 
         // get non group expenses for certain user id
-        resource function get nonGroupExpenses(http:Caller caller, http:Request req, @http:Query string userId) returns http:Ok & readonly|error? {
+        resource function get nonGroupExpenses(http:Caller caller, http:Request req) returns http:Ok & readonly|error? {
             http:Response response = new;
-            final db:Client dbClient = check new (); // Assuming db:Client is your persist client
+
+            string? userId = utils:getCookieValue(req, "user_id");
+            if userId == () {
+                return utils:sendErrorResponse(
+                        caller,
+                        http:STATUS_BAD_REQUEST,
+                        "Invalid 'user_id' cookie",
+                        "Expected a valid 'user_id' cookie"
+                );
+            }
 
             // Step 1: Fetch all ExpenseParticipant records where the user is involved
             stream<db:ExpenseParticipant, persist:Error?> userParticipants = dbClient->/expenseparticipants(
@@ -876,6 +1037,8 @@ public function getExpenseService() returns http:Service {
 
                 // Process the stream result
                 var result = check expenseStream.next();
+                check expenseStream.close(); // Important: Close the stream
+
                 record {|
                     string expense_Id;
                     string name;
@@ -971,17 +1134,72 @@ public function getExpenseService() returns http:Service {
                     }
                 }
 
-                // Step 9: Add the expense summary
+                // Step 8.5: Get transactions for this expense
+                sql:ParameterizedQuery transactionsQuery = `
+                    SELECT 
+                        t.transaction_Id,
+                        t.payed_amount,
+                        t.payee_IdUser_Id,
+                        t.status,
+                        t.created_at,
+                        t.updated_at,
+                        u.first_name,
+                        u.last_name
+                    FROM 
+                        Transaction t
+                    JOIN 
+                        User u ON t.payee_IdUser_Id = u.user_Id
+                    WHERE 
+                        t.expenseExpense_Id = ${expenseId} AND t.status = 1
+                `;
+
+                stream<record {|
+                    string transaction_Id;
+                    decimal payed_amount;
+                    string payee_IdUser_Id;
+                    int status;
+                    time:Utc? created_at;
+                    time:Utc? updated_at;
+                    string first_name;
+                    string last_name;
+                |}, sql:Error?> transactionsStream = utils:Client->query(transactionsQuery);
+
+                json[] expenseTransactions = [];
+                error? txnErr = from var txn in transactionsStream
+                    do {
+                        expenseTransactions.push({
+                            "transaction_Id": txn.transaction_Id,
+                            "payed_amount": txn.payed_amount,
+                            "payee_IdUser_Id": txn.payee_IdUser_Id,
+                            "payee_name": txn.first_name + " " + txn.last_name,
+                            "status": txn.status,
+                            "created_at": txn.created_at,
+                            "updated_at": txn.updated_at
+                        });
+                    };
+                check transactionsStream.close(); // Important: Close the stream
+
+                if txnErr is error {
+                    log:printError("Database error fetching transactions for expense " + expenseId + ": " + txnErr.message());
+                    response.statusCode = 500;
+                    response.setJsonPayload({"status": "error", "message": "Failed to fetch expense transactions"});
+                    check caller->respond(response);
+                    return;
+                }
+
+                // Step 10: Add the expense summary
                 summaries.push({
+                    expenseId: expenseId,
                     expenseName: expenseRecord.name,
                     participantNames: participantNames,
                     netAmount: netAmount,
                     created_at: expenseRecord.created_at,
-                    updated_at: expenseRecord.updated_at
+                    updated_at: expenseRecord.updated_at,
+                    transactions: expenseTransactions
                 });
             }
 
-            // Step 10: Send the response
+            // Step 11: Send the response
             response.statusCode = 200;
             response.setJsonPayload({
                 "status": "success",
@@ -1015,6 +1233,7 @@ public function getExpenseService() returns http:Service {
                 do {
                     userRecord = u;
                 };
+            check userStream.close(); // Important: Close the stream
             if uErr is error {
                 log:printError("Database error fetching user: " + uErr.message());
                 response.statusCode = 500;
@@ -1039,6 +1258,7 @@ public function getExpenseService() returns http:Service {
                 do {
                     expenseIds.push(p.expenseExpense_Id);
                 };
+            check participantStream.close(); // Important: Close the stream
             if e is error {
                 log:printError("Database error fetching participant records: " + e.message());
                 response.statusCode = 500;
@@ -1078,6 +1298,7 @@ public function getExpenseService() returns http:Service {
                     do {
                         allParticipantRecords.push(p);
                     };
+                check allParticipantsStream.close(); // Important: Close the stream
                 if pErr is error {
                     log:printError("Database error fetching participants for expense " + expenseId + ": " + pErr.message());
                     response.statusCode = 500;
@@ -1457,9 +1678,9 @@ public function getExpenseService() returns http:Service {
                         int totalParticipants = 1; // default
 
                         check from record {} countRow in countStream
-                        do {
-                            totalParticipants = <int>countRow["total_participants"];
-                        };
+                            do {
+                                totalParticipants = <int>countRow["total_participants"];
+                            };
 
                         if groupId is string {
                             // Get group name
@@ -1468,9 +1689,9 @@ public function getExpenseService() returns http:Service {
 
                             string groupName = "Unknown Group";
                             check from record {} groupRow in groupStream
-                            do {
-                                groupName = <string>groupRow["name"];
-                            };
+                                do {
+                                    groupName = <string>groupRow["name"];
+                                };
 
                             // Check if there are non-group participants
                             sql:ParameterizedQuery nonGroupQuery = `
@@ -1486,9 +1707,9 @@ public function getExpenseService() returns http:Service {
                             int nonGroupCount = 0;
 
                             check from record {} ngRow in nonGroupStream
-                            do {
-                                nonGroupCount = <int>ngRow["non_group_count"];
-                            };
+                                do {
+                                    nonGroupCount = <int>ngRow["non_group_count"];
+                                };
 
                             int groupMemberCount = totalParticipants - nonGroupCount;
 
@@ -1518,9 +1739,9 @@ public function getExpenseService() returns http:Service {
                         string creatorName = "Someone";
 
                         check from record {} creatorRow in creatorStream
-                        do {
-                            creatorName = <string>creatorRow["first_name"];
-                        };
+                            do {
+                                creatorName = <string>creatorRow["first_name"];
+                            };
 
                         description = string `You were added to ${expenseName} by ${creatorName} - you owe $${owingAmount}`;
                     }
@@ -1621,44 +1842,172 @@ public function getExpenseService() returns http:Service {
             return;
         }
 
+        // Dedicated API for non-group expense details
+        resource function get nonGroupExpenseDetails/[string expenseId](http:Caller caller, http:Request req) returns error? {
+            http:Response res = new;
+
+            // First check if this expense exists and get basic info
+            sql:ParameterizedQuery expenseCheckQuery = `
+        SELECT expense_Id, name, expense_total_amount, expense_owe_amount, status, 
+               created_at, updated_at, usergroupGroup_Id
+        FROM Expense 
+        WHERE expense_Id = ${expenseId}
+    `;
+
+            stream<record {}, persist:Error?> expenseStream = dbClient->queryNativeSQL(expenseCheckQuery);
+            record {}? expenseRecord = ();
+
+            error? expenseErr = from record {} row in expenseStream
+                do {
+                    expenseRecord = row;
+                };
+
+            if expenseErr is error {
+                log:printError("Database error fetching expense: " + expenseErr.message());
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to fetch expense");
+            }
+
+            if expenseRecord is () {
+                return utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Expense not found", "Expense with ID " + expenseId + " does not exist");
+            }
+
+            // Check if it's a non-group expense (usergroupGroup_Id should be null or empty)
+            anydata groupIdValue = expenseRecord["usergroupGroup_Id"];
+            if groupIdValue is string && groupIdValue.trim() != "" {
+                return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Invalid expense type", "This expense belongs to a group. Use the regular expense endpoint.");
+            }
+
+            // Fetch participants with user details in one query
+            sql:ParameterizedQuery participantsQuery = `
+        SELECT ep.participant_Id, ep.participant_role, ep.owning_amount, 
+               ep.expenseExpense_Id, ep.userUser_Id, ep.status, 
+               ep.created_at as p_created_at, ep.updated_at as p_updated_at,
+               u.user_Id, u.first_name, u.last_name, u.email
+        FROM ExpenseParticipant ep
+        JOIN User u ON ep.userUser_Id = u.user_Id
+        WHERE ep.expenseExpense_Id = ${expenseId}
+    `;
+
+            stream<record {}, persist:Error?> participantsStream = dbClient->queryNativeSQL(participantsQuery);
+            json[] enhancedParticipants = [];
+
+            error? participantsErr = from record {} row in participantsStream
+                do {
+                    enhancedParticipants.push({
+                        "participant_Id": <string>row["participant_Id"],
+                        "participant_role": <string>row["participant_role"],
+                        "owning_amount": <decimal>row["owning_amount"],
+                        "expenseExpense_Id": <string>row["expenseExpense_Id"],
+                        "userUser_Id": <string>row["userUser_Id"],
+                        "status": <int>row["status"],
+                        "created_at": <string>row["p_created_at"],
+                        "updated_at": <string>row["p_updated_at"],
+                        "user": {
+                            "user_Id": <string>row["user_Id"],
+                            "first_name": <string>row["first_name"],
+                            "last_name": <string>row["last_name"],
+                            "email": <string>row["email"]
+                        }
+                    });
+                };
+
+            if participantsErr is error {
+                log:printError("Database error fetching participants: " + participantsErr.message());
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to fetch participants");
+            }
+
+            // Fetch transactions for this expense
+            sql:ParameterizedQuery transactionsQuery = `
+        SELECT transaction_Id, payed_amount, payee_idUser_Id, status, 
+               created_at, updated_at
+        FROM Transaction 
+        WHERE expenseExpense_Id = ${expenseId}
+    `;
+
+            stream<record {}, persist:Error?> transactionsStream = dbClient->queryNativeSQL(transactionsQuery);
+            json[] transactionsData = [];
+
+            error? transactionsErr = from record {} row in transactionsStream
+                do {
+                    transactionsData.push({
+                        "transaction_Id": <string>row["transaction_Id"],
+                        "payed_amount": <decimal>row["payed_amount"],
+                        "expenseExpense_Id": expenseId,
+                        "payee_idUser_Id": <string>row["payee_idUser_Id"],
+                        "status": <int>row["status"],
+                        "created_at": <string>row["created_at"],
+                        "updated_at": <string>row["updated_at"]
+                    });
+                };
+
+            if transactionsErr is error {
+                log:printError("Database error fetching transactions: " + transactionsErr.message());
+            }
+
+            // Build response data for non-group expense
+            json expenseData = {
+                "expense_Id": <string>expenseRecord["expense_Id"],
+                "name": <string>expenseRecord["name"],
+                "expense_total_amount": <decimal>expenseRecord["expense_total_amount"],
+                "expense_owe_amount": <decimal>expenseRecord["expense_owe_amount"],
+                "status": <int>expenseRecord["status"],
+                "created_at": <string>expenseRecord["created_at"],
+                "updated_at": <string>expenseRecord["updated_at"],
+                "expenseParticipants": enhancedParticipants,
+                "transactions": transactionsData,
+                "usergroup": null,
+                "isGroupExpense": false
+            };
+
+            json payload = {
+                "status": "success",
+                "message": "Non-group expense retrieved successfully",
+                "data": expenseData
+            };
+
+            res.setJsonPayload(payload);
+            res.statusCode = http:STATUS_OK;
+            return caller->respond(res);
+        }
+
     };
 }
 
-        // Helper function to construct ParticipantPayload array from JSON with optional fields
-        function constructParticipants(json[] participantJsonArray) returns ParticipantPayload[]|error {
-            ParticipantPayload[] participants = [];
+// Helper function to construct ParticipantPayload array from JSON with optional fields
+function constructParticipants(json[] participantJsonArray) returns ParticipantPayload[]|error {
+    ParticipantPayload[] participants = [];
 
-            foreach json participantJson in participantJsonArray {
-                json roleJson = check participantJson.participant_role;
-                json amountJson = check participantJson.owning_amount;
-                json userIdJson = check participantJson.userUser_Id;
+    foreach json participantJson in participantJsonArray {
+        json roleJson = check participantJson.participant_role;
+        json amountJson = check participantJson.owning_amount;
+        json userIdJson = check participantJson.userUser_Id;
 
-                // Get optional fields
-                json|error firstNameResult = participantJson.firstName;
-                json|error lastNameResult = participantJson.lastName;
+        // Get optional fields
+        json|error firstNameResult = participantJson.firstName;
+        json|error lastNameResult = participantJson.lastName;
 
-                string? firstName = ();
-                string? lastName = ();
+        string? firstName = ();
+        string? lastName = ();
 
-                if firstNameResult is json && firstNameResult !is () {
-                    firstName = firstNameResult.toString();
-                }
-
-                if lastNameResult is json && lastNameResult !is () {
-                    lastName = lastNameResult.toString();
-                }
-
-                ParticipantPayload participant = {
-                    participant_role: <ParticipantRole>roleJson,
-                    owning_amount: <decimal>amountJson,
-                    userUser_Id: userIdJson is () ? () : userIdJson.toString(),
-                    firstName: firstName,
-                    lastName: lastName
-                };
-
-                participants.push(participant);
-            }
-
-            return participants;
+        if firstNameResult is json && firstNameResult !is () {
+            firstName = firstNameResult.toString();
         }
+
+        if lastNameResult is json && lastNameResult !is () {
+            lastName = lastNameResult.toString();
+        }
+
+        ParticipantPayload participant = {
+            participant_role: <ParticipantRole>roleJson,
+            owning_amount: <decimal>amountJson,
+            userUser_Id: userIdJson is () ? () : userIdJson.toString(),
+            firstName: firstName,
+            lastName: lastName
+        };
+
+        participants.push(participant);
+    }
+
+    return participants;
+}
 

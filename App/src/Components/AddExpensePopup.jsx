@@ -63,7 +63,7 @@ export default function AddExpensePopup() {
 
     // Create a new item with type and details
     const newSelectedItem = {
-      id: item.user_Id || item.group_Id || item.id || item.user_id || null,
+      id: item.user_Id || item.group_Id || item.id || item.user_id || item.group_id || item.Id || null,
       type,
       name: item.first_name || item.email || item.name || "Unknown",
       avatar: item.avatar || null,
