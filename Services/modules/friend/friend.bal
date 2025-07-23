@@ -1,11 +1,11 @@
 import splittrack_backend.db as db;
+import splittrack_backend.utils;
 
 import ballerina/http;
 import ballerina/log;
 import ballerina/sql;
 import ballerina/time;
 import ballerina/uuid;
-import splittrack_backend.utils;
 
 final db:Client dbClient = check new;
 
@@ -145,7 +145,7 @@ public function getFriendService() returns http:Service {
                 }
 
                 result.push({
-                    friendReq_ID: fr.friendReq_ID,  // This line is crucial for frontend ID
+                    friendReq_ID: fr.friendReq_ID, // This line is crucial for frontend ID
                     senderName: senderName,
                     senderEmail: senderEmail,
                     senderImage: "placeholder.png" // Replace with actual image URL if available
@@ -224,8 +224,8 @@ public function getFriendService() returns http:Service {
             res.setJsonPayload(response);
             check caller->respond(res);
         }
-        
-        //Accept or decline friend
+
+        //Accept or decline friend request - Simple fixed version
         resource function put friendRequests/[string requestId](http:Caller caller, http:Request req) returns error? {
             json|error payload = req.getJsonPayload();
             if (payload is error) {
@@ -262,61 +262,60 @@ public function getFriendService() returns http:Service {
 
             db:FriendRequest? existingRequest = ();
             var nextResult = check requestStream.next();
-            check requestStream.close(); // Important: Close the stream
+            check requestStream.close();
 
             if nextResult is record {db:FriendRequest value;} {
                 existingRequest = nextResult.value;
             }
 
-            if existingRequest is db:FriendRequest {
-                string sendUserId = existingRequest.send_user_idUser_Id;
-                string receiveUserId = existingRequest.receive_user_Id;
-
-            
-
-                // Update the FriendRequest status
-                sql:ParameterizedQuery updateQuery = `UPDATE FriendRequest SET status = ${status} WHERE friendReq_ID = ${requestId}`;
-                var updateResult = dbClient->executeNativeSQL(updateQuery);
-                if updateResult is error {
-                    http:Response res = new;
-                    res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
-                    res.setJsonPayload({"error": "Failed to update friend request status"});
-                    check caller->respond(res);
-                    return;
-                }
-
-                if status == "accepted" {
-                    string newFriendId = uuid:createType4AsString().toString();
-                    string friend_Id = "fr-" + newFriendId.substring(0, 8);
-
-                    sql:ParameterizedQuery insertFriendQuery = `INSERT INTO Friend 
-            (friend_Id, user_id_1User_Id, user_id_2User_Id, status) 
-            VALUES (${friend_Id}, ${sendUserId}, ${receiveUserId}, 1)`;
-
-                    var insertFriendResult = dbClient->executeNativeSQL(insertFriendQuery);
-                    if insertFriendResult is error {
-                        http:Response res = new;
-                        res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
-                        res.setJsonPayload({"error": "Failed to insert new friend"});
-                        check caller->respond(res);
-                        return;
-                    }
-                }
-
-                http:Response res = new;
-                res.statusCode = http:STATUS_NO_CONTENT;
-                check caller->respond(res);
-                return;
-            } else {
+            // Check if request exists
+            if existingRequest == () {
                 http:Response res = new;
                 res.statusCode = http:STATUS_NOT_FOUND;
                 res.setJsonPayload({"error": "Friend request not found"});
                 check caller->respond(res);
                 return;
             }
-        }
 
-    
+            // Now we know existingRequest is not null, we can safely access its fields
+            db:FriendRequest friendRequest = <db:FriendRequest>existingRequest;
+            string sendUserId = friendRequest.send_user_idUser_Id;
+            string receiveUserId = friendRequest.receive_user_Id;
+
+            // Update the FriendRequest status
+            sql:ParameterizedQuery updateQuery = `UPDATE FriendRequest SET status = ${status} WHERE friendReq_ID = ${requestId}`;
+            var updateResult = dbClient->executeNativeSQL(updateQuery);
+            if updateResult is error {
+                http:Response res = new;
+                res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                res.setJsonPayload({"error": "Failed to update friend request status"});
+                check caller->respond(res);
+                return;
+            }
+
+            if status == "accepted" {
+                string newFriendId = uuid:createType4AsString().toString();
+                string friend_Id = "fr-" + newFriendId.substring(0, 8);
+
+                sql:ParameterizedQuery insertFriendQuery = `INSERT INTO Friend 
+            (friend_Id, user_id_1User_Id, user_id_2User_Id, status) 
+            VALUES (${friend_Id}, ${sendUserId}, ${receiveUserId}, 1)`;
+
+                var insertFriendResult = dbClient->executeNativeSQL(insertFriendQuery);
+                if insertFriendResult is error {
+                    http:Response res = new;
+                    res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                    res.setJsonPayload({"error": "Failed to insert new friend"});
+                    check caller->respond(res);
+                    return;
+                }
+            }
+
+            http:Response res = new;
+            res.statusCode = http:STATUS_OK;
+            res.setJsonPayload({"message": "Friend request processed successfully"});
+            check caller->respond(res);
+        }
 
         // Get the total balance with a friend (friendExpense)
         resource function get friendExpense/[string friendId](http:Caller caller, http:Request req) returns error? {
@@ -332,10 +331,10 @@ public function getFriendService() returns http:Service {
 
             // Check if the two users are friends (status = 1) - Use utils:Client instead of dbClient
             sql:ParameterizedQuery friendCheckQuery = `SELECT friend_Id FROM Friend WHERE ((user_id_1User_Id = ${currentUserId} AND user_id_2User_Id = ${friendId}) OR (user_id_1User_Id = ${friendId} AND user_id_2User_Id = ${currentUserId})) AND status = 1`;
-            stream<record {| string friend_Id; |}, sql:Error?> friendStream = utils:Client->query(friendCheckQuery);
+            stream<record {|string friend_Id;|}, sql:Error?> friendStream = utils:Client->query(friendCheckQuery);
             var friendResult = friendStream.next();
             check friendStream.close(); // Important: Close the stream
-            
+
             if friendResult is error || !(friendResult is record {|record {|string friend_Id;|} value;|}) {
                 http:Response res = new;
                 res.statusCode = http:STATUS_FORBIDDEN;
@@ -346,10 +345,10 @@ public function getFriendService() returns http:Service {
 
             // Get friend's name - Use utils:Client for consistency
             sql:ParameterizedQuery friendNameQuery = `SELECT first_name, last_name FROM User WHERE user_Id = ${friendId}`;
-            stream<record {| string? first_name; string? last_name; |}, sql:Error?> friendNameStream = utils:Client->query(friendNameQuery);
+            stream<record {|string? first_name; string? last_name;|}, sql:Error?> friendNameStream = utils:Client->query(friendNameQuery);
             var friendNameResult = friendNameStream.next();
             check friendNameStream.close(); // Important: Close the stream
-            
+
             string friendName = "";
             if friendNameResult is record {|record {|string? first_name; string? last_name;|} value;|} {
                 string? fname = friendNameResult.value.first_name;
@@ -367,12 +366,15 @@ public function getFriendService() returns http:Service {
 
             // Find all expenses where both users are participants
             sql:ParameterizedQuery expenseIdsQuery = `SELECT DISTINCT ep1.expenseExpense_Id FROM ExpenseParticipant ep1 JOIN ExpenseParticipant ep2 ON ep1.expenseExpense_Id = ep2.expenseExpense_Id JOIN Expense e ON ep1.expenseExpense_Id = e.expense_Id WHERE ep1.userUser_Id = ${currentUserId} AND ep2.userUser_Id = ${friendId} AND ep1.status = 1 AND ep2.status = 1 AND e.status = 1`;
-            stream<record {| string expenseExpense_Id; |}, sql:Error?> expenseIdsStream = utils:Client->query(expenseIdsQuery);
+            stream<record {|string expenseExpense_Id;|}, sql:Error?> expenseIdsStream = utils:Client->query(expenseIdsQuery);
 
             string[] expenseIds = [];
-            error? e1 = from var row in expenseIdsStream do { expenseIds.push(row.expenseExpense_Id); };
+            error? e1 = from var row in expenseIdsStream
+                do {
+                    expenseIds.push(row.expenseExpense_Id);
+                };
             check expenseIdsStream.close(); // Important: Close the stream
-            
+
             if e1 is error {
                 http:Response res = new;
                 res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
@@ -387,10 +389,10 @@ public function getFriendService() returns http:Service {
             foreach string expenseId in expenseIds {
                 // Get expense details including name, total amount, and creation date
                 sql:ParameterizedQuery expenseQuery = `SELECT name, expense_total_amount, created_at FROM Expense WHERE expense_Id = ${expenseId} AND status = 1`;
-                stream<record {| string name; decimal expense_total_amount; time:Utc? created_at; |}, sql:Error?> expenseStream = utils:Client->query(expenseQuery);
+                stream<record {|string name; decimal expense_total_amount; time:Utc? created_at;|}, sql:Error?> expenseStream = utils:Client->query(expenseQuery);
                 var expenseResult = expenseStream.next();
                 check expenseStream.close(); // Important: Close the stream
-                
+
                 string expenseName = "";
                 decimal expenseTotalAmount = 0d;
                 time:Utc? createdAt = ();
@@ -402,11 +404,14 @@ public function getFriendService() returns http:Service {
 
                 // Get all participants for this expense
                 sql:ParameterizedQuery participantsQuery = `SELECT userUser_Id, participant_role, owning_amount FROM ExpenseParticipant WHERE expenseExpense_Id = ${expenseId} AND status = 1`;
-                stream<record {| string userUser_Id; string participant_role; decimal owning_amount; |}, sql:Error?> participantsStream = utils:Client->query(participantsQuery);
-                record {| string userUser_Id; string participant_role; decimal owning_amount; |}[] participants = [];
-                error? e2 = from var p in participantsStream do { participants.push(p); };
+                stream<record {|string userUser_Id; string participant_role; decimal owning_amount;|}, sql:Error?> participantsStream = utils:Client->query(participantsQuery);
+                record {|string userUser_Id; string participant_role; decimal owning_amount;|}[] participants = [];
+                error? e2 = from var p in participantsStream
+                    do {
+                        participants.push(p);
+                    };
                 check participantsStream.close(); // Important: Close the stream
-                
+
                 if e2 is error {
                     http:Response res = new;
                     res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
@@ -461,7 +466,7 @@ public function getFriendService() returns http:Service {
                 |}, sql:Error?> transactionsStream = utils:Client->query(transactionsQuery);
 
                 json[] expenseTransactions = [];
-                error? e3 = from var txn in transactionsStream 
+                error? e3 = from var txn in transactionsStream
                     do {
                         expenseTransactions.push({
                             "transaction_Id": txn.transaction_Id,
@@ -474,7 +479,7 @@ public function getFriendService() returns http:Service {
                         });
                     };
                 check transactionsStream.close(); // Important: Close the stream
-                
+
                 if e3 is error {
                     http:Response res = new;
                     res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;

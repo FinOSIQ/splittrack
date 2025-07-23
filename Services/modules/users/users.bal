@@ -169,6 +169,7 @@ public function getUserService() returns http:Service {
                 return caller->respond(response);
             } else {
                 response.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                io:println("Database error: ", existingUser.message());
                 response.setJsonPayload({"status": "error", "message": "Database error"});
                 return caller->respond(response);
             }
