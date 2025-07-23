@@ -225,3 +225,54 @@ export const fetchGroupExpenses = async () => {
     }
   }
 };
+
+// Function to fetch non-group expenses
+export const fetchNonGroupExpenses = async () => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/nonGroupExpenses`;
+    
+    console.log('Fetching non-group expenses from:', url);
+    
+    const response = await axios.get(url, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('Non-group expenses response:', response.data);
+    console.log('Number of expenses found:', response.data.expenses?.length || 0);
+    
+    // Log each expense for debugging
+    if (response.data.expenses && response.data.expenses.length > 0) {
+      response.data.expenses.forEach((expense, index) => {
+        console.log(`Expense ${index + 1}:`, {
+          expenseId: expense.expenseId,
+          expenseName: expense.expenseName,
+          netAmount: expense.netAmount,
+          participantNames: expense.participantNames,
+          transactionCount: expense.transactions?.length || 0,
+          created_at: expense.created_at
+        });
+      });
+    } else {
+      console.log('No non-group expenses found');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching non-group expenses:", error);
+    console.error("Response data:", error.response?.data);
+    console.error("Response status:", error.response?.status);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Unauthorized. Please login again.');
+    } else if (error.response?.status === 404) {
+      throw new Error('Non-group expenses not found.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error(`Failed to fetch non-group expenses: ${error.message}`);
+    }
+  }
+};

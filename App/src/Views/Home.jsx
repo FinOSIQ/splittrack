@@ -15,7 +15,7 @@ import SearchResults from '../Components/SearchResults';
 import { fetchSearchData } from '../utils/requests/expense';
 import { useUserData } from '../hooks/useUserData';
 import useIsMobile from '../utils/useIsMobile';
-import { fetchGroupExpenses } from '../utils/requests/expense';
+import { fetchGroupExpenses, fetchNonGroupExpenses } from '../utils/requests/expense';
 
 // Constants for search functionality
 const SEARCH_DEBOUNCE_MS = 300;
@@ -33,7 +33,10 @@ export default function Home() {
   const [groups, setGroups] = useState([]);
   const [groupLoading, setGroupLoading] = useState(true);
   const [groupError, setGroupError] = useState(null);
-    const [showRecentActivity, setShowRecentActivity] = useState(false);
+  const [nonGroupExpenses, setNonGroupExpenses] = useState([]);
+  const [nonGroupLoading, setNonGroupLoading] = useState(true);
+  const [nonGroupError, setNonGroupError] = useState(null);
+  const [showRecentActivity, setShowRecentActivity] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(INITIAL_SEARCH_STATE);
@@ -232,6 +235,33 @@ export default function Home() {
     loadGroupData();
   }, []);
 
+  // Fetch non-group expenses
+  useEffect(() => {
+    const loadNonGroupData = async () => {
+      try {
+        setNonGroupLoading(true);
+        setNonGroupError(null);
+        
+        const response = await fetchNonGroupExpenses();
+        
+        if (response && response.expenses) {
+          setNonGroupExpenses(response.expenses);
+        } else {
+          setNonGroupExpenses([]);
+        }
+        console.log('Non-group expenses data:', response.expenses); 
+      } catch (err) {
+        console.error('Error loading non-group expenses:', err);
+        setNonGroupError(err.message || 'Failed to load non-group expenses');
+        setNonGroupExpenses([]);
+      } finally {
+        setNonGroupLoading(false);
+      }
+    };
+
+    loadNonGroupData();
+  }, []);
+
   return (
     <>
       {isMobile ? (
@@ -356,6 +386,39 @@ export default function Home() {
                     <GroupCard key={index} group={group} />
                   ))
                 )}
+              </div>
+
+              {/* Non Group Expenses Section */}
+              <div className="mt-8">
+                <h2 className="text-2xl font-bold mb-4">Non Group Expenses</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {nonGroupLoading ? (
+                    <div className="col-span-1 lg:col-span-2 text-center text-[#040b2b] text-lg py-8">
+                      Loading non-group expenses...
+                    </div>
+                  ) : nonGroupError ? (
+                    <div className="col-span-1 lg:col-span-2 text-center text-red-500 text-lg py-8">
+                      Error: {nonGroupError}
+                    </div>
+                  ) : nonGroupExpenses.length === 0 ? (
+                    <div className="col-span-1 lg:col-span-2 text-center text-[#040b2b] text-lg">
+                      No non-group expenses found
+                    </div>
+                  ) : (
+                    nonGroupExpenses.map((expense, index) => (
+                      <GroupCard 
+                        key={`non-group-${index}`} 
+                        group={{
+                          groupId: expense.expenseId,
+                          groupName: expense.expenseName || 'Unnamed Expense',
+                          netAmount: expense.netAmount || 0,
+                          participantNames: expense.participantNames || [],
+                          isNonGroupExpense: true
+                        }} 
+                      />
+                    ))
+                  )}
+                </div>
               </div>
             </div>
 

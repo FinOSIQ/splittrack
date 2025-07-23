@@ -47,11 +47,13 @@ type GroupSummaryTwo record {|
 |};
 
 type ExpenseSummary record {|
+    string expenseId;
     string expenseName;
     string[] participantNames;
     decimal netAmount;
     time:Utc created_at;
     time:Utc updated_at;
+    json[] transactions;
 |};
 
 type UserExpenseSummary record {|
@@ -77,7 +79,7 @@ public type ExpenseSession record {|
     string status;
     time:Utc createdAt; 
     time:Utc expiresAt;
-    GuestUser[] guestUsers;  // ✅ Embedded guest users array with structured data
+    GuestUser[] guestUsers;  //  Embedded guest users array with structured data
 |};
 
 type ExpenseJoinInfo record {
