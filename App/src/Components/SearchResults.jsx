@@ -2,12 +2,35 @@ import React from 'react';
 import { List } from '@material-tailwind/react';
 import UserCard from './UserCard';
 
+// Default images for search results
+const DEFAULT_IMAGES = {
+    user: 'https://docs.material-tailwind.com/img/face-1.jpg',
+    friend: 'https://docs.material-tailwind.com/img/face-2.jpg',
+    group: 'https://docs.material-tailwind.com/img/face-3.jpg'
+};
+
 // Optimized SearchResults Component with click handling
 export default function SearchResults({ searchData = {}, onItemClick }) {
     // Default empty arrays to prevent errors and improve performance
     const friends = searchData.friends || [];
     const groups = searchData.groups || [];
     const users = searchData.users || [];
+
+    // Transform data with proper images
+    const transformedFriends = friends.map(friend => ({
+        ...friend,
+        img: friend.img || DEFAULT_IMAGES.friend
+    }));
+
+    const transformedGroups = groups.map(group => ({
+        ...group,
+        img: group.img || DEFAULT_IMAGES.group
+    }));
+
+    const transformedUsers = users.map(user => ({
+        ...user,
+        img: user.img || DEFAULT_IMAGES.user
+    }));
 
     // Handle item click and pass data to parent
     const handleItemClick = (item, type) => {
@@ -20,30 +43,30 @@ export default function SearchResults({ searchData = {}, onItemClick }) {
     return (
         <List>
             {/* Friends Section (Only render if there are friends) */}
-            {friends.length > 0 && (
+            {transformedFriends.length > 0 && (
                 <Section 
                     title="Friends" 
-                    data={friends} 
+                    data={transformedFriends} 
                     type="friend"
                     onItemClick={handleItemClick} 
                 />
             )}
 
             {/* Groups Section */}
-            {groups.length > 0 && (
+            {transformedGroups.length > 0 && (
                 <Section 
                     title="Groups" 
-                    data={groups} 
+                    data={transformedGroups} 
                     type="group"
                     onItemClick={handleItemClick} 
                 />
             )}
 
             {/* Users Section */}
-            {users.length > 0 && (
+            {transformedUsers.length > 0 && (
                 <Section 
                     title="Users" 
-                    data={users} 
+                    data={transformedUsers} 
                     type="user"
                     onItemClick={handleItemClick} 
                 />
@@ -60,7 +83,7 @@ const Section = ({ title, data, type, onItemClick }) => (
             <hr className="flex-1 ml-4 border-gray-300" />
         </div>
         {data.map((item, index) => (
-            <div key={item.user_id || item.group_id || index} onClick={() => onItemClick(item, type)} className="cursor-pointer">
+            <div key={item.user_id || item.group_Id || index} onClick={() => onItemClick(item, type)} className="cursor-pointer">
                 <UserCard 
                     img={item.img} 
                     name={item.name} 

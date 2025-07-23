@@ -8,6 +8,7 @@ import addExpenseImg from '../images/addexpense.png';
 import addImg from '../images/add.png';
 import activityImg from '../images/activity.png';
 import AddExpensePopup from './AddExpensePopup';
+import CreateGroupModal from './CreateGroup';
 
 const NavBar = () => {
   return (
@@ -32,9 +33,7 @@ const NavBar = () => {
             
           </div>
 
-          <Link to="/add" className="w-7 h-7 mr-7">
-            <img src={addImg} alt="Add" />
-          </Link>
+          <CreateGroupModal/>
 
           <Link to="/activity" className="w-7 h-7 mr-9">
             <img src={activityImg} alt="Activity" />

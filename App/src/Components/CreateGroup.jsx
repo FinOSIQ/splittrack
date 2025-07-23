@@ -1,32 +1,163 @@
 import React, { useState } from "react";
+import { createGroup } from "../utils/requests/Group";
+import { toast } from "sonner";
+import { useUserData } from "../hooks/useUserData";
+import { fetchSearchData } from "../utils/requests/expense";
+import axios from "axios";
+import SearchResults from "./SearchResults";
 
 export default function CreateGroupModal() {
     const [isOpen, setIsOpen] = useState(false);
     const [groupName, setGroupName] = useState("");
     const [friendInput, setFriendInput] = useState("");
-    const [friends, setFriends] = useState([
-        
-    ]);
+    const [friends, setFriends] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
+    
+    // Get user data from hook
+    const { user, loading: userLoading } = useUserData();
 
     const handleAddFriend = (e) => {
         e.preventDefault();
         if (friendInput.trim()) {
             setFriends((prev) => [...prev, friendInput.trim()]);
             setFriendInput("");
+            setSearchResults({}); // Clear search results after adding
         }
     };
 
-    const handleRemoveFriend = (name) => {
-        setFriends((prev) => prev.filter((f) => f !== name));
+    const handleRemoveFriend = (friendToRemove) => {
+        setFriends((prev) => prev.filter((friend) => {
+            const friendId = typeof friend === 'object' ? friend.id : friend;
+            const removeId = typeof friendToRemove === 'object' ? friendToRemove.id : friendToRemove;
+            return friendId !== removeId;
+        }));
+    };
+
+    // Handle search for users and friends
+    const handleSearch = async (searchValue) => {
+        if (!searchValue.trim()) {
+            setSearchResults([]);
+            return;
+        }
+
+        if (!user || !user.user_Id) {
+            console.log("User not logged in");
+            return;
+        }
+
+        const source = axios.CancelToken.source();
+
+        try {
+            const searchData = await fetchSearchData(
+                searchValue, 
+                "users,friends", // Search for users and friends
+                user.user_Id, 
+                source.token
+            );
+            
+            console.log("Search results:", searchData);
+            setSearchResults(searchData || {});
+        } catch (error) {
+            console.error("Error fetching search data:", error);
+            setSearchResults({});
+        }
+    };
+
+    // Handle input change for friend search
+    const handleFriendInputChange = (e) => {
+        const value = e.target.value;
+        setFriendInput(value);
+        handleSearch(value);
+    };
+
+    // Add selected search result to friends
+    const handleSearchItemClick = (item, type) => {
+        // Store both ID and display name with all necessary data
+        const friendData = {
+            id: item.user_id || item.userId || item.user_Id || item.id,
+            name: item.name || `${item.first_name || ''} ${item.last_name || ''}`.trim(),
+            email: item.email || '',
+            img: item.img || null,
+            type: type
+        };
+        
+        // Check if friend is already added
+        const isAlreadyAdded = friends.some(friend => 
+            (typeof friend === 'object' ? friend.id : friend) === friendData.id
+        );
+        
+        if (friendData.id && !isAlreadyAdded) {
+            setFriends((prev) => [...prev, friendData]);
+            setFriendInput("");
+            setSearchResults({});
+        }
+    };
+
+    const handleCreateGroup = async () => {
+        if (!groupName.trim()) {
+            toast.error("Please enter a group name");
+            return;
+        }
+
+        // Check if user data is available
+        if (!user || !user.user_Id) {
+            toast.error("User not logged in. Please login first.");
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const currentUserId = user.user_Id;
+            
+            const members = [
+                { userId: currentUserId, role: "creator" }
+            ];
+
+            // Add friends as members
+            friends.forEach(friend => {
+                const friendId = typeof friend === 'object' ? friend.id : friend;
+                members.push({ userId: friendId, role: "member" });
+            });
+
+            const groupData = {
+                name: groupName,
+                members: members
+            };
+
+            const response = await createGroup(groupData);
+            
+            if (response.success) {
+                toast.success("Group created successfully!");
+                // Reset form
+                setGroupName("");
+                setFriends([]);
+                setFriendInput("");
+                setSearchResults({});
+                setIsOpen(false);
+            } else {
+                toast.error(response.error || "Failed to create group");
+            }
+        } catch (error) {
+            console.error("Unexpected error creating group:", error);
+            toast.error("An unexpected error occurred");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
         <div>
             <button
                 onClick={() => setIsOpen(true)}
-                className="bg-blue-500 text-white px-4 py-2 rounded-md"
+                className=""
             >
-                Create Group
+                <img 
+                    src="/create-group.svg" 
+                    alt="Create Group" 
+                    className="w-5 h-5"
+                />
+               
             </button>
 
             {isOpen && (
@@ -37,7 +168,11 @@ export default function CreateGroupModal() {
                         <div
                             data-svg-wrapper
                             className="left-[596px] top-[34px] absolute cursor-pointer"
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => {
+                                setIsOpen(false);
+                                setSearchResults({});
+                                setFriendInput("");
+                            }}
                         >
                             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M26.6666 13.3335L13.3333 26.6668M26.6666 26.6668L13.3333 13.3335" stroke="#040B2B" strokeWidth="2" strokeLinecap="round" />
@@ -77,21 +212,31 @@ export default function CreateGroupModal() {
                         >
                             <input
                                 type="text"
-                                placeholder="Add Friends"
+                                placeholder="Search and Add Friends"
                                 value={friendInput}
-                                onChange={(e) => setFriendInput(e.target.value)}
+                                onChange={handleFriendInputChange}
                                 className="bg-transparent outline-none text-[#61677d] text-xl font-['Poppins'] flex-1"
                             />
                         </form>
+
+                        {/* Search Results Dropdown */}
+                        {friendInput && (searchResults.friends?.length > 0 || searchResults.users?.length > 0) && (
+                            <div className="w-[303px] left-[236px] top-[345px] absolute bg-white rounded-xl shadow-lg border border-gray-200 max-h-60 overflow-y-auto z-50">
+                                <SearchResults
+                                    searchData={searchResults}
+                                    onItemClick={handleSearchItemClick}
+                                />
+                            </div>
+                        )}
 
                         {friends.map((friend, i) => (
                             <div
                                 key={i}
                                 className="w-[232px] h-[37px] left-[236px] absolute bg-white rounded-2xl shadow-md flex items-center justify-between px-4"
-                                style={{ top: `${355 + i * 45}px` }}
+                                style={{ top: `${395 + i * 45}px` }}
                             >
                                 <div className="text-[#61677d] text-base font-normal font-['Poppins'] leading-[24.94px]">
-                                    {friend}
+                                    {typeof friend === 'object' ? friend.name : friend}
                                 </div>
                                 <div
                                     className="cursor-pointer border border-[#A00C0C] rounded-full p-1"
@@ -117,26 +262,21 @@ export default function CreateGroupModal() {
 
                         <div
                             className="w-[115px] h-[42px] left-[423px] top-[509px] absolute cursor-pointer"
-                            onClick={() => {
-                                alert(`Group Name: ${groupName}\nFriends: ${friends.join(", ")}`);
-                            }}
+                            onClick={handleCreateGroup}
                         >
                             <div className="w-[115px] h-[42px] px-[24.94px] py-[18.71px] left-0 top-0 absolute bg-[#040b2b] rounded-lg justify-center items-center gap-[16.63px] inline-flex">
                                 <div className="text-white text-xl font-medium font-['Poppins'] leading-[24.94px]">
-                                    Next
+                                    {isLoading ? "Creating..." : "Create"}
                                 </div>
-                                <svg width="9" height="14" viewBox="0 0 9 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M5.36325 7L-0.00341797 1.63333L1.62992 0L8.62992 7L1.62992 14L-0.00341797 12.3667L5.36325 7Z" fill="#FEF7FF" />
-                                </svg>
+                                {!isLoading && (
+                                    <svg width="9" height="14" viewBox="0 0 9 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M5.36325 7L-0.00341797 1.63333L1.62992 0L8.62992 7L1.62992 14L-0.00341797 12.3667L5.36325 7Z" fill="#FEF7FF" />
+                                    </svg>
+                                )}
                             </div>
                         </div>
 
-                        <div className="left-[142px] top-[509px] absolute">
-                            <svg width="48" height="46" viewBox="0 0 48 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M7.5 9.34375C7.5 8.1535 8.508 7.1875 9.75 7.1875H18.75C19.992 7.1875 21 8.1535 21 9.34375V17.9687C21 19.159 19.992 20.125 18.75 20.125H9.75C9.15326 20.125 8.58097 19.8978 8.15901 19.4934C7.73705 19.0891 7.5 18.5406 7.5 17.9687V9.34375ZM7.5 28.0312C7.5 26.841 8.508 25.875 9.75 25.875H18.75C19.992 25.875 21 26.841 21 28.0312V36.6562C21 37.8465 19.992 38.8125 18.75 38.8125H9.75C9.15326 38.8125 8.58097 38.5853 8.15901 38.1809C7.73705 37.7766 7.5 37.2281 7.5 36.6562V28.0312ZM27 9.34375C27 8.1535 28.008 7.1875 29.25 7.1875H38.25C39.492 7.1875 40.5 8.1535 40.5 9.34375V17.9687C40.5 19.159 39.492 20.125 38.25 20.125H29.25C28.6533 20.125 28.081 19.8978 27.659 19.4934C27.2371 19.0891 27 18.5406 27 17.9687V9.34375Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                                <path d="M13.5 12.9375H15V14.375H13.5V12.9375ZM13.5 31.625H15V33.0625H13.5V31.625ZM33 12.9375H34.5V14.375H33V12.9375ZM27 25.875H28.5V27.3125H27V25.875ZM27 37.375H28.5V38.8125H27V37.375ZM39 25.875H40.5V27.3125H39V25.875ZM39 37.375H40.5V38.8125H39V37.375ZM33 31.625H34.5V33.0625H33V31.625Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                        </div>
+                       
                     </div>
                 </div>
             )}
