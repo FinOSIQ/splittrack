@@ -63,7 +63,7 @@ export default function AddExpensePopup() {
 
     // Create a new item with type and details
     const newSelectedItem = {
-      id: item.user_Id || item.group_Id || item.id || null,
+      id: item.user_Id || item.group_Id || item.id || item.user_id || null,
       type,
       name: item.first_name || item.email || item.name || "Unknown",
       avatar: item.avatar || null,
@@ -460,7 +460,7 @@ export default function AddExpensePopup() {
 
         {/* Render Search Results if searchResults is present */}
         {searchValue && searchResults && (
-          <div className="absolute top-12 left-0 right-0 mt-1 bg-white shadow-lg rounded-md overflow-y-auto z-50 border border-gray-200">
+          <div className="absolute top-12 left-0 right-0 mt-1 bg-white shadow-lg rounded-md overflow-hidden z-50 border border-gray-200">
             <SearchResults
               searchData={searchResults}
               onItemClick={handleSearchItemClick}
