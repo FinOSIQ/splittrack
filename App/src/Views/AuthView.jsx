@@ -15,11 +15,11 @@ export default function AuthView () {
                     
                     const res = await postUserData(accessToken);
                     
-                    if (res.status === 200) {
+                    if (res.status >= 200 && res.status < 300) {
                         window.location.href = "/home";
                     } else {
                         console.log(res);
-                        // window.location.href = "/";
+                        window.location.href = "/";
                         
                         
                     }

@@ -1232,7 +1232,6 @@ const GroupView = () => {
                                             • Total Members: {groupDetails.group?.groupMembers?.length || 0}<br/>
                                             • Total Expenses: {groupDetails.group?.expenses?.length || 0}<br/>
                                             • Your Balance: {(() => {
-                                                const totalBalance = calculateTotalBalance();
                                                 const isPositive = totalBalance >= 0;
                                                 const absoluteAmount = Math.abs(totalBalance);
                                                 return `${isPositive ? '+' : '-'}${absoluteAmount.toFixed(2)} LKR ${isPositive ? '(Owed to you)' : '(You owe)'}`;
