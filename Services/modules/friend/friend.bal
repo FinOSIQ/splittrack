@@ -420,11 +420,14 @@ public function getFriendService() returns http:Service {
                     return;
                 }
 
-                // Find roles and amounts for both users
+                // Find roles and amounts for both users and identify creator
                 string? currentUserRole = ();
                 decimal currentUserAmount = 0d;
                 string? friendRole = ();
                 decimal friendAmount = 0d;
+                string? creatorUserId = ();
+                
+                // First pass: find current user and friend data
                 foreach var p in participants {
                     if p.userUser_Id == currentUserId {
                         currentUserRole = p.participant_role;
@@ -434,66 +437,110 @@ public function getFriendService() returns http:Service {
                         friendAmount = p.owning_amount;
                     }
                 }
+                
+                // Second pass: find the creator (could be current user, friend, or someone else)
+                foreach var p in participants {
+                    if p.participant_role.toLowerAscii() == "creator" {
+                        creatorUserId = p.userUser_Id;
+                        break; // Found the creator, no need to continue
+                    }
+                }
 
-                // Get transactions for this expense
-                sql:ParameterizedQuery transactionsQuery = `
-                    SELECT 
-                        t.transaction_Id,
-                        t.payed_amount,
-                        t.payee_IdUser_Id,
-                        t.status,
-                        t.created_at,
-                        t.updated_at,
-                        u.first_name,
-                        u.last_name
-                    FROM 
-                        Transaction t
-                    JOIN 
-                        User u ON t.payee_IdUser_Id = u.user_Id
-                    WHERE 
-                        t.expenseExpense_Id = ${expenseId} AND t.status = 1
-                `;
+                // Get creator's name
+                string creatorName = "";
+                if creatorUserId is string {
+                    sql:ParameterizedQuery creatorNameQuery = `SELECT first_name, last_name FROM User WHERE user_Id = ${creatorUserId}`;
+                    stream<record {|string? first_name; string? last_name;|}, sql:Error?> creatorNameStream = utils:Client->query(creatorNameQuery);
+                    var creatorNameResult = creatorNameStream.next();
+                    check creatorNameStream.close();
 
-                stream<record {|
-                    string transaction_Id;
-                    decimal payed_amount;
-                    string payee_IdUser_Id;
-                    int status;
-                    time:Utc? created_at;
-                    time:Utc? updated_at;
-                    string first_name;
-                    string last_name;
-                |}, sql:Error?> transactionsStream = utils:Client->query(transactionsQuery);
+                    if creatorNameResult is record {|record {|string? first_name; string? last_name;|} value;|} {
+                        string? fname = creatorNameResult.value.first_name;
+                        string? lname = creatorNameResult.value.last_name;
+                        if fname is string {
+                            creatorName += fname;
+                        }
+                        if lname is string {
+                            if creatorName.length() > 0 {
+                                creatorName += " ";
+                            }
+                            creatorName += lname;
+                        }
+                    }
+                }
 
+                // Get transactions for this expense only if current user or friend is the creator
                 json[] expenseTransactions = [];
-                error? e3 = from var txn in transactionsStream
-                    do {
-                        expenseTransactions.push({
-                            "transaction_Id": txn.transaction_Id,
-                            "payed_amount": txn.payed_amount,
-                            "payee_IdUser_Id": txn.payee_IdUser_Id,
-                            "payee_name": txn.first_name + " " + txn.last_name,
-                            "status": txn.status,
-                            "created_at": txn.created_at,
-                            "updated_at": txn.updated_at
-                        });
-                    };
-                check transactionsStream.close(); // Important: Close the stream
+                
+                // Check if either current user or friend is the creator
+                boolean shouldIncludeTransactions = false;
+                if currentUserRole is string && friendRole is string {
+                    if currentUserRole.toLowerAscii() == "creator" || friendRole.toLowerAscii() == "creator" {
+                        shouldIncludeTransactions = true;
+                    }
+                }
+                
+                if shouldIncludeTransactions {
+                    sql:ParameterizedQuery transactionsQuery = `
+                        SELECT 
+                            t.transaction_Id,
+                            t.payed_amount,
+                            t.payee_IdUser_Id,
+                            t.status,
+                            t.created_at,
+                            t.updated_at,
+                            u.first_name,
+                            u.last_name
+                        FROM 
+                            Transaction t
+                        JOIN 
+                            User u ON t.payee_IdUser_Id = u.user_Id
+                        WHERE 
+                            t.expenseExpense_Id = ${expenseId} AND t.status = 1
+                    `;
 
-                if e3 is error {
-                    http:Response res = new;
-                    res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
-                    res.setJsonPayload({"error": "Failed to fetch expense transactions"});
-                    check caller->respond(res);
-                    return;
+                    stream<record {|
+                        string transaction_Id;
+                        decimal payed_amount;
+                        string payee_IdUser_Id;
+                        int status;
+                        time:Utc? created_at;
+                        time:Utc? updated_at;
+                        string first_name;
+                        string last_name;
+                    |}, sql:Error?> transactionsStream = utils:Client->query(transactionsQuery);
+
+                    error? e3 = from var txn in transactionsStream
+                        do {
+                            expenseTransactions.push({
+                                "transaction_Id": txn.transaction_Id,
+                                "payed_amount": txn.payed_amount,
+                                "payee_IdUser_Id": txn.payee_IdUser_Id,
+                                "payee_name": txn.first_name + " " + txn.last_name,
+                                "status": txn.status,
+                                "created_at": txn.created_at,
+                                "updated_at": txn.updated_at
+                            });
+                        };
+                    check transactionsStream.close(); // Important: Close the stream
+
+                    if e3 is error {
+                        http:Response res = new;
+                        res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                        res.setJsonPayload({"error": "Failed to fetch expense transactions"});
+                        check caller->respond(res);
+                        return;
+                    }
                 }
 
                 // If current user is creator, friend owes them (add to netAmount)
                 // If friend is creator, current user owes them (subtract from netAmount)
-                if currentUserRole == "creator" && friendRole != "creator" {
-                    netAmount += friendAmount;
-                } else if friendRole == "creator" && currentUserRole != "creator" {
-                    netAmount -= currentUserAmount;
+                if currentUserRole is string && friendRole is string {
+                    if currentUserRole.toLowerAscii() == "creator" && friendRole.toLowerAscii() != "creator" {
+                        netAmount += friendAmount;
+                    } else if friendRole.toLowerAscii() == "creator" && currentUserRole.toLowerAscii() != "creator" {
+                        netAmount -= currentUserAmount;
+                    }
                 }
 
                 // Add to details with expense name, total amount, creation date, and transactions
@@ -505,6 +552,7 @@ public function getFriendService() returns http:Service {
                     "currentUserAmount": currentUserAmount,
                     "friendRole": friendRole,
                     "friendAmount": friendAmount,
+                    "creatorName": creatorName,
                     "createdAt": createdAt is time:Utc ? createdAt.toString() : (),
                     "transactions": expenseTransactions
                 };

@@ -201,7 +201,7 @@ export default function ExpenseView() {
                         ? `${participant.user.first_name || ''} ${participant.user.last_name || ''}`.trim()
                         : 'Unknown Participant';
                       
-                      const displayName = isCreator ? 'You' : participantName;
+                      const displayName = participantName; // Always show actual name, not "You"
                       const avatar = generateAvatar(displayName);
                       
                       return (

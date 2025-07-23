@@ -708,9 +708,9 @@ public function getGroupService() returns http:Service {
                         |} part) {
                     // Check if this participant is the current user
                     string role = part.participant_role;
-                    if (part.userUser_Id == currentUserId) {
-                        role = "self"; // Mark the current user
-                    }
+                    // if (part.userUser_Id == currentUserId) {
+                    //     role = "self"; // Mark the current user
+                    // }
 
                     expParticipants.push({
                         "participant_role": role,

@@ -79,18 +79,13 @@ const OwedCard = ({
   currentUserRole = 'creator',
   friendRole = 'member',
   currentUserAmount = '0',
-  friendAmount = '0'
+  friendAmount = '0',
+  creatorName = 'Creator'
 }) => {
   
-  // Determine who paid based on the role
+  // Simply show creator's name and amount paid
   const getPaymentDescription = () => {
-    if (currentUserRole === 'creator') {
-      return `You paid LKR ${totalAmount}`;
-    } else if (friendRole === 'creator') {
-      return `${friendName} paid LKR ${totalAmount}`;
-    } else {
-      return `Shared expense - LKR ${totalAmount}`;
-    }
+    return `${creatorName} paid LKR ${totalAmount}`;
   };
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border border-gray-200 shadow-sm mb-4 w-full sm:w-[60%] md:w-[80%] lg:w-[70%] xl:w-[94%] mx-auto transition-all duration-300 ">

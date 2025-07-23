@@ -6,8 +6,17 @@ const PaidCard = ({
   image = "src/images/Frame.png", 
   title = 'Dinner', 
   description = 'You Paid LKR 5,000.00', 
-  amount = '5,000.00 LKR' 
+  amount = '5,000.00 LKR',
+  payeeName = 'Someone',
+  expenseCreatorName = 'Creator',
+  payedAmount = '0.00'
 }) => {
+  
+  // Generate transaction description
+  const getTransactionDescription = () => {
+    return `${payeeName} paid LKR ${payedAmount} to ${expenseCreatorName}`;
+  };
+
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border border-gray-200 shadow-sm mb-4 w-full sm:w-[60%] md:w-[80%] lg:w-[70%] xl:w-[94%] mx-auto transition-all duration-300">
 
@@ -22,7 +31,7 @@ const PaidCard = ({
         </div>
         <div className="ml-4">
           <div className="text-[#040b2b] text-sm font-normal font-['Poppins'] leading-[24.94px]">{title}</div>
-          <div className="text-[#61677d] text-xs font-light font-['Poppins'] leading-[24.94px]">{description}</div>
+          <div className="text-[#61677d] text-xs font-light font-['Poppins'] leading-[24.94px]">{getTransactionDescription()}</div>
         </div>
       </div>
 

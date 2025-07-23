@@ -765,33 +765,47 @@ const GroupView = () => {
                                                             let amount = '';
                                                             let isOwed = false;
                                                             
-                                                            // Check if current user has "self" participant role (meaning they are the creator/payer)
-                                                            const isCurrentUserCreator = item.participant_role === "self";
-                                                            const currentUserName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'User';
+                                                            // Find the creator from the expense participants
+                                                            const creatorParticipant = item.participant?.find(p => p.participant_role === 'Creator');
+                                                            let creatorName = 'Someone';
+                                                            
+                                                            if (creatorParticipant) {
+                                                                // Find the creator's name from group members
+                                                                const creatorMember = groupDetails?.group?.groupMembers?.find(member => 
+                                                                    getMemberUserId(member) === creatorParticipant.userUser_Id
+                                                                );
+                                                                
+                                                                if (creatorMember) {
+                                                                    creatorName = `${creatorMember.first_name || ''} ${creatorMember.last_name || ''}`.trim();
+                                                                }
+                                                            }
+                                                            
+                                                            // Check if current user is the creator
+                                                            const currentUserId = getCurrentUserId();
+                                                            const isCurrentUserCreator = creatorParticipant?.userUser_Id === currentUserId;
                                                             
                                                             if (isCurrentUserCreator) {
-                                                                // Current user created/paid the expense (participant_role: "self")
+                                                                // Current user created/paid the expense
+                                                                creatorName = 'You';
                                                                 if (item.expense_owe_amount && item.expense_owe_amount > 0) {
-                                                                    description = `${currentUserName} paid - Others owe ${currentUserName}`;
+                                                                    description = `Others owe you`;
                                                                     amount = `${item.expense_owe_amount?.toFixed(2) || '0.00'}`;
                                                                     isOwed = true;
                                                                 } else {
-                                                                    description = `${currentUserName} paid`;
+                                                                    description = `You paid`;
                                                                     amount = `${item.expense_total_amount?.toFixed(2) || '0.00'}`;
                                                                     isOwed = true;
                                                                 }
                                                             } else {
                                                                 // Someone else created/paid the expense
-                                                                const creatorName = getCreatorName(item.created_by) || 'Someone';
-                                                                
                                                                 if (item.expense_owe_amount && Math.abs(item.expense_owe_amount) > 0) {
-                                                                    description = `${creatorName} paid - ${currentUserName} owes`;
+                                                                    description = `You owe ${creatorName}`;
                                                                     amount = `${Math.abs(item.expense_owe_amount)?.toFixed(2) || '0.00'}`;
                                                                     isOwed = false;
                                                                 } else {
                                                                     // Calculate split amount if no specific owe amount
                                                                     const splitAmount = item.expense_total_amount / (members.length || 1);
-                                                                    description = `${creatorName} paid - ${currentUserName} owes`;
+                                                                    description = `You owe ${creatorName}`;
                                                                     amount = `${splitAmount?.toFixed(2) || '0.00'}`;
                                                                     isOwed = false;
                                                                 }
@@ -812,6 +826,7 @@ const GroupView = () => {
                                                                         totalAmount={item.expense_total_amount?.toFixed(2) || '0.00'}
                                                                         isOwed={isOwed}
                                                                         groupName={groupDetails.group?.name}
+                                                                        creatorName={creatorName}
                                                                     />
                                                                 </div>
                                                             );
@@ -819,6 +834,50 @@ const GroupView = () => {
                                                             // Render transaction using PaidCard
                                                             const transactionDescription = getTransactionDescription(item, currentUserId);
                                                             const transactionTitle = `${item.expenseName} - Settlement`;
+                                                            
+                                                            // Find the expense creator for this transaction
+                                                            let expenseCreatorName = 'Someone';
+                                                            
+                                                            // Find the expense that contains this transaction
+                                                            const parentExpense = groupDetails?.group?.expenses?.find(expense => 
+                                                                expense.transactions?.some(trans => trans.transaction_Id === item.transaction_Id)
+                                                            );
+                                                            
+                                                            if (parentExpense) {
+                                                                // Find the creator from the expense participants
+                                                                const creatorParticipant = parentExpense.participant?.find(p => p.participant_role === 'Creator');
+                                                                
+                                                                if (creatorParticipant) {
+                                                                    // Find the creator's name from group members
+                                                                    const creatorMember = groupDetails?.group?.groupMembers?.find(member => 
+                                                                        getMemberUserId(member) === creatorParticipant.userUser_Id
+                                                                    );
+                                                                    
+                                                                    if (creatorMember) {
+                                                                        expenseCreatorName = `${creatorMember.first_name || ''} ${creatorMember.last_name || ''}`.trim();
+                                                                        
+                                                                        // If current user is the creator, show "You"
+                                                                        if (creatorParticipant.userUser_Id === currentUserId) {
+                                                                            expenseCreatorName = 'You';
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            
+                                                            // Get payee name - check if current user is the payee
+                                                            let payeeName = 'Someone';
+                                                            if (item.payee_IdUser_Id === currentUserId) {
+                                                                payeeName = 'You';
+                                                            } else {
+                                                                // Find payee name from group members
+                                                                const payeeMember = groupDetails?.group?.groupMembers?.find(member => 
+                                                                    getMemberUserId(member) === item.payee_IdUser_Id
+                                                                );
+                                                                
+                                                                if (payeeMember) {
+                                                                    payeeName = `${payeeMember.first_name || ''} ${payeeMember.last_name || ''}`.trim();
+                                                                }
+                                                            }
                                                             
                                                             return (
                                                                 <div 
@@ -832,6 +891,9 @@ const GroupView = () => {
                                                                         title={transactionTitle}
                                                                         description={transactionDescription}
                                                                         amount={`${item.payed_amount?.toFixed(2) || '0.00'} LKR`}
+                                                                        payeeName={payeeName}
+                                                                        expenseCreatorName={expenseCreatorName}
+                                                                        payedAmount={item.payed_amount?.toFixed(2) || '0.00'}
                                                                     />
                                                                 </div>
                                                             );

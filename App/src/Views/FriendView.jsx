@@ -385,6 +385,7 @@ const FriendView = () => {
                                                                         friendRole={item.friendRole}
                                                                         currentUserAmount={item.currentUserAmount?.toFixed(2) || '0.00'}
                                                                         friendAmount={item.friendAmount?.toFixed(2) || '0.00'}
+                                                                        creatorName={item.creatorName || 'Unknown'}
                                                                     />
                                                                 </div>
                                                             );
@@ -392,6 +393,12 @@ const FriendView = () => {
                                                             // Render transaction using PaidCard
                                                             const transactionDescription = getTransactionDescription(item);
                                                             const transactionTitle = `${item.expenseName} - Settlement`;
+                                                            
+                                                            // Find the parent expense to get creator name
+                                                            const parentExpense = friendData.details.find(expense => 
+                                                                expense.expenseId === item.expenseExpense_Id || 
+                                                                expense.transactions?.some(txn => txn.transaction_Id === item.transaction_Id)
+                                                            );
                                                             
                                                             return (
                                                                 <div 
@@ -405,6 +412,9 @@ const FriendView = () => {
                                                                         title={transactionTitle}
                                                                         description={transactionDescription}
                                                                         amount={`${item.payed_amount?.toFixed(2) || '0.00'} LKR`}
+                                                                        payeeName={item.payee_name || 'Someone'}
+                                                                        expenseCreatorName={parentExpense?.creatorName || 'Unknown'}
+                                                                        payedAmount={item.payed_amount?.toFixed(2) || '0.00'}
                                                                     />
                                                                 </div>
                                                             );
