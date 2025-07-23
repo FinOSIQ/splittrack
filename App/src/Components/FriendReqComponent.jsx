@@ -16,7 +16,7 @@ export default function FriendReqComponent({ onFriendsUpdate }) {
 
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:9090/api_friend/v1/friendrequests/${user.user_Id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api_friend/v1/friendrequests/${user.user_Id}`, {
         credentials: 'include'
       });
       
@@ -41,7 +41,7 @@ export default function FriendReqComponent({ onFriendsUpdate }) {
     setProcessingRequests(prev => new Set([...prev, requestId]));
 
     try {
-      const response = await fetch(`http://localhost:9090/api_friend/v1/friendRequests/${requestId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api_friend/v1/friendRequests/${requestId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
