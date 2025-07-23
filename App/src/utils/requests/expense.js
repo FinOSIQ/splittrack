@@ -276,3 +276,38 @@ export const fetchNonGroupExpenses = async () => {
     }
   }
 };
+
+// Function to fetch non-group expense details by ID
+export const getNonGroupExpenseById = async (expenseId) => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/nonGroupExpenseDetails/${expenseId}`;
+    
+    console.log('Fetching non-group expense with ID:', expenseId);
+    
+    const response = await axios.get(url, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('Non-group expense response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching non-group expense:", error);
+    console.error("Response data:", error.response?.data);
+    console.error("Response status:", error.response?.status);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Unauthorized. Please login again.');
+    } else if (error.response?.status === 404) {
+      throw new Error('Non-group expense not found.');
+    } else if (error.response?.status === 403) {
+      throw new Error('Access denied. You are not a participant in this expense.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error(`Failed to fetch non-group expense: ${error.message}`);
+    }
+  }
+};
