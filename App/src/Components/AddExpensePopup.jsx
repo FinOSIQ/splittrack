@@ -464,6 +464,7 @@ export default function AddExpensePopup() {
             <SearchResults
               searchData={searchResults}
               onItemClick={handleSearchItemClick}
+              showAddFriendButton={false}
             />
           </div>
         )}
@@ -908,7 +909,7 @@ export default function AddExpensePopup() {
   };
 
   return (
-    <div className="relative w-[80px] h-[80px] ml-3 -ml-2 z-500 group">
+    <div className="relative w-[80px] h-[80px] ml-3  z-500 group">
   <button
     onClick={() => {
       setIsOpen(true);

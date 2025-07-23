@@ -287,6 +287,7 @@ export default function CreateGroupModal() {
                                         <SearchResults
                                             searchData={searchResults}
                                             onItemClick={handleSearchItemClick}
+                                            showAddFriendButton={false}
                                         />
                                     </div>
                                 )}
