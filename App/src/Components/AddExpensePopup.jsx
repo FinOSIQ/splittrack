@@ -908,48 +908,48 @@ export default function AddExpensePopup() {
   };
 
   return (
-    <div className="relative w-[80px] h-[80px] bg-white rounded-full ml-3 z-500">
-      <button
-        onClick={() => {
-          setIsOpen(true);
-          setStep(1);
-          setSearchValue(""); // Clear search input when opening popup
-          setSearchResults(null); // Clear search results when opening popup
-          setSelectedGroupId(null); // Clear selected group ID when opening popup
-          
-          // Reset selectedItems with current user
-          if (user && isLoggedIn()) {
-            const currentUserItem = {
-              id: user.user_Id,
-              type: 'user',
-              name: getFullName() || `${user.first_name} ${user.last_name}`.trim(),
-              avatar: null,
-              originalData: user,
-              isCurrentUser: true
-            };
-            setSelectedItems([currentUserItem]);
-          } else {
-            setSelectedItems([]); // Fallback if no user data
-          }
-        }}
-        className="absolute left-2 top-1  w-[70px] h-[70px] bg-[#040b2b] text-white flex items-center justify-center rounded-full shadow-md border-2 border-white"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M12 2V22M2 12H22"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
+    <div className="relative w-[80px] h-[80px] ml-3 -ml-2 z-500 group">
+  <button
+    onClick={() => {
+      setIsOpen(true);
+      setStep(1);
+      setSearchValue("");
+      setSearchResults(null);
+      setSelectedGroupId(null);
+      if (user && isLoggedIn()) {
+        const currentUserItem = {
+          id: user.user_Id,
+          type: 'user',
+          name: getFullName() || `${user.first_name} ${user.last_name}`.trim(),
+          avatar: null,
+          originalData: user,
+          isCurrentUser: true
+        };
+        setSelectedItems([currentUserItem]);
+      } else {
+        setSelectedItems([]);
+      }
+    }}
+    className="absolute left-1 top-1 w-[70px] h-[70px] bg-[#040b2b] text-white flex items-center justify-center rounded-full border-8 border-white transition-all duration-300 group-hover:w-[220px] group-hover:rounded-[50px] group-hover:pl-6 group-hover:justify-start"
+  >
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 2V22M2 12H22"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+    <span className="ml-3 hidden group-hover:inline text-white font-medium">Add Expense</span>
+  </button>
+
 
       {/* The Popup */}
       {isOpen && (
