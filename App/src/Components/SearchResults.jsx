@@ -1,6 +1,7 @@
 import React from 'react';
 import { List } from '@material-tailwind/react';
 import UserCard from './UserCard';
+import AddFriendButton from './AddFriendButton';
 
 // Default images for search results
 const DEFAULT_IMAGES = {
@@ -89,15 +90,32 @@ const Section = ({ title, data, type, onItemClick }) => (
         {data.map((item, index) => (
             <div 
                 key={item.user_id || item.userId || item.user_Id || item.group_Id || item.groupId || item.id || `${type}-${index}`} 
-                onClick={() => onItemClick(item, type)} 
-                className="cursor-pointer hover:bg-gray-50 transition-colors"
+                className="group hover:bg-gray-50 transition-colors duration-200"
             >
-                <UserCard 
-                    img={item.img} 
-                    name={item.name} 
-                    email={item.email} 
-                    styles='ml-1' 
-                />
+                <div className="flex items-center justify-between pr-3">
+                    <div 
+                        onClick={() => onItemClick(item, type)} 
+                        className="cursor-pointer flex-1 min-w-0"
+                    >
+                        <UserCard 
+                            img={item.img} 
+                            name={item.name} 
+                            email={item.email} 
+                            styles='ml-1' 
+                        />
+                    </div>
+                    {/* Add Friend button for users only - appears on hover */}
+                    {type === 'user' && (
+                        <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0 flex-shrink-0">
+                            <AddFriendButton
+                                targetUserId={item.user_id || item.userId || item.user_Id}
+                                targetUserName={item.name}
+                                size="small"
+                                className="shadow-sm"
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
         ))}
     </>
