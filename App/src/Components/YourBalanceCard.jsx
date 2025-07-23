@@ -1,36 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { fetchUserExpenseSummary } from '../utils/requests/expense';
 
-const YourBalanceCard = () => {
+const YourBalanceCard = ({ refreshTrigger }) => { // Add refreshTrigger prop
   const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Fetch user balance data
-  useEffect(() => {
-    const loadUserBalance = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await fetchUserExpenseSummary();
-        
-        if (response && response.summary) {
-          setBalance(response.summary.netAmount);
-        } else {
-          setBalance(0);
-        }
-      } catch (err) {
-        console.error('Error loading user balance:', err);
-        setError(err.message || 'Failed to load balance');
+  const loadUserBalance = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetchUserExpenseSummary();
+      
+      if (response && response.summary) {
+        setBalance(response.summary.netAmount);
+      } else {
         setBalance(0);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('Error loading user balance:', err);
+      setError(err.message || 'Failed to load balance');
+      setBalance(0);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Load data on mount
+  useEffect(() => {
     loadUserBalance();
   }, []);
+
+  // Refresh data when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger > 0) { // Only refresh if refreshTrigger is a positive number
+      loadUserBalance();
+    }
+  }, [refreshTrigger]);
 
   // Format balance for display
   const formatBalance = (amount) => {
