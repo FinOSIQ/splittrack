@@ -17,13 +17,13 @@ const NavBar = () => {
       {/* Wrapper div with group class to enable group-hover */}
       <div className="group">
         <div
-          className="fixed top-0 h-screen bg-[#f1f2f9] group-hover:bg-blue-50 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] border-r flex flex-col py-4
+          className="fixed top-0 h-screen bg-[#f1f2f9] z-50 group-hover:bg-blue-50 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] border-r flex flex-col py-4
             w-14 hover:w-60 transition-width duration-300 ease-in-out overflow-visible"
         >
           <div
-  className="grid grid-rows-7 flex-grow items-center justify-start px-3 relative whitespace-nowrap pt-16"
-  style={{ rowGap: '1px' }} // custom smaller gap
->
+            className="grid grid-rows-7 flex-grow items-center justify-start px-3 relative whitespace-nowrap pt-16"
+            style={{ rowGap: '1px' }} // custom smaller gap
+          >
 
             <Link to="/settleup" className="flex items-center gap-4 ">
               <img src={settleImg} alt="Settle" className="w-7 h-7" />
@@ -54,7 +54,7 @@ const NavBar = () => {
               <span
                 className="ml-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[#040b2b] font-medium select-none"
               >
-              
+
               </span>
             </div>
 
