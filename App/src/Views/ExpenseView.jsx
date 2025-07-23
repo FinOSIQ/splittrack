@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import HeaderProfile from "../Components/HeaderProfile";
 import CommentSection from "../Components/CommentSection";
 import Navbar from "../Components/NavBar";
 import photo from "../images/Untitled design (10) 1.png";
-import { getExpenseById } from '../utils/requests/expense.js';
+import { getExpenseById, getNonGroupExpenseById } from '../utils/requests/expense.js';
 import { formatDate, formatCurrency } from '../utils/dateUtils.js';
 
 // Generate emoji based on expense name/category
@@ -70,9 +70,11 @@ const generateAvatar = (name) => {
 
 export default function ExpenseView() {
   const { expenseId } = useParams();
+  const location = useLocation();
   const [expenseData, setExpenseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isNonGroupExpense, setIsNonGroupExpense] = useState(false);
 
   useEffect(() => {
     const fetchExpenseData = async () => {
@@ -83,10 +85,31 @@ export default function ExpenseView() {
 
       try {
         setLoading(true);
-        const response = await getExpenseById(expenseId);
-        console.log('API Response:', response); // Debug log
-        setExpenseData(response.data || response);
-        setError(null);
+        
+        // First try to fetch as non-group expense
+        try {
+          console.log('Attempting to fetch as non-group expense:', expenseId);
+          const nonGroupResponse = await getNonGroupExpenseById(expenseId);
+          console.log('Non-group expense API Response:', nonGroupResponse);
+          setExpenseData(nonGroupResponse.data || nonGroupResponse);
+          setIsNonGroupExpense(true);
+          setError(null);
+          return;
+        } catch (nonGroupError) {
+          console.log('Not a non-group expense, trying regular expense endpoint');
+          
+          // If non-group expense fails, try regular expense endpoint
+          try {
+            const regularResponse = await getExpenseById(expenseId);
+            console.log('Regular expense API Response:', regularResponse);
+            setExpenseData(regularResponse.data || regularResponse);
+            setIsNonGroupExpense(false);
+            setError(null);
+          } catch (regularError) {
+            console.error('Both expense endpoints failed:', regularError);
+            setError(regularError.message);
+          }
+        }
       } catch (err) {
         console.error('Error fetching expense:', err);
         setError(err.message);
@@ -139,9 +162,16 @@ export default function ExpenseView() {
                     </div>
                     
                     <div>
-                      <h1 className="text-gray-900 text-xl font-semibold font-['Poppins'] mb-1">
-                        {expenseData.name || 'Expense'}
-                      </h1>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h1 className="text-gray-900 text-xl font-semibold font-['Poppins']">
+                          {expenseData.name || 'Expense'}
+                        </h1>
+                        {isNonGroupExpense && (
+                          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                            Individual Expense
+                          </span>
+                        )}
+                      </div>
                       <div className="text-gray-900 text-2xl font-bold font-['Poppins']">
                         {formatCurrency(expenseData.expense_total_amount || 0)} LKR
                       </div>
