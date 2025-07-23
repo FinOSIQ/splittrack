@@ -30,7 +30,7 @@ const generateAvatar = (name) => {
 
 export default function AllFriends() {
   const [activeTab, setActiveTab] = useState("friends");
-  const [friends, setFriends] = useState([]); // This will store friend details from backend
+  const [friends, setFriends] = useState([]); 
   const contentRef = useRef(null);
   const isMobile = useIsMobile();
   const { user, loading } = useUserData();
@@ -52,7 +52,8 @@ export default function AllFriends() {
       }
 
       try {
-                const userId = user.user_Id;
+        
+               const userId = user.user_Id;
         const response = await getFriends(userId);
 
         
@@ -84,7 +85,6 @@ export default function AllFriends() {
       }
     };
 
-    // Initial check and add event listener
     handleResize();
     window.addEventListener("resize", handleResize);
 
