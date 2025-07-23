@@ -142,7 +142,86 @@ export const getExpenseById = async (expenseId) => {
 };
 
 
+// Function to fetch recent activity
+export const fetchRecentActivity = async () => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/recentActivity`;
+    
+    const response = await axios.get(url, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching recent activity:", error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Unauthorized. Please login again.');
+    } else if (error.response?.status === 404) {
+      throw new Error('Recent activity not found.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error(`Failed to fetch recent activity: ${error.message}`);
+    }
+  }
+};
 
+// Function to fetch user expense summary (balance)
+export const fetchUserExpenseSummary = async () => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/userExpenseSummary`;
+    
+    const response = await axios.get(url, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user expense summary:", error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Unauthorized. Please login again.');
+    } else if (error.response?.status === 404) {
+      throw new Error('User expense summary not found.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error(`Failed to fetch user expense summary: ${error.message}`);
+    }
+  }
+};
 
-
-
+// Function to fetch group expenses
+export const fetchGroupExpenses = async () => {
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/groupExpenses`;
+    
+    const response = await axios.get(url, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching group expenses:", error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Unauthorized. Please login again.');
+    } else if (error.response?.status === 404) {
+      throw new Error('Group expenses not found.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error(`Failed to fetch group expenses: ${error.message}`);
+    }
+  }
+};

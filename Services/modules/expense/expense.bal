@@ -1624,41 +1624,41 @@ public function getExpenseService() returns http:Service {
     };
 }
 
-// Helper function to construct ParticipantPayload array from JSON with optional fields
-function constructParticipants(json[] participantJsonArray) returns ParticipantPayload[]|error {
-    ParticipantPayload[] participants = [];
+        // Helper function to construct ParticipantPayload array from JSON with optional fields
+        function constructParticipants(json[] participantJsonArray) returns ParticipantPayload[]|error {
+            ParticipantPayload[] participants = [];
 
-    foreach json participantJson in participantJsonArray {
-        json roleJson = check participantJson.participant_role;
-        json amountJson = check participantJson.owning_amount;
-        json userIdJson = check participantJson.userUser_Id;
+            foreach json participantJson in participantJsonArray {
+                json roleJson = check participantJson.participant_role;
+                json amountJson = check participantJson.owning_amount;
+                json userIdJson = check participantJson.userUser_Id;
 
-        // Get optional fields
-        json|error firstNameResult = participantJson.firstName;
-        json|error lastNameResult = participantJson.lastName;
+                // Get optional fields
+                json|error firstNameResult = participantJson.firstName;
+                json|error lastNameResult = participantJson.lastName;
 
-        string? firstName = ();
-        string? lastName = ();
+                string? firstName = ();
+                string? lastName = ();
 
-        if firstNameResult is json && firstNameResult !is () {
-            firstName = firstNameResult.toString();
+                if firstNameResult is json && firstNameResult !is () {
+                    firstName = firstNameResult.toString();
+                }
+
+                if lastNameResult is json && lastNameResult !is () {
+                    lastName = lastNameResult.toString();
+                }
+
+                ParticipantPayload participant = {
+                    participant_role: <ParticipantRole>roleJson,
+                    owning_amount: <decimal>amountJson,
+                    userUser_Id: userIdJson is () ? () : userIdJson.toString(),
+                    firstName: firstName,
+                    lastName: lastName
+                };
+
+                participants.push(participant);
+            }
+
+            return participants;
         }
-
-        if lastNameResult is json && lastNameResult !is () {
-            lastName = lastNameResult.toString();
-        }
-
-        ParticipantPayload participant = {
-            participant_role: <ParticipantRole>roleJson,
-            owning_amount: <decimal>amountJson,
-            userUser_Id: userIdJson is () ? () : userIdJson.toString(),
-            firstName: firstName,
-            lastName: lastName
-        };
-
-        participants.push(participant);
-    }
-
-    return participants;
-}
 

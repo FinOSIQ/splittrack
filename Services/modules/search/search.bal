@@ -84,7 +84,7 @@ function searchDatabase(string value, string[] types, string? userId) returns Se
     SearchResponse response = {};
 
     if types.indexOf("users") != () {
-        response.users = searchUsers(value);
+        response.users = searchUsers(value, userId);
     }
     if types.indexOf("friends") != () {
         response.friends = searchFriends(userId,value);
@@ -97,10 +97,15 @@ function searchDatabase(string value, string[] types, string? userId) returns Se
 }
 
 // Function to search users
-function searchUsers(string value) returns json|error {
+function searchUsers(string value, string? userId) returns json|error {
+    if userId == () {
+        return {"error": "userId is required for users search"};
+    }
+
     sql:ParameterizedQuery query = `SELECT user_id, first_name, email 
                                     FROM user 
                                     WHERE email IS NOT NULL
+                                    AND user_id != ${userId}
                                     AND (first_name LIKE ${"%" + value + "%"} 
                                        OR email LIKE ${"%" + value + "%"})`;
     stream<utils:JsonRecord, error?> resultStream = utils:Client->query(query);

@@ -440,6 +440,59 @@ public function getFriendService() returns http:Service {
                     }
                 }
 
+                // Get transactions for this expense
+                sql:ParameterizedQuery transactionsQuery = `
+                    SELECT 
+                        t.transaction_Id,
+                        t.payed_amount,
+                        t.payee_IdUser_Id,
+                        t.status,
+                        t.created_at,
+                        t.updated_at,
+                        u.first_name,
+                        u.last_name
+                    FROM 
+                        Transaction t
+                    JOIN 
+                        User u ON t.payee_IdUser_Id = u.user_Id
+                    WHERE 
+                        t.expenseExpense_Id = ${expenseId} AND t.status = 1
+                `;
+
+                stream<record {|
+                    string transaction_Id;
+                    decimal payed_amount;
+                    string payee_IdUser_Id;
+                    int status;
+                    time:Utc? created_at;
+                    time:Utc? updated_at;
+                    string first_name;
+                    string last_name;
+                |}, sql:Error?> transactionsStream = utils:Client->query(transactionsQuery);
+
+                json[] expenseTransactions = [];
+                error? e3 = from var txn in transactionsStream 
+                    do {
+                        expenseTransactions.push({
+                            "transaction_Id": txn.transaction_Id,
+                            "payed_amount": txn.payed_amount,
+                            "payee_IdUser_Id": txn.payee_IdUser_Id,
+                            "payee_name": txn.first_name + " " + txn.last_name,
+                            "status": txn.status,
+                            "created_at": txn.created_at,
+                            "updated_at": txn.updated_at
+                        });
+                    };
+                check transactionsStream.close(); // Important: Close the stream
+                
+                if e3 is error {
+                    http:Response res = new;
+                    res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
+                    res.setJsonPayload({"error": "Failed to fetch expense transactions"});
+                    check caller->respond(res);
+                    return;
+                }
+
                 // If current user is creator, friend owes them (add to netAmount)
                 // If friend is creator, current user owes them (subtract from netAmount)
                 if currentUserRole == "creator" && friendRole != "creator" {
@@ -448,7 +501,7 @@ public function getFriendService() returns http:Service {
                     netAmount -= currentUserAmount;
                 }
 
-                // Add to details with expense name, total amount, and creation date
+                // Add to details with expense name, total amount, creation date, and transactions
                 json expenseDetail = {
                     "expenseId": expenseId,
                     "expenseName": expenseName,
@@ -457,7 +510,8 @@ public function getFriendService() returns http:Service {
                     "currentUserAmount": currentUserAmount,
                     "friendRole": friendRole,
                     "friendAmount": friendAmount,
-                    "createdAt": createdAt is time:Utc ? createdAt.toString() : ()
+                    "createdAt": createdAt is time:Utc ? createdAt.toString() : (),
+                    "transactions": expenseTransactions
                 };
 
                 expenseDetails.push(expenseDetail);
