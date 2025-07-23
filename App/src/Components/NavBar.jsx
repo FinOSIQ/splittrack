@@ -16,10 +16,10 @@ const NavBar = () => {
       {/* Wrapper div with group class to enable group-hover */}
       <div className="group">
         <div
-          className="fixed top-0 h-screen bg-[#f1f2f9] group-hover:bg-blue-100 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] border-r flex flex-col py-4
+          className="fixed top-0 h-screen bg-[#f1f2f9] group-hover:bg-blue-50 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] border-r flex flex-col py-4
             w-14 hover:w-60 transition-width duration-300 ease-in-out overflow-visible"
         >
-          <div className="grid grid-rows-7 flex-grow items-center justify-start px-3 gap-y-4 relative whitespace-nowrap pt-36">
+          <div className="grid grid-rows-7 flex-grow items-center justify-start px-3 gap-y-4 relative whitespace-nowrap pt-16">
 
             <Link to="/settleup" className="flex items-center gap-4">
               <img src={settleImg} alt="Settle" className="w-7 h-7" />
@@ -30,7 +30,7 @@ const NavBar = () => {
 
             <div className="flex items-center gap-4 group cursor-pointer">
               <CreateGroupModal />
-              
+
               <span className="ml-12 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[#040b2b] font-medium">
                 Create Group
               </span>
@@ -40,23 +40,19 @@ const NavBar = () => {
 
             {/* Add Expense button with half-outside circle */}
             <div
-              className="relative w-full group"
-              style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}
+              className="relative w-full group flex items-center"
+              style={{ marginTop: '0.75rem', marginBottom: '0.75rem', minHeight: '70px' }}
             >
-              <div
-                className="absolute top-1/2 -left-5 -translate-y-1/2 flex items-center justify-center cursor-pointer"
-              >
-                <div>
-                  <AddExpensePopup />
-                </div>
-              </div>
+              {/* Remove absolute positioning and negative left margin */}
+              <AddExpensePopup />
 
               <span
-                className="ml-[5.8rem] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[#040b2b] font-medium"
+                className="ml-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[#040b2b] font-medium select-none"
               >
                 Add Expense
               </span>
             </div>
+
 
             <Link to="/allfriends" className="flex items-center gap-4">
               <img src={addImg} alt="Add" className="w-7 h-7" />

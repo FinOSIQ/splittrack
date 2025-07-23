@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import gsap from "gsap";
 import HeaderProfile from "../Components/HeaderProfile";
+import NavBar from '../Components/NavBar';
 import SettleUpFriendCard from "../Components/SettleUpFriendCard";
 import YourBalanceCard from "../Components/YourBalanceCard";
 import TransactionHistoryComponent from "../Components/TransactionHistoryComponent";
@@ -182,6 +183,9 @@ export default function SettleUp() {
 
   return (
     <>
+      <NavBar /> 
+      <div style={{ marginLeft: '56px' }}>
+        
       <HeaderProfile />
 
       <div className="h-[80vh] flex bg-white rounded-md md:mx-5 -mt-8 md:mt-4 overflow-hidden">
@@ -323,6 +327,7 @@ export default function SettleUp() {
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Mobile Pop‑Up of right section */}

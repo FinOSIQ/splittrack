@@ -92,7 +92,9 @@ export default function AllFriends() {
   }, []);
   return (
     <>
+      <div style={{ marginLeft: '56px' }}>
       <HeaderProfile />
+      </div>
       {isMobile ? (
         <MobileOverlay />
       ) : (
