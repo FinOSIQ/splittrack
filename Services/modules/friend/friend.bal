@@ -100,10 +100,12 @@ public function getFriendService() returns http:Service {
         resource function get friendrequests/[string userId](http:Caller caller, http:Request req) returns error? {
             string userIdStr = userId;
 
+            // Fetch all friend requests with relations
             stream<db:FriendRequestWithRelations, error?> friendRequestsStream = dbClient->/friendrequests(db:FriendRequestWithRelations);
 
             db:FriendRequestWithRelations[] filteredRequests = [];
 
+            // Filter friend requests where receiver matches and status is pending
             error? e = friendRequestsStream.forEach(function(db:FriendRequestWithRelations fr) {
                 if fr.receive_user_Id == userIdStr && fr.status == "pending" {
                     filteredRequests.push(fr);
@@ -120,6 +122,7 @@ public function getFriendService() returns http:Service {
 
             json[] result = [];
 
+            // Construct the JSON response array including friendReq_ID
             foreach var fr in filteredRequests {
                 db:UserOptionalized? sender = fr.send_user_Id;
 
@@ -142,14 +145,10 @@ public function getFriendService() returns http:Service {
                 }
 
                 result.push({
-                    "requestId": fr.friendReq_ID,
-                    "senderId": fr.send_user_idUser_Id,
-                    "receiverId": fr.receive_user_Id,
-                    "senderName": senderName,
-                    "senderEmail": senderEmail,
-                    "senderImage": "placeholder.png", // Replace with actual image URL if available
-                    "status": fr.status,
-                    "created_at": fr?.created_at is time:Utc ? fr?.created_at.toString() : ()
+                    friendReq_ID: fr.friendReq_ID,  // This line is crucial for frontend ID
+                    senderName: senderName,
+                    senderEmail: senderEmail,
+                    senderImage: "placeholder.png" // Replace with actual image URL if available
                 });
             }
 
@@ -193,14 +192,13 @@ public function getFriendService() returns http:Service {
             string friendReq_ID = "fr-" + fullUuid.substring(0, 8);
 
             // Construct new FriendRequest record
-            time:Utc currentTime = time:utcNow();
             db:FriendRequest newRequest = {
                 friendReq_ID: friendReq_ID,
                 send_user_idUser_Id: senderId,
                 receive_user_Id: receiverId,
                 status: "pending",
-                created_at: currentTime,
-                updated_at: currentTime
+                created_at: time:utcNow(),
+                updated_at: time:utcNow()
             };
 
             // Insert new friend request into DB
@@ -226,10 +224,8 @@ public function getFriendService() returns http:Service {
             res.setJsonPayload(response);
             check caller->respond(res);
         }
-
-        //Accept or decline frined
-
-
+        
+        //Accept or decline friend
         resource function put friendRequests/[string requestId](http:Caller caller, http:Request req) returns error? {
             json|error payload = req.getJsonPayload();
             if (payload is error) {
@@ -266,6 +262,7 @@ public function getFriendService() returns http:Service {
 
             db:FriendRequest? existingRequest = ();
             var nextResult = check requestStream.next();
+            check requestStream.close(); // Important: Close the stream
 
             if nextResult is record {db:FriendRequest value;} {
                 existingRequest = nextResult.value;
@@ -275,24 +272,15 @@ public function getFriendService() returns http:Service {
                 string sendUserId = existingRequest.send_user_idUser_Id;
                 string receiveUserId = existingRequest.receive_user_Id;
 
-                // *** NEW: Delete the friend request from FriendRequest table ***
-                sql:ParameterizedQuery deleteQuery = `DELETE FROM FriendRequest WHERE friendReq_ID = ${requestId}`;
-                var deleteResult = dbClient->executeNativeSQL(deleteQuery);
-                if deleteResult is error {
-                    http:Response res = new;
-                    res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
-                    res.setJsonPayload({"error": "Failed to delete friend request"});
-                    check caller->respond(res);
-                    return;
-                }
+            
 
-                // *** NEW: Insert into friendrequestupdate table with updated status ***
-                sql:ParameterizedQuery insertUpdateQuery = `INSERT INTO FriendRequestUpdate (friendReq_ID, status) VALUES (${requestId}, ${status})`;
-                var insertUpdateResult = dbClient->executeNativeSQL(insertUpdateQuery);
-                if insertUpdateResult is error {
+                // Update the FriendRequest status
+                sql:ParameterizedQuery updateQuery = `UPDATE FriendRequest SET status = ${status} WHERE friendReq_ID = ${requestId}`;
+                var updateResult = dbClient->executeNativeSQL(updateQuery);
+                if updateResult is error {
                     http:Response res = new;
                     res.statusCode = http:STATUS_INTERNAL_SERVER_ERROR;
-                    res.setJsonPayload({"error": "Failed to log friend request update"});
+                    res.setJsonPayload({"error": "Failed to update friend request status"});
                     check caller->respond(res);
                     return;
                 }
@@ -302,8 +290,8 @@ public function getFriendService() returns http:Service {
                     string friend_Id = "fr-" + newFriendId.substring(0, 8);
 
                     sql:ParameterizedQuery insertFriendQuery = `INSERT INTO Friend 
-                        (friend_Id, user_id_1User_Id, user_id_2User_Id, status) 
-                        VALUES (${friend_Id}, ${sendUserId}, ${receiveUserId}, 1)`;
+            (friend_Id, user_id_1User_Id, user_id_2User_Id, status) 
+            VALUES (${friend_Id}, ${sendUserId}, ${receiveUserId}, 1)`;
 
                     var insertFriendResult = dbClient->executeNativeSQL(insertFriendQuery);
                     if insertFriendResult is error {
@@ -327,6 +315,8 @@ public function getFriendService() returns http:Service {
                 return;
             }
         }
+
+    
 
         // Get the total balance with a friend (friendExpense)
         resource function get friendExpense/[string friendId](http:Caller caller, http:Request req) returns error? {
@@ -532,6 +522,6 @@ public function getFriendService() returns http:Service {
             check caller->respond(res);
         }
 
-};
+    };
 
 }
