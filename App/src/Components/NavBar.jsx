@@ -8,7 +8,8 @@ import addExpenseImg from '../images/addexpense.png';
 import addImg from '../images/add.png';
 
 import AddExpensePopup from './AddExpensePopup';
-import CreateGroupModal from "./CreateGroup";
+import CreateGroupModal from './CreateGroup';
+
 
 const NavBar = () => {
   return (
@@ -39,6 +40,7 @@ const NavBar = () => {
               </span>
 
             </div>
+
 
 
             {/* Add Expense button with half-outside circle */}

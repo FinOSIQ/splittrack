@@ -30,41 +30,45 @@ const generateAvatar = (name) => {
 
 export default function AllFriends() {
   const [activeTab, setActiveTab] = useState("friends");
-  const [friends, setFriends] = useState([]); // This will store friend details from backend
+  const [friends, setFriends] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0); // Key to trigger refresh
   const contentRef = useRef(null);
   const isMobile = useIsMobile();
   const { user, loading } = useUserData();
-
-  
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
   // Function to handle friend card click and navigate to FriendView
   const handleFriendClick = (friendId) => {
     navigate(`/friend/${friendId}`);
   };
-  
 
-  useEffect(() => {
-    async function fetchFriends() {
-      // Don't fetch if user data is still loading or user is not available
-      if (loading || !user?.user_Id) {
-        return;
-      }
-
-      try {
-                const userId = user.user_Id;
-        const response = await getFriends(userId);
-
-        
-        setFriends(response.friends || []);
-      } catch (error) {
-        console.error("Failed to fetch friends:", error);
-        // You might want to show a toast notification or error state here
-      }
+  // Function to fetch friends
+  const fetchFriends = async () => {
+    if (loading || !user?.user_Id) {
+      return;
     }
 
+    try {
+      console.log("🔄 Fetching friends for user:", user.user_Id);
+      const userId = user.user_Id;
+      const response = await getFriends(userId);
+      console.log("👥 Friends fetched:", response.friends);
+      setFriends(response.friends || []);
+    } catch (error) {
+      console.error("Failed to fetch friends:", error);
+    }
+  };
+
+  // Fetch friends when component mounts or user changes
+  useEffect(() => {
     fetchFriends();
-  }, [user, loading]);
+  }, [user, loading, refreshKey]); // Added refreshKey as dependency
+
+  // Function to refresh friends list (called from FriendReqComponent)
+  const handleFriendsRefresh = () => {
+    console.log("🔄 Refreshing friends list after friend request action");
+    setRefreshKey(prev => prev + 1); // This will trigger useEffect to refetch friends
+  };
 
   useEffect(() => {
     if (contentRef.current) {
@@ -84,12 +88,11 @@ export default function AllFriends() {
       }
     };
 
-    // Initial check and add event listener
     handleResize();
     window.addEventListener("resize", handleResize);
-
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
   return (
     <>
       <div style={{ marginLeft: '56px' }}>
@@ -156,7 +159,6 @@ export default function AllFriends() {
 
               <div className="my-4 ml-2 overflow-y-auto max-h-[75vh] [&::-webkit-scrollbar]:w-2 scrollable-div">
                 <div ref={contentRef}>
-                    
                   {activeTab === "friends" &&
                     friends.map((friend, index) => (
                       <FriendCard
@@ -169,7 +171,9 @@ export default function AllFriends() {
                       />
                     ))}
 
-                  {activeTab === "friendRequests" && <FriendReqComponent />}
+                  {activeTab === "friendRequests" && (
+                    <FriendReqComponent onFriendsUpdate={handleFriendsRefresh} />
+                  )}
                 </div>
               </div>
             </div>
@@ -182,10 +186,11 @@ export default function AllFriends() {
             <div className="text-[#040b2b] text-2xl font-bold font-inter mx-6 mt-1">
               Friend Requests
             </div>
-            <FriendReqComponent />
+            {/* Pass the refresh callback to FriendReqComponent */}
+            <FriendReqComponent onFriendsUpdate={handleFriendsRefresh} />
           </div>
         </div>
       </div>
-    </>
-  );
+    </>
+  );
 }

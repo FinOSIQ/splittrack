@@ -38,6 +38,7 @@ export default function SettleUp() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [balanceRefreshTrigger, setBalanceRefreshTrigger] = useState(0); // Add balance refresh trigger
   const listRef = useRef(null);
 
   // Load friends data when tab changes
@@ -168,7 +169,7 @@ export default function SettleUp() {
     }
   };
 
-  // Handle payment success - refresh both friends list and expense details
+  // Handle payment success - refresh both friends list, expense details, and balance
   const handlePaymentSuccess = () => {
     console.log('Payment successful, refreshing data...');
     
@@ -179,6 +180,9 @@ export default function SettleUp() {
     if (selectedFriend) {
       loadExpenseDetails();
     }
+
+    // Trigger balance card refresh by incrementing the trigger
+    setBalanceRefreshTrigger(prev => prev + 1);
   };
 
   return (
@@ -195,7 +199,7 @@ export default function SettleUp() {
 
           {/* balance on mobile above list */}
           <div className="block lg:hidden mb-4">
-            <YourBalanceCard />
+            <YourBalanceCard refreshTrigger={balanceRefreshTrigger} />
           </div>
 
           {/* Tabs */}
@@ -286,7 +290,7 @@ export default function SettleUp() {
         {/* Desktop Right */}
         <div className="xl:w-[30%] lg:w-[40%] hidden lg:flex flex-col p-4 bg-[#f1f2f9] rounded-2xl">
           <h2 className="text-2xl font-bold mb-4">Your Balance</h2>
-          <YourBalanceCard />
+          <YourBalanceCard refreshTrigger={balanceRefreshTrigger} />
           <div className="mt-6 flex-1 overflow-y-auto scrollable-div">
             {selectedFriend ? (
               <div>

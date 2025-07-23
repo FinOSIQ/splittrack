@@ -14,7 +14,7 @@ export default function QrCodeScanner({ selectedItems, setSelectedItems }) {
     if (!showQr) return; // Don't poll if QR is not shown
     
     try {
-      const response = await fetch(`http://localhost:9090/api_expense/v1/joinExpense/${sessionId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api_expense/v1/joinExpense/${sessionId}`);
       if (response.ok) {
         const data = await response.json();
         if (data.guestUsers && Array.isArray(data.guestUsers)) {

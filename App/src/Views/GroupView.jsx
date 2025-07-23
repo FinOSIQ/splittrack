@@ -1,14 +1,17 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../Components/NavBar.jsx';
 import HeaderProfile from '../Components/HeaderProfile.jsx';
 import OwedCard from '../Components/OwedCard.jsx';
 import PaidCard from '../Components/PaidCard.jsx';
 import CommentSection from '../Components/CommentSection.jsx';
-import { getGroupDetails, getGroupMemberBalanceSummary } from '../utils/requests/Group'; 
+import AddGroupMember from '../Components/AddGroupMember.jsx';
+import ConfirmationModal from '../Components/ConfirmationModal.jsx';
+import { useToast } from '../Components/ToastProvider.jsx';
+import { getGroupDetails, getGroupMemberBalanceSummary, updateGroup, removeMember, deleteGroup } from '../utils/requests/Group'; 
 import { generateGroupReport } from '../utils/pdfGenerator.js';
 import { parseBalDateTime, getMonthDay } from '../utils/dateUtils.js';
-import useUserData from '../hooks/useUserData';
+import { useUserData } from '../hooks/useUserData';
 import GroupImage from '../images/group.png'; 
 import ProfileImage from '../images/profile.png'; 
 import ExpenseImage from '../images/plate.png'; // Adjust the path as necessary
@@ -40,10 +43,28 @@ const GroupView = () => {
     const [balanceLoading, setBalanceLoading] = useState(false);
     const [error, setError] = useState(null);
     const [generatingReport, setGeneratingReport] = useState(false);
+    const [isEditingGroupName, setIsEditingGroupName] = useState(false);
+    const [editedGroupName, setEditedGroupName] = useState('');
+    const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+    const [removingMemberId, setRemovingMemberId] = useState(null);
+    
+    // Generic confirmation modal state
+    const [confirmationModal, setConfirmationModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        details: '',
+        confirmButtonText: 'Confirm',
+        onConfirm: () => {},
+        requiresTyping: false,
+        requiredText: '',
+        isLoading: false
+    });
 
     const { groupId } = useParams();
     const navigate = useNavigate();
     const { user } = useUserData(); // Get current user data
+    const { showSuccess, showError, showWarning } = useToast(); // Toast notifications
 
     // Function to group expenses by month and sort by date
     const groupExpensesByMonth = (expenses) => {
@@ -80,7 +101,8 @@ const GroupView = () => {
         return groupedExpenses;
     };
 
-    // Function to combine and group expenses and transactions by month
+    // Function to com
+    // bine and group expenses and transactions by month
     const groupExpensesAndTransactionsByMonth = (expenses) => {
         if (!expenses || expenses.length === 0) return {};
 
@@ -142,18 +164,65 @@ const GroupView = () => {
         navigate(`/expense/${expenseId}`);
     };
 
+    // Helper function to get user ID from member data consistently
+    const getMemberUserId = useCallback((member) => {
+        return member.userUser_Id || member.user?.user_Id || member.user_Id || member.userId;
+    }, []);
+
     // Helper function to get current user ID
-    const getCurrentUserId = () => {
+    const getCurrentUserId = useCallback(() => {
         return user?.user_Id || null;
-    };
+    }, [user]);
+
+    // Helper functions for confirmation modals
+    const showConfirmationModal = useCallback((config) => {
+        setConfirmationModal({
+            isOpen: true,
+            title: config.title,
+            message: config.message,
+            details: config.details || '',
+            confirmButtonText: config.confirmButtonText || 'Confirm',
+            onConfirm: config.onConfirm,
+            requiresTyping: config.requiresTyping || false,
+            requiredText: config.requiredText || '',
+            isLoading: false
+        });
+    }, []);
+
+    const closeConfirmationModal = useCallback(() => {
+        setConfirmationModal(prev => ({
+            ...prev,
+            isOpen: false,
+            isLoading: false
+        }));
+    }, []);
+
+    const setConfirmationLoading = useCallback((loading) => {
+        setConfirmationModal(prev => ({
+            ...prev,
+            isLoading: loading
+        }));
+    }, []);
+
+    // Check if current user is the group creator
+    const isCurrentUserCreator = useMemo(() => {
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId || !groupDetails?.group?.groupMembers) return false;
+        
+        const currentUserMember = groupDetails.group.groupMembers.find(member => 
+            getMemberUserId(member) === currentUserId
+        );
+        
+        return currentUserMember?.member_role === 'creator';
+    }, [getCurrentUserId, getMemberUserId, groupDetails?.group?.groupMembers]);
 
     // Helper function to get creator name from group members
-    const getCreatorName = (creatorId) => {
+    const getCreatorName = useCallback((creatorId) => {
         if (!creatorId || !groupDetails?.group?.groupMembers) return 'Someone';
         
         // Find the creator in the group members
         const creator = groupDetails.group.groupMembers.find(member => 
-            member.user_Id === creatorId || member.userId === creatorId
+            getMemberUserId(member) === creatorId
         );
         
         if (creator) {
@@ -161,14 +230,14 @@ const GroupView = () => {
         }
         
         return 'Someone';
-    };
+    }, [getMemberUserId, groupDetails?.group?.groupMembers]);
 
     // Helper function to get user name by ID
-    const getUserNameById = (userId) => {
+    const getUserNameById = useCallback((userId) => {
         if (!userId || !groupDetails?.group?.groupMembers) return 'Someone';
         
         const user = groupDetails.group.groupMembers.find(member => 
-            member.userUser_Id === userId || member.user_Id === userId
+            getMemberUserId(member) === userId
         );
         
         if (user) {
@@ -176,7 +245,7 @@ const GroupView = () => {
         }
         
         return 'Someone';
-    };
+    }, [getMemberUserId, groupDetails?.group?.groupMembers]);
 
     // Helper function to generate transaction description
     const getTransactionDescription = (transaction, currentUserId) => {
@@ -190,18 +259,20 @@ const GroupView = () => {
         }
     };
 
-    // Map group members from API data
-    const members = groupDetails?.group?.groupMembers?.map(member => ({
-        name: `${member.first_name} ${member.last_name}`,
-        img: "../images/profile.png"
-    })) || [];
+    // Map group members from API data (memoized to prevent unnecessary re-renders)
+    const members = useMemo(() => {
+        return groupDetails?.group?.groupMembers?.map(member => ({
+            name: `${member.first_name} ${member.last_name}`,
+            img: "../images/profile.png"
+        })) || [];
+    }, [groupDetails?.group?.groupMembers]);
 
-    const visibleMembers = members.slice(0, 2);
-    const remainingCount = members.length - 2;
+    const visibleMembers = useMemo(() => members.slice(0, 2), [members]);
+    const remainingCount = useMemo(() => members.length - 2, [members.length]);
 
     const handleGenerateReport = async () => {
         if (!groupDetails) {
-            alert('No group data available to generate report');
+            showError('No group data available to generate report');
             return;
         }
 
@@ -210,33 +281,34 @@ const GroupView = () => {
             const result = await generateGroupReport(groupDetails);
             
             if (result.success) {
-                alert(`Report generated successfully! File saved as: ${result.fileName}`);
+                showSuccess(`Report generated successfully! File saved as: ${result.fileName}`);
             } else {
-                alert(`Error generating report: ${result.error}`);
+                showError(`Error generating report: ${result.error}`);
             }
         } catch (error) {
             console.error('Error generating report:', error);
-            alert('Failed to generate report. Please try again.');
+            showError('Failed to generate report. Please try again.');
         } finally {
             setGeneratingReport(false);
         }
     };
 
-    // Function to calculate total balance amount
-    const calculateTotalBalance = () => {
+    // Function to calculate total balance amount (memoized)
+    const totalBalance = useMemo(() => {
         if (!balanceData?.members) return 0;
         
         return balanceData.members.reduce((total, member) => {
             const amount = parseFloat(member.amount) || 0;
             return total + amount;
         }, 0);
-    };
+    }, [balanceData?.members]);
 
     // Function to load balance data
-    const loadBalanceData = async () => {
+    const loadBalanceData = useCallback(async () => {
         if (!groupId) return;
         
         setBalanceLoading(true);
+        setError(null); // Reset error state
         try {
             const data = await getGroupMemberBalanceSummary(groupId);
             setBalanceData(data);
@@ -247,36 +319,272 @@ const GroupView = () => {
         } finally {
             setBalanceLoading(false);
         }
+    }, [groupId]);
+
+    // Function to reload group details
+    const loadGroupDetails = useCallback(async () => {
+        if (!groupId) return;
+        
+        setLoading(true);
+        setError(null); // Reset error state
+        try {
+            const data = await getGroupDetails(groupId);
+            setGroupDetails(data);
+            console.log('Group Details:', data);
+            
+            // Also reload balance data
+            await loadBalanceData();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [groupId, loadBalanceData]);
+
+    // Function to handle group name editing
+    const handleEditGroupName = () => {
+        setEditedGroupName(groupDetails?.group?.name || '');
+        setIsEditingGroupName(true);
     };
 
+    const handleUpdateGroupName = useCallback(async () => {
+        if (!editedGroupName.trim()) {
+            showWarning('Please enter a valid group name.');
+            return;
+        }
+
+        try {
+            setIsEditingGroupName(false); // Set to false to show loading state
+            setError(null); // Reset error state
+            
+            // Get current members from group details
+            const currentMembers = groupDetails?.group?.groupMembers?.map(member => ({
+                userId: getMemberUserId(member),
+                role: member.member_role || 'member'
+            })) || [];
+
+            // Prepare update data - send all current members back with new name
+            const updateData = {
+                name: editedGroupName.trim(),
+                members: currentMembers
+            };
+
+            console.log('Updating group name with data:', updateData);
+            
+            // Call the API to update group
+            const response = await updateGroup(groupId, updateData);
+            
+            if (response.success) {
+                // Update local state
+                if (groupDetails && groupDetails.group) {
+                    groupDetails.group.name = editedGroupName;
+                    setGroupDetails({ ...groupDetails });
+                }
+                
+                showSuccess('Group name updated successfully!');
+            } else {
+                // Revert editing state on error
+                setIsEditingGroupName(true);
+                setError(response.error || 'Failed to update group name. Please try again.');
+                showError(response.error || 'Failed to update group name. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error updating group name:', error);
+            setIsEditingGroupName(true); // Revert editing state on error
+            setError('Failed to update group name. Please try again.');
+            showError('Failed to update group name. Please try again.');
+        }
+    }, [editedGroupName, getMemberUserId, groupDetails, groupId, showSuccess, showError, showWarning]);
+
+    const handleCancelEditGroupName = () => {
+        setEditedGroupName('');
+        setIsEditingGroupName(false);
+    };
+
+    // Check if group name has changed
+    const hasGroupNameChanged = editedGroupName !== groupDetails?.group?.name && editedGroupName.trim() !== '';
+
+    // Handle remove member confirmation
+    const handleRemoveMember = useCallback(async (memberIndex, member) => {
+        const memberData = groupDetails?.group?.groupMembers?.[memberIndex];
+        const memberUserId = getMemberUserId(memberData);
+        const currentUserId = getCurrentUserId();
+        const isCurrentUser = memberUserId === currentUserId;
+        
+        if (!memberUserId) {
+            showError('Error: Unable to identify the member to remove. Please try again.');
+            return;
+        }
+        
+        // Allow creators to remove any member (except themselves), or allow members to remove themselves
+        if (!isCurrentUserCreator && !isCurrentUser) {
+            showWarning('You can only remove yourself from the group. Only the group creator can remove other members.');
+            return;
+        }
+
+        if (memberData?.member_role === 'creator') {
+            showWarning('Cannot remove the group creator.');
+            return;
+        }
+
+        // Check if member has non-zero balance before allowing removal
+        try {
+            // Load balance data if not already loaded
+            if (!balanceData) {
+                setBalanceLoading(true);
+                await loadBalanceData();
+                setBalanceLoading(false);
+            }
+            
+            // Find member's balance in the balance data
+            const memberBalance = balanceData?.members?.find(balanceMember => 
+                balanceMember.userId === memberUserId
+            );
+            
+            const memberAmount = memberBalance ? parseFloat(memberBalance.amount) : 0;
+            
+            // Prevent removal if member has non-zero balance
+            if (memberAmount !== 0) {
+                const balanceText = memberAmount > 0 
+                    ? `owes LKR ${Math.abs(memberAmount).toFixed(2)} to the group`
+                    : `is owed LKR ${Math.abs(memberAmount).toFixed(2)} by the group`;
+                
+                showError(`Cannot ${isCurrentUser ? 'leave' : 'remove'} ${member.name} - they have an outstanding balance. ${member.name} ${balanceText}. Please settle all balances before ${isCurrentUser ? 'leaving' : 'removing them from'} the group.`);
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking member balance:', error);
+            showError('Error checking member balance. Please try again.');
+            return;
+        }
+
+        const actionText = isCurrentUser ? 'leave the group' : `remove ${member.name} from the group`;
+        const title = isCurrentUser ? 'Leave Group' : 'Remove Member';
+        const message = `Are you sure you want to ${actionText}?`;
+        const details = `This action cannot be undone. ${isCurrentUser ? 'You' : 'The member'} will lose access to all group expenses and data.`;
+
+        showConfirmationModal({
+            title,
+            message,
+            details,
+            confirmButtonText: isCurrentUser ? 'Leave Group' : 'Remove Member',
+            onConfirm: () => confirmRemoveMember(memberUserId, member.name),
+        });
+    }, [isCurrentUserCreator, groupDetails?.group?.groupMembers, getMemberUserId, getCurrentUserId, showConfirmationModal, balanceData, loadBalanceData]);
+
+    // Confirm remove member
+    const confirmRemoveMember = useCallback(async (memberUserId, memberName) => {
+        if (!memberUserId) {
+            showError('Error: Unable to identify the member to remove. Please try again.');
+            return;
+        }
+        
+        try {
+            setConfirmationLoading(true);
+            setRemovingMemberId(memberUserId);
+            setError(null); // Reset error state
+            
+            // Call the new removeMember API function
+            const response = await removeMember(groupId, memberUserId);
+            
+            if (response.success) {
+                closeConfirmationModal();
+                // Reload group details to get updated member list
+                await loadGroupDetails();
+                showSuccess(`Successfully removed ${memberName} from the group!`);
+                
+                // If current user removed themselves, navigate back to home
+                const currentUserId = getCurrentUserId();
+                if (memberUserId === currentUserId) {
+                    navigate('/home');
+                }
+            } else {
+                setError(response.error || 'Failed to remove member. Please try again.');
+                showError(response.error || 'Failed to remove member. Please try again.');
+                closeConfirmationModal();
+            }
+        } catch (error) {
+            console.error('Error removing member:', error);
+            setError('Failed to remove member. Please try again.');
+            showError('Failed to remove member. Please try again.');
+            closeConfirmationModal();
+        } finally {
+            setConfirmationLoading(false);
+            setRemovingMemberId(null);
+        }
+    }, [groupId, loadGroupDetails, closeConfirmationModal, setConfirmationLoading, getCurrentUserId, navigate, showSuccess, showError]);
+
+    // Handle delete group (creator only)
+    const handleDeleteGroup = useCallback(async () => {
+        if (!isCurrentUserCreator) {
+            showWarning('Only the group creator can delete the group.');
+            return;
+        }
+
+        const hasActiveExpenses = groupDetails?.group?.expenses && groupDetails.group.expenses.length > 0;
+        if (hasActiveExpenses) {
+            showError(`Cannot delete group - ${groupDetails.group.expenses.length} active expense(s) found. Please settle or remove all expenses first.`);
+            return;
+        }
+
+        const groupName = groupDetails?.group?.name || 'this group';
+        
+        showConfirmationModal({
+            title: 'Delete Group',
+            message: `Are you sure you want to permanently delete "${groupName}"?`,
+            details: 'This action cannot be undone and will remove:\n- All group data\n- All member information\n- All expense history',
+            confirmButtonText: 'Delete Group',
+            requiresTyping: true,
+            requiredText: 'DELETE',
+            onConfirm: () => confirmDeleteGroup(),
+        });
+    }, [isCurrentUserCreator, groupDetails, showConfirmationModal, showWarning, showError]);
+
+    // Confirm delete group
+    const confirmDeleteGroup = useCallback(async () => {
+        try {
+            setConfirmationLoading(true);
+            setError(null);
+            
+            const response = await deleteGroup(groupId);
+            
+            if (response.success) {
+                closeConfirmationModal();
+                showSuccess('Group deleted successfully!');
+                navigate('/home');
+            } else {
+                setError(response.error || 'Failed to delete group. Please try again.');
+                showError(response.error || 'Failed to delete group. Please try again.');
+                closeConfirmationModal();
+            }
+        } catch (error) {
+            console.error('Error deleting group:', error);
+            setError('Failed to delete group. Please try again.');
+            showError('Failed to delete group. Please try again.');
+            closeConfirmationModal();
+        } finally {
+            setConfirmationLoading(false);
+        }
+    }, [groupId, closeConfirmationModal, setConfirmationLoading, navigate, showSuccess, showError]);
+
+    // Handle member addition
+    const handleMemberAdded = useCallback((newMembers) => {
+        // Reload group details to get updated member list
+        loadGroupDetails();
+    }, [loadGroupDetails]);
+
     // Load balance data when switching to balance tab
-    const handleTabChange = (tab) => {
+    const handleTabChange = useCallback((tab) => {
         setActiveTab(tab);
         if (tab === 'balance' && !balanceData) {
             loadBalanceData();
         }
-    };
+    }, [balanceData, loadBalanceData]);
 
 
     useEffect(() => {
-        const loadGroupDetails = async () => {
-            setLoading(true);
-            try {
-                const data = await getGroupDetails(groupId);
-                setGroupDetails(data);
-                setLoading(false);
-                console.log('Group Details:', data);
-                
-                // Also load balance data for the header display
-                await loadBalanceData();
-            } catch (err) {
-                setError(err.message);
-                setLoading(false);
-            }
-        };
-        
         loadGroupDetails();
-    }, [groupId]);
+    }, [loadGroupDetails]);
 
 
 
@@ -342,7 +650,6 @@ const GroupView = () => {
                                 {/* Amount Owed */}
                                 <div className="text-right">
                                     {(() => {
-                                        const totalBalance = calculateTotalBalance();
                                         const isPositive = totalBalance >= 0;
                                         const absoluteAmount = Math.abs(totalBalance);
                                         
@@ -686,19 +993,49 @@ const GroupView = () => {
                                             <label className="text-[#61677d] text-sm font-normal font-['Poppins']">Group Name</label>
                                             <input 
                                                 type="text" 
-                                                value={groupDetails?.group?.name || ''} 
-                                                disabled
-                                                className="w-full mt-1 p-3 border border-gray-300 rounded-lg bg-gray-100 text-[#040b2b]"
+                                                value={isEditingGroupName ? editedGroupName : (groupDetails?.group?.name || '')}
+                                                onChange={(e) => setEditedGroupName(e.target.value)}
+                                                disabled={!isEditingGroupName}
+                                                className={`w-full mt-1 p-3 border border-gray-300 rounded-lg text-[#040b2b] ${
+                                                    isEditingGroupName ? 'bg-white focus:outline-none focus:ring-2 focus:ring-blue-500' : 'bg-gray-100'
+                                                }`}
                                             />
                                         </div>
-                                        <div>
-                                            <label className="text-[#61677d] text-sm font-normal font-['Poppins']">Group ID</label>
-                                            <input 
-                                                type="text" 
-                                                value={groupDetails?.group?.group_Id || ''} 
-                                                disabled
-                                                className="w-full mt-1 p-3 border border-gray-300 rounded-lg bg-gray-100 text-[#040b2b]"
-                                            />
+                                        <div className="flex items-end">
+                                            {!isEditingGroupName ? (
+                                                <button 
+                                                    onClick={handleEditGroupName}
+                                                    disabled={!isCurrentUserCreator}
+                                                    className={`flex items-center gap-2 px-6 py-3 font-medium font-['Poppins'] rounded-lg text-sm transition-all ${
+                                                        isCurrentUserCreator 
+                                                            ? 'border border-[#040B2B] text-[#040B2B] hover:bg-[#040B2B] hover:text-white' 
+                                                            : 'border border-gray-300 text-gray-400 cursor-not-allowed'
+                                                    }`}
+                                                    title={!isCurrentUserCreator ? 'Only the group creator can edit the group name' : ''}
+                                                >
+                                                    Edit
+                                                </button>
+                                            ) : (
+                                                <div className="flex space-x-2">
+                                                    <button 
+                                                        onClick={handleUpdateGroupName}
+                                                        disabled={!hasGroupNameChanged}
+                                                        className={`flex items-center gap-2 px-6 py-3 font-medium font-['Poppins'] rounded-lg text-sm transition-all ${
+                                                            hasGroupNameChanged 
+                                                                ? 'border border-[#040B2B] text-[#040B2B] hover:bg-[#040B2B] hover:text-white' 
+                                                                : 'border border-gray-300 text-gray-400 cursor-not-allowed'
+                                                        }`}
+                                                    >
+                                                        {hasGroupNameChanged ? 'Update' : 'No Changes'}
+                                                    </button>
+                                                    <button 
+                                                        onClick={handleCancelEditGroupName}
+                                                        className="flex items-center gap-2 px-6 py-3 border border-[#DC2626] font-medium font-['Poppins'] text-[#DC2626] rounded-lg text-sm transition-all hover:bg-[#DC2626] hover:text-white"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -709,7 +1046,21 @@ const GroupView = () => {
                                         <div className="text-[#040b2b] text-base font-medium font-['Poppins']">
                                             Group Members ({members.length})
                                         </div>
-                                        <button className="px-4 py-2 bg-[#040B2B] text-white rounded-lg text-sm font-medium hover:bg-[#0a1654] transition">
+                                        <button 
+                                            onClick={() => isCurrentUserCreator ? setIsAddMemberModalOpen(true) : null}
+                                            disabled={!isCurrentUserCreator}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
+                                                isCurrentUserCreator 
+                                                    ? 'bg-[#040B2B] text-white hover:bg-[#0a1654]' 
+                                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            }`}
+                                            title={!isCurrentUserCreator ? 'Only the group creator can add members' : ''}
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" />
+                                                <circle cx="8.5" cy="7" r="4" />
+                                                <path d="M20 8V14M23 11H17" />
+                                            </svg>
                                             Add Member
                                         </button>
                                     </div>
@@ -717,6 +1068,10 @@ const GroupView = () => {
                                         {members.map((member, index) => {
                                             const memberAvatar = generateAvatar(member.name);
                                             const memberRole = groupDetails?.group?.groupMembers?.[index]?.member_role || 'member';
+                                            const memberId = getMemberUserId(groupDetails?.group?.groupMembers?.[index]);
+                                            const isRemoving = removingMemberId === memberId;
+                                            const canRemove = isCurrentUserCreator && memberRole !== 'creator';
+                                            
                                             return (
                                                 <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                                                     <div className="flex items-center space-x-3">
@@ -732,14 +1087,24 @@ const GroupView = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex space-x-2">
-                                                        {memberRole !== 'admin' && (
-                                                            <button className="px-3 py-1 text-xs bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition">
-                                                                Remove
+                                                        {canRemove && (
+                                                            <button 
+                                                                onClick={() => handleRemoveMember(index, member)}
+                                                                disabled={isRemoving}
+                                                                className={`px-3 py-1 text-xs rounded-lg transition ${
+                                                                    isRemoving 
+                                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                                                        : 'bg-red-100 text-red-600 hover:bg-red-200'
+                                                                }`}
+                                                            >
+                                                                {isRemoving ? 'Removing...' : 'Remove'}
                                                             </button>
                                                         )}
-                                                        <button className="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition">
-                                                            Edit Role
-                                                        </button>
+                                                        {memberRole === 'creator' && (
+                                                            <span className="px-3 py-1 text-xs bg-blue-100 text-blue-600 rounded-lg">
+                                                                Creator
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
@@ -780,15 +1145,69 @@ const GroupView = () => {
                                         Danger Zone
                                     </div>
                                     <div className="text-[#61677d] text-sm font-normal font-['Poppins'] mb-4">
-                                        These actions are irreversible. Please proceed with caution.
+                                        {isCurrentUserCreator 
+                                            ? "Deleting the group will permanently remove all data including expenses and member information. This action cannot be undone."
+                                            : "Leaving the group will remove your access to all group expenses and data. You can be re-added by the group creator."
+                                        }
                                     </div>
                                     <div className="space-y-3">
-                                        <button className="w-full md:w-auto px-6 py-3 bg-white text-red-600 border border-red-300 rounded-lg text-sm font-medium hover:bg-red-50 transition">
-                                            Leave Group
-                                        </button>
-                                        <button className="w-full md:w-auto px-6 py-3 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition ml-0 md:ml-3">
-                                            Delete Group
-                                        </button>
+                                        {isCurrentUserCreator ? (
+                                            // Show Delete Group button only for creators
+                                            (() => {
+                                                const hasActiveExpenses = groupDetails?.group?.expenses && groupDetails.group.expenses.length > 0;
+                                                const canDelete = !hasActiveExpenses;
+                                                
+                                                return (
+                                                    <button 
+                                                        onClick={handleDeleteGroup}
+                                                        disabled={!canDelete}
+                                                        className={`w-full md:w-auto px-6 py-3 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
+                                                            canDelete 
+                                                                ? 'bg-red-600 text-white hover:bg-red-700' 
+                                                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                        }`}
+                                                        title={
+                                                            !canDelete 
+                                                                ? `Cannot delete group - ${groupDetails.group.expenses.length} active expense(s) found. Please settle or remove all expenses first.`
+                                                                : "Permanently delete this group and all its data"
+                                                        }
+                                                    >
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c0 1 1 2 2 2v2"/>
+                                                            <line x1="10" y1="11" x2="10" y2="17"/>
+                                                            <line x1="14" y1="11" x2="14" y2="17"/>
+                                                        </svg>
+                                                        {canDelete ? 'Delete Group' : 'Cannot Delete - Has Expenses'}
+                                                    </button>
+                                                );
+                                            })()
+                                        ) : (
+                                            // Show Leave Group button only for members
+                                            <button 
+                                                onClick={() => {
+                                                    const currentUserId = getCurrentUserId();
+                                                    const currentUserMember = groupDetails?.group?.groupMembers?.find(member => 
+                                                        getMemberUserId(member) === currentUserId
+                                                    );
+                                                    if (currentUserMember) {
+                                                        const memberName = `${currentUserMember.first_name} ${currentUserMember.last_name}`;
+                                                        handleRemoveMember(
+                                                            groupDetails.group.groupMembers.indexOf(currentUserMember),
+                                                            { name: memberName }
+                                                        );
+                                                    }
+                                                }}
+                                                className="w-full md:w-auto px-6 py-3 bg-white text-red-600 border border-red-300 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-2"
+                                                title="Leave this group"
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                                    <polyline points="16,17 21,12 16,7"/>
+                                                    <line x1="21" y1="12" x2="9" y2="12"/>
+                                                </svg>
+                                                Leave Group
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -813,7 +1232,6 @@ const GroupView = () => {
                                             • Total Members: {groupDetails.group?.groupMembers?.length || 0}<br/>
                                             • Total Expenses: {groupDetails.group?.expenses?.length || 0}<br/>
                                             • Your Balance: {(() => {
-                                                const totalBalance = calculateTotalBalance();
                                                 const isPositive = totalBalance >= 0;
                                                 const absoluteAmount = Math.abs(totalBalance);
                                                 return `${isPositive ? '+' : '-'}${absoluteAmount.toFixed(2)} LKR ${isPositive ? '(Owed to you)' : '(You owe)'}`;
@@ -851,6 +1269,29 @@ const GroupView = () => {
                     )}
                 </div>
             </main>
+
+            {/* Generic Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={confirmationModal.isOpen}
+                title={confirmationModal.title}
+                message={confirmationModal.message}
+                details={confirmationModal.details}
+                confirmButtonText={confirmationModal.confirmButtonText}
+                onConfirm={confirmationModal.onConfirm}
+                onCancel={closeConfirmationModal}
+                requiresTyping={confirmationModal.requiresTyping}
+                requiredText={confirmationModal.requiredText}
+                isLoading={confirmationModal.isLoading}
+            />
+
+            {/* Add Group Member Modal */}
+            <AddGroupMember
+                isOpen={isAddMemberModalOpen}
+                onClose={() => setIsAddMemberModalOpen(false)}
+                groupId={groupId}
+                groupName={groupDetails?.group?.name || 'Group'}
+                onMemberAdded={handleMemberAdded}
+            />
         </div>
     );
 };

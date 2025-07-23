@@ -198,13 +198,24 @@ public function getGroupService() returns http:Service {
                 // Update members using delete and replace if provided
                 if members is json[] {
 
-                    // Delete all existing members
+                    // Get current creator before deleting members
+                    sql:ParameterizedQuery getCurrentCreatorQuery = `SELECT userUser_Id FROM usergroupmember WHERE groupGroup_Id = ${groupId} AND member_role = 'creator'`;
+                    stream<record {| string userUser_Id; |}, error?> creatorStream = utils:Client->query(getCurrentCreatorQuery);
+                    string? currentCreatorId = ();
+                    
+                    error? creatorError = creatorStream.forEach(function(record {| string userUser_Id; |} creator) {
+                        currentCreatorId = creator.userUser_Id;
+                    });
+                    
+                    if creatorError is error {
+                        io:println("Error getting current creator: ", creatorError.toString());
+                    }
 
-                    // io:println("Deleting all members for groupId: ", groupId);
+                    // Delete all existing members except creator
                     sql:ParameterizedQuery deleteMembersQuery = `DELETE FROM usergroupmember WHERE groupGroup_Id = ${groupId} AND member_role != 'creator'`;
-                    io:println("Delete members query: ", deleteMembersQuery);
-                    sql:ExecutionResult deleteResult = check dbClient->executeNativeSQL(deleteMembersQuery);
-                    io:println("Deleted rows: ", deleteResult.affectedRowCount);
+                  
+                    _= check dbClient->executeNativeSQL(deleteMembersQuery);
+                    
 
                     // Insert new members
                     time:Utc memberCurrentTime = time:utcNow();
@@ -225,11 +236,18 @@ public function getGroupService() returns http:Service {
                         string groupMemberId = uuid:createType4AsString();
 
                         if role === "creator" {
-                            fail error("Cannot alter creator role", statusCode = http:STATUS_BAD_REQUEST);
+                            // Check if trying to change creator to a different user
+                            if currentCreatorId is string && currentCreatorId != userId {
+                                fail error("Cannot change creator to a different user", statusCode = http:STATUS_BAD_REQUEST);
+                            }
+                            // Skip inserting creator if it's the same user (already exists)
+                            if currentCreatorId is string && currentCreatorId == userId {
+                                continue;
+                            }
                         }
 
-                        if role != "member" {
-                            fail error("Role must be 'member', got '" + role + "'", statusCode = http:STATUS_BAD_REQUEST);
+                        if role != "member" && role != "creator" {
+                            fail error("Role must be 'member' or 'creator', got '" + role + "'", statusCode = http:STATUS_BAD_REQUEST);
                         }
 
                         toInsert.push({
@@ -268,35 +286,276 @@ public function getGroupService() returns http:Service {
             return res;
         }
 
-        // // DELETE: Remove a group and its members
+        // DELETE: Remove a group and its members (only if no expenses exist)
         resource function delete groups/[string groupId](http:Caller caller, http:Request req) returns error? {
+            // First check if group exists
+            sql:ParameterizedQuery checkGroupQuery = `SELECT group_Id, name FROM UserGroup WHERE group_Id = ${groupId} AND status = 1`;
+            stream<record {| string group_Id; string name; |}, error?> groupStream = utils:Client->query(checkGroupQuery);
+            
+            boolean groupExists = false;
+            string groupName = "";
+            error? groupError = groupStream.forEach(function(record {| string group_Id; string name; |} group) {
+                groupExists = true;
+                groupName = group.name;
+            });
+            
+            if groupError is error {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to check group existence", groupError.toString());
+            }
+            
+            if !groupExists {
+                return utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Group not found", "Group with ID " + groupId + " does not exist");
+            }
+
+            // Check if group has any related expenses
+            sql:ParameterizedQuery checkExpensesQuery = `SELECT COUNT(*) as expense_count FROM Expense WHERE usergroupGroup_Id = ${groupId} AND status = 1`;
+            stream<record {| int expense_count; |}, error?> expenseStream = utils:Client->query(checkExpensesQuery);
+            
+            int expenseCount = 0;
+            error? expenseError = expenseStream.forEach(function(record {| int expense_count; |} result) {
+                expenseCount = result.expense_count;
+            });
+            
+            if expenseError is error {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to check group expenses", expenseError.toString());
+            }
+            
+            // Prevent deletion if group has expenses
+            if expenseCount > 0 {
+                return utils:sendErrorResponse(
+                    caller, 
+                    http:STATUS_CONFLICT, 
+                    "Cannot delete group with existing expenses", 
+                    string `Group "${groupName}" has ${expenseCount} active expense(s). Please settle or remove all expenses before deleting the group.`
+                );
+            }
+
+            // Extract user ID from cookie to verify permissions
+            string? currentUserId = utils:getCookieValue(req, "user_id");
+            if currentUserId == () {
+                return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Invalid 'user_id' cookie", "Expected a valid 'user_id' cookie");
+            }
+
+            // Check if current user is the group creator
+            sql:ParameterizedQuery checkCreatorQuery = `SELECT userUser_Id FROM UserGroupMember WHERE groupGroup_Id = ${groupId} AND member_role = 'creator' AND status = 1`;
+            stream<record {| string userUser_Id; |}, error?> creatorStream = utils:Client->query(checkCreatorQuery);
+            
+            boolean isCreator = false;
+            error? creatorError = creatorStream.forEach(function(record {| string userUser_Id; |} creator) {
+                if creator.userUser_Id == currentUserId {
+                    isCreator = true;
+                }
+            });
+            
+            if creatorError is error {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to verify group creator", creatorError.toString());
+            }
+            
+            if !isCreator {
+                return utils:sendErrorResponse(caller, http:STATUS_FORBIDDEN, "Access denied", "Only the group creator can delete the group");
+            }
+
             transaction {
-                // Delete members first (due to foreign key constraints)
-                sql:ParameterizedQuery deleteMembersQuery = `DELETE FROM usergroupmember WHERE groupGroup_Id = ${groupId}`;
-                _ = check dbClient->executeNativeSQL(deleteMembersQuery);
+                // Delete all group members first (due to foreign key constraints)
+                sql:ParameterizedQuery deleteMembersQuery = `DELETE FROM UserGroupMember WHERE groupGroup_Id = ${groupId}`;
+                sql:ExecutionResult deleteMembersResult = check dbClient->executeNativeSQL(deleteMembersQuery);
+                io:println("Deleted group members: ", deleteMembersResult.affectedRowCount);
 
-                // Delete group
-
-                // TODO: doesn't work with maria DB - discus standard alterative
-                db:UserGroup|persist:Error deleteResult = dbClient->/usergroups/[groupId].delete();
-
-                if deleteResult is persist:NotFoundError {
-                    fail error("Group with ID " + groupId + " does not exist", statusCode = http:STATUS_NOT_FOUND);
-                } else if deleteResult is persist:Error {
-                    fail error(deleteResult.message(), statusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+                // Delete the group using SQL (MariaDB compatible)
+                sql:ParameterizedQuery deleteGroupQuery = `DELETE FROM UserGroup WHERE group_Id = ${groupId}`;
+                sql:ExecutionResult deleteGroupResult = check dbClient->executeNativeSQL(deleteGroupQuery);
+                io:println("Deleted group: ", deleteGroupResult.affectedRowCount);
+                
+                if deleteGroupResult.affectedRowCount == 0 {
+                    fail error("Group deletion failed - no rows affected", statusCode = http:STATUS_INTERNAL_SERVER_ERROR);
                 }
 
+                check commit;
+                
                 http:Response res = new;
                 res.statusCode = http:STATUS_OK; // 200 OK
-                res.setJsonPayload({"status": "success", "groupId": groupId});
+                res.setJsonPayload({
+                    "status": "success", 
+                    "message": string `Group "${groupName}" deleted successfully`,
+                    "groupId": groupId,
+                    "deletedMembers": deleteMembersResult.affectedRowCount
+                });
                 check caller->respond(res);
-                check commit;
+                
             } on fail error e {
                 // Transaction failed (rolled back automatically)
                 int statusCode = e.detail().hasKey("statusCode")
                     ? check e.detail().get("statusCode").ensureType(int)
                     : http:STATUS_INTERNAL_SERVER_ERROR;
                 return utils:sendErrorResponse(caller, statusCode, "Failed to delete group", e.message());
+            }
+        }
+
+        // REMOVE MEMBER: Remove a specific member from a group
+        resource function post removeMember(http:Caller caller, http:Request req) returns error? {
+            json payload = check req.getJsonPayload();
+
+            // Extract groupId and userId from request body
+            json|error groupIdJson = payload.groupId;
+            json|error userIdJson = payload.userId;
+
+            if groupIdJson is error || groupIdJson is () {
+                return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Missing 'groupId' field");
+            }
+            if userIdJson is error || userIdJson is () {
+                return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Missing 'userId' field");
+            }
+
+            string groupId = groupIdJson.toString();
+            string userId = userIdJson.toString();
+
+            // Extract current user ID from cookie to verify permissions
+            string? currentUserId = utils:getCookieValue(req, "user_id");
+            if currentUserId == () {
+                return utils:sendErrorResponse(caller, http:STATUS_BAD_REQUEST, "Invalid 'user_id' cookie", "Expected a valid 'user_id' cookie");
+            }
+
+            // First check if group exists
+            sql:ParameterizedQuery checkGroupQuery = `SELECT group_Id, name FROM UserGroup WHERE group_Id = ${groupId} AND status = 1`;
+            stream<record {| string group_Id; string name; |}, error?> groupStream = utils:Client->query(checkGroupQuery);
+            
+            boolean groupExists = false;
+            string groupName = "";
+            error? groupError = groupStream.forEach(function(record {| string group_Id; string name; |} group) {
+                groupExists = true;
+                groupName = group.name;
+            });
+            
+            if groupError is error {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to check group existence", groupError.toString());
+            }
+            
+            if !groupExists {
+                return utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Group not found", "Group with ID " + groupId + " does not exist");
+            }
+
+            // Check if current user is a member of the group
+            sql:ParameterizedQuery checkMembershipQuery = `SELECT userUser_Id, member_role FROM UserGroupMember WHERE groupGroup_Id = ${groupId} AND userUser_Id = ${currentUserId} AND status = 1`;
+            stream<record {| string userUser_Id; string member_role; |}, error?> membershipStream = utils:Client->query(checkMembershipQuery);
+            
+            boolean isMember = false;
+            boolean isCurrentUserCreator = false;
+            error? membershipError = membershipStream.forEach(function(record {| string userUser_Id; string member_role; |} member) {
+                if member.userUser_Id == currentUserId {
+                    isMember = true;
+                    if member.member_role == "creator" {
+                        isCurrentUserCreator = true;
+                    }
+                }
+            });
+            
+            if membershipError is error {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to verify group membership", membershipError.toString());
+            }
+            
+            if !isMember {
+                return utils:sendErrorResponse(caller, http:STATUS_FORBIDDEN, "Access denied", "You must be a member of this group to remove members");
+            }
+
+            // Check if user to be removed exists in the group
+            sql:ParameterizedQuery checkMemberQuery = `SELECT group_member_Id, member_role, userUser_Id FROM UserGroupMember WHERE groupGroup_Id = ${groupId} AND userUser_Id = ${userId} AND status = 1`;
+            stream<record {| string group_member_Id; string member_role; string userUser_Id; |}, error?> memberStream = utils:Client->query(checkMemberQuery);
+            
+            boolean memberExists = false;
+            string memberRole = "";
+            error? memberError = memberStream.forEach(function(record {| string group_member_Id; string member_role; string userUser_Id; |} member) {
+                memberExists = true;
+                memberRole = member.member_role;
+            });
+            
+            if memberError is error {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to check member existence", memberError.toString());
+            }
+            
+            if !memberExists {
+                return utils:sendErrorResponse(caller, http:STATUS_NOT_FOUND, "Member not found", "User with ID " + userId + " is not a member of this group");
+            }
+
+            // Prevent removal of group creator
+            if memberRole == "creator" {
+                return utils:sendErrorResponse(caller, http:STATUS_FORBIDDEN, "Cannot remove creator", "Group creator cannot be removed from the group");
+            }
+
+            // Prevent regular members from removing other members (only creator can remove others)
+            if !isCurrentUserCreator && userId != currentUserId {
+                return utils:sendErrorResponse(caller, http:STATUS_FORBIDDEN, "Insufficient permissions", "Only the group creator can remove other members. You can only remove yourself from the group");
+            }
+
+            // Get user details for response
+            sql:ParameterizedQuery getUserQuery = `SELECT first_name, last_name FROM User WHERE user_Id = ${userId}`;
+            stream<record {| string first_name; string last_name; |}, error?> userStream = utils:Client->query(getUserQuery);
+            
+            string userName = "Unknown User";
+            error? userError = userStream.forEach(function(record {| string first_name; string last_name; |} user) {
+                userName = user.first_name + " " + user.last_name;
+            });
+            
+            if userError is error {
+                io:println("Warning: Failed to get user name: ", userError.toString());
+            }
+
+            // Check if user has any pending expenses in the group
+            sql:ParameterizedQuery checkExpensesQuery = `
+                SELECT COUNT(*) as expense_count 
+                FROM Expense e 
+                JOIN ExpenseParticipant ep ON e.expense_Id = ep.expenseExpense_Id 
+                WHERE e.usergroupGroup_Id = ${groupId} 
+                AND ep.userUser_Id = ${userId} 
+                AND e.status = 1 
+                AND ep.status = 1
+            `;
+            stream<record {| int expense_count; |}, error?> expenseStream = utils:Client->query(checkExpensesQuery);
+            
+            int expenseCount = 0;
+            error? expenseError = expenseStream.forEach(function(record {| int expense_count; |} result) {
+                expenseCount = result.expense_count;
+            });
+            
+            if expenseError is error {
+                return utils:sendErrorResponse(caller, http:STATUS_INTERNAL_SERVER_ERROR, "Failed to check user expenses", expenseError.toString());
+            }
+
+            // Warn if user has expenses but allow removal (expenses will need to be handled separately)
+            string warningMessage = "";
+            if expenseCount > 0 {
+                warningMessage = string ` Warning: User has ${expenseCount} active expense(s) in this group.`;
+            }
+
+            transaction {
+                // Remove the member from the group
+                sql:ParameterizedQuery removeMemberQuery = `DELETE FROM UserGroupMember WHERE groupGroup_Id = ${groupId} AND userUser_Id = ${userId}`;
+                sql:ExecutionResult removeResult = check dbClient->executeNativeSQL(removeMemberQuery);
+                io:println("Removed member: ", removeResult.affectedRowCount);
+                
+                if removeResult.affectedRowCount == 0 {
+                    fail error("Member removal failed - no rows affected", statusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+                }
+
+                check commit;
+                
+                http:Response res = new;
+                res.statusCode = http:STATUS_OK; // 200 OK
+                res.setJsonPayload({
+                    "status": "success", 
+                    "message": string `${userName} has been removed from group "${groupName}"${warningMessage}`,
+                    "groupId": groupId,
+                    "removedUserId": userId,
+                    "removedUserName": userName,
+                    "expenseCount": expenseCount
+                });
+                check caller->respond(res);
+                
+            } on fail error e {
+                // Transaction failed (rolled back automatically)
+                int statusCode = e.detail().hasKey("statusCode")
+                    ? check e.detail().get("statusCode").ensureType(int)
+                    : http:STATUS_INTERNAL_SERVER_ERROR;
+                return utils:sendErrorResponse(caller, statusCode, "Failed to remove member", e.message());
             }
         }
 

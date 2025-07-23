@@ -13,12 +13,6 @@ const SEARCH_DEBOUNCE_MS = 300;
 const MIN_SEARCH_LENGTH = 2;
 const MENU_RADIUS = 90;
 const MENU_ANGLES = [180, 225, 270];
-const DEFAULT_IMAGES = {
-    user: 'https://docs.material-tailwind.com/img/face-1.jpg',
-    friend: 'https://docs.material-tailwind.com/img/face-2.jpg',
-    group: 'https://docs.material-tailwind.com/img/face-3.jpg'
-};
-
 const INITIAL_SEARCH_STATE = { users: [], friends: [], groups: [] };
 
 export default function MobileOverlay() {
@@ -68,22 +62,19 @@ export default function MobileOverlay() {
 
     const transformSearchResults = useCallback((results) => ({
         users: (results.users || []).map(user => ({
-            img: DEFAULT_IMAGES.user,
             name: user.first_name || 'Unknown User',
             email: user.email || '',
             user_id: user.user_id
         })),
         friends: (results.friends || []).map(friend => ({
-            img: DEFAULT_IMAGES.friend,
             name: friend.first_name || 'Unknown Friend',
             email: friend.email || '',
             user_id: friend.user_id
         })),
         groups: (results.groups || []).map(group => ({
-            img: DEFAULT_IMAGES.group,
             name: group.name || 'Unknown Group',
-            email: `Group ID: ${group.group_id}`,
-            group_id: group.group_id
+            email: `Group ID: ${group.group_Id}`,
+            group_id: group.group_Id
         }))
     }), []);
 
@@ -175,10 +166,10 @@ export default function MobileOverlay() {
                 console.log('Navigate to user:', item.user_id);
                 break;
             case 'friend':
-                console.log('Navigate to friend:', item.user_id);
+                navigate(`/friend/${item.user_id}`);
                 break;
             case 'group':
-                console.log('Navigate to group:', item.group_id);
+                navigate(`/group/${item.group_id}`);
                 break;
             default:
                 console.log('Unknown type:', type);
@@ -312,6 +303,8 @@ export default function MobileOverlay() {
         }
 
         if (hasSearched && hasResults) {
+            console.log("Search Results:", searchResults);
+            
             return (
                 <SearchResults
                     searchData={searchResults}
