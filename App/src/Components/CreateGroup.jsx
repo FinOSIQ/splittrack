@@ -1,11 +1,12 @@
 import React, { useState } from "react";
+import cgroupImg from '../images/cgroup.png';
 
 export default function CreateGroupModal() {
     const [isOpen, setIsOpen] = useState(false);
     const [groupName, setGroupName] = useState("");
     const [friendInput, setFriendInput] = useState("");
     const [friends, setFriends] = useState([
-        
+
     ]);
 
     const handleAddFriend = (e) => {
@@ -21,13 +22,15 @@ export default function CreateGroupModal() {
     };
 
     return (
-        <div>
-            <button
-                onClick={() => setIsOpen(true)}
-                className="bg-blue-500 text-white px-4 py-2 rounded-md"
-            >
-                Create Group
-            </button>
+        <div className="flex items-center gap-4">
+  <div className="w-7 h-7 flex items-center justify-center">
+    <img
+      src={cgroupImg}
+      alt="Create Group"
+      className="w-7 h-7 cursor-pointer"
+      onClick={() => setIsOpen(true)}
+    />
+  </div>
 
             {isOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

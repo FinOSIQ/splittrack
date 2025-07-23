@@ -932,7 +932,7 @@ export default function AddExpensePopup() {
             setSelectedItems([]); // Fallback if no user data
           }
         }}
-        className="absolute left-2 top-1  w-[70px] h-[70px] bg-[#040b2b] text-white flex items-center justify-center rounded-full shadow-md border-2 border-white"
+        className="absolute left-1 top-1  w-[70px] h-[70px] bg-[#040b2b] text-white flex items-center justify-center rounded-full  border-none border-white"
       >
         <svg
           width="24"
