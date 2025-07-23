@@ -18,7 +18,7 @@ export default function QrCodeScanner({ selectedItems, setSelectedItems }) {
       if (response.ok) {
         const data = await response.json();
         if (data.guestUsers && Array.isArray(data.guestUsers)) {
-          console.log("Guest users:", data.guestUsers);
+          // console.log("Guest users:", data.guestUsers);
           
           // Add each guest user to selectedItems as they are discovered
           data.guestUsers.forEach(guestUser => {
