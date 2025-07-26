@@ -5,6 +5,9 @@ import ballerina/io;
 import ballerina/sql;
 import splittrack_backend.utils;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 
 
 
@@ -32,7 +35,7 @@ public function getSearchService() returns http:Service {
     
     return @http:ServiceConfig {
         cors: {
-            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowOrigins: [frontendUrl], // Frontend URL from config
             allowMethods: ["GET", "POST", "OPTIONS","PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,

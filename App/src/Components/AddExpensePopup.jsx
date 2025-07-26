@@ -362,10 +362,14 @@ export default function AddExpensePopup() {
       // sendExpenseToAPI(expenseObject);
       const res = await createExpense(expenseObject);
       if (res.status == 201) {
-        toast.success(`Expense ${expenseName} Created successfully`)
+        toast.success(`Expense ${expenseName} Created successfully`);
         setIsOpen(false);
-      }else {
-        toast.error(`Failed to create Expense ${res}`)
+        // Refresh the page after a short delay to allow the toast to be seen
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        toast.error(`Failed to create Expense ${res}`);
       }
       
       

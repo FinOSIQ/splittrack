@@ -13,6 +13,9 @@ import ballerina/uuid;
 // import ballerina/io; 
 // import ballerina/sql;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 type GroupResponse record {|
     json|error group?;
     json|error members?;
@@ -33,7 +36,7 @@ public function getGroupService() returns http:Service {
 
     return @http:ServiceConfig {
         cors: {
-            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowOrigins: [frontendUrl], // Frontend URL from config
             allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,
@@ -706,11 +709,9 @@ public function getGroupService() returns http:Service {
                             decimal owning_amount;
                             string userUser_Id;
                         |} part) {
-                    // Check if this participant is the current user
+                   
                     string role = part.participant_role;
-                    if (part.userUser_Id == currentUserId) {
-                        role = "self"; // Mark the current user
-                    }
+                  
 
                     expParticipants.push({
                         "participant_role": role,
