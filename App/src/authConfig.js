@@ -5,4 +5,12 @@ export const authConfig = {
     baseUrl: "https://api.asgardeo.io/t/sparkz", // Replace YOUR_ORG with your Asgardeo organization name
     scope: ["openid", "email", "phone", "profile"] // Defines what user data you can access
   };
-  
+
+  console.log("AuthConfig initialized with:", {
+    signInRedirectURL: authConfig.signInRedirectURL,
+    signOutRedirectURL: authConfig.signOutRedirectURL,
+    clientID: authConfig.clientID,
+    baseUrl: authConfig.baseUrl,
+    scope: authConfig.scope
+  });
+
