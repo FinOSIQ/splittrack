@@ -88,17 +88,12 @@ const YourBalanceCard = ({ refreshTrigger }) => { // Add refreshTrigger prop
               px-[15px]
               py-[7px]
               border-dotted
-              bg-[#f1f2f9]/0
               rounded-[12px]
-              shadow-[0px_2px_0px_0px_rgba(0,0,0,0.02)]
-              border border-[#d9d9d9]
               flex justify-center items-center gap-2.5
               overflow-hidden
             "
           >
-            <div className="text-center text-white text-xs font-normal">
-              View More
-            </div>
+            
           </div>
         </div>
       </div>

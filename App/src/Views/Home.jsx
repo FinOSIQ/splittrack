@@ -281,7 +281,7 @@ export default function Home() {
           <div className={`xl:w-[70%] lg:w-[60%] w-full p-2 lg:p-4 flex flex-col ${isMobile ? '' : 'min-h-0'} lg:min-h-0 md:min-h-0`}>
             {/* Search Bar with Results */}
             <div className="mb-4" ref={searchContainerRef}>
-              <div className="bg-[#f1f2f9] rounded-lg flex items-center px-4 border border-gray-300 focus-within:border-blue-500 h-12">
+              <div className="bg-[#f1f2f9] hidden rounded-lg lg:flex items-center px-4 border border-gray-300 focus-within:border-blue-500 h-12">
                 <svg
                   className="w-5 h-5 text-gray-500"
                   fill="none"
@@ -345,7 +345,7 @@ export default function Home() {
             </div>
 
             {/* Groups Heading - Fixed */}
-            <h2 className="text-2xl font-bold mb-4 hidden lg:block flex-shrink-0">Groups</h2>
+            {/* <h2 className="text-2xl font-bold mb-4 hidden lg:block flex-shrink-0">Groups</h2> */}
 
             {/* Balance card on mobile above groups list - Fixed */}
             <div className="block lg:hidden mb-4 flex-shrink-0">
@@ -367,6 +367,7 @@ export default function Home() {
 
             {/* Groups list - Scrollable */}
             <div className="flex-1 overflow-y-auto min-h-0">
+            <h2 className="text-2xl font-bold mb-4 mt-6">Groups</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {groupLoading ? (
                   <div className="col-span-1 lg:col-span-2 text-center text-[#040b2b] text-lg py-8">

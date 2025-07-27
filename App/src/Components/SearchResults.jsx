@@ -11,7 +11,7 @@ const DEFAULT_IMAGES = {
 };
 
 // Optimized SearchResults Component with click handling
-export default function SearchResults({ searchData = {}, onItemClick }) {
+export default function SearchResults({ searchData = {}, onItemClick, showAddFriendButton = true }) {
     // Default empty arrays to prevent errors and improve performance
     const friends = searchData.friends || [];
     const groups = searchData.groups || [];
@@ -53,7 +53,8 @@ export default function SearchResults({ searchData = {}, onItemClick }) {
                         title="Friends" 
                         data={transformedFriends} 
                         type="friend"
-                        onItemClick={handleItemClick} 
+                        onItemClick={handleItemClick}
+                        showAddFriendButton={showAddFriendButton}
                     />
                 )}
 
@@ -63,7 +64,8 @@ export default function SearchResults({ searchData = {}, onItemClick }) {
                         title="Groups" 
                         data={transformedGroups} 
                         type="group"
-                        onItemClick={handleItemClick} 
+                        onItemClick={handleItemClick}
+                        showAddFriendButton={showAddFriendButton}
                     />
                 )}
 
@@ -73,7 +75,8 @@ export default function SearchResults({ searchData = {}, onItemClick }) {
                         title="Users" 
                         data={transformedUsers} 
                         type="user"
-                        onItemClick={handleItemClick} 
+                        onItemClick={handleItemClick}
+                        showAddFriendButton={showAddFriendButton}
                     />
                 )}
             </List>
@@ -82,7 +85,7 @@ export default function SearchResults({ searchData = {}, onItemClick }) {
 }
 
 // Reusable Section Component with click handling
-const Section = ({ title, data, type, onItemClick }) => (
+const Section = ({ title, data, type, onItemClick, showAddFriendButton }) => (
     <>
         <div className="flex items-center justify-between px-4 py-2 sticky top-0 bg-white border-b border-gray-100">
             <span className="text-gray-600 font-medium text-sm">{title}</span>
@@ -104,8 +107,8 @@ const Section = ({ title, data, type, onItemClick }) => (
                             styles='ml-1' 
                         />
                     </div>
-                    {/* Add Friend button for users only - appears on hover */}
-                    {type === 'user' && (
+                    {/* Add Friend button for users only - appears on hover - conditional rendering */}
+                    {type === 'user' && showAddFriendButton && (
                         <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0 flex-shrink-0">
                             <AddFriendButton
                                 targetUserId={item.user_id || item.userId || item.user_Id}

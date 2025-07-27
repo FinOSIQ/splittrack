@@ -10,6 +10,9 @@ import ballerina/sql;
 import ballerina/time;
 import ballerina/uuid;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 final db:Client dbClient = check new ();
 
 public function hello(string? name) returns string {
@@ -25,7 +28,7 @@ public function hello(string? name) returns string {
 public function getExpenseService() returns http:Service {
     return @http:ServiceConfig {
         cors: {
-            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowOrigins: [frontendUrl], // Frontend URL from config
             allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,
@@ -1611,7 +1614,7 @@ public function getExpenseService() returns http:Service {
         }
 
         // recent activity endpoint
-        resource function get recentActivity(http:Caller caller, http:Request req) returns error? {
+       resource function get recentActivity(http:Caller caller, http:Request req) returns error? {
             http:Response response = new;
 
             // Get user ID from cookie
@@ -1715,14 +1718,14 @@ public function getExpenseService() returns http:Service {
 
                             if nonGroupCount > 0 {
                                 // Scenario 2: Group + non-group users
-                                description = string `You created ${expenseName} for $${totalAmount} with ${groupMemberCount} people from ${groupName} and ${nonGroupCount} others`;
+                                description = string `You created ${expenseName} for LKR ${totalAmount} with ${groupMemberCount} people from ${groupName} and ${nonGroupCount} others`;
                             } else {
                                 // Scenario 1: Group expense only  
-                                description = string `You created ${expenseName} for $${totalAmount} with ${totalParticipants} people in ${groupName}`;
+                                description = string `You created ${expenseName} for LKR ${totalAmount} with ${totalParticipants} people in ${groupName}`;
                             }
                         } else {
                             // Scenario 3: Just users, no group
-                            description = string `You created ${expenseName} for $${totalAmount} with ${totalParticipants} people`;
+                            description = string `You created ${expenseName} for LKR ${totalAmount} with ${totalParticipants} people`;
                         }
 
                     } else {
@@ -1743,7 +1746,7 @@ public function getExpenseService() returns http:Service {
                                 creatorName = <string>creatorRow["first_name"];
                             };
 
-                        description = string `You were added to ${expenseName} by ${creatorName} - you owe $${owingAmount}`;
+                        description = string `You were added to ${expenseName} by ${creatorName} - you owe LKR ${owingAmount}`;
                     }
 
                     json activity = {
@@ -1804,10 +1807,10 @@ public function getExpenseService() returns http:Service {
 
                     if payerId == userId {
                         // Scenario 5: You made the payment (you are the payer)
-                        description = string `You paid ${creatorName} $${payedAmount} for ${expenseName}`;
+                        description = string `You paid ${creatorName} LKR ${payedAmount} for ${expenseName}`;
                     } else if creatorId == userId {
                         // Scenario 6: Someone paid you (you are the creator who received payment)
-                        description = string `${payerName} paid you $${payedAmount} for ${expenseName}`;
+                        description = string `${payerName} paid you LKR ${payedAmount} for ${expenseName}`;
                     }
 
                     // Only add if description was set (user is involved in this transaction)
@@ -1841,7 +1844,6 @@ public function getExpenseService() returns http:Service {
             check caller->respond(response);
             return;
         }
-
         // Dedicated API for non-group expense details
         resource function get nonGroupExpenseDetails/[string expenseId](http:Caller caller, http:Request req) returns error? {
             http:Response res = new;

@@ -25,8 +25,8 @@ public isolated function setAuthCookies(http:Response response, string accessTok
 
     // Add manual Set-Cookie headers to reinforce the HttpOnly flag
     // This ensures the headers are explicitly set
-    string accessTokenHeader = "access_token=" + accessToken + "; Path=/; HttpOnly; Secure; Max-Age=2592000";
-    string userIdHeader = "user_id=" + userId + "; Path=/; HttpOnly; Secure; Max-Age=2592000";
+    string accessTokenHeader = "access_token=" + accessToken + "; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=2592000";
+    string userIdHeader = "user_id=" + userId + "; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=2592000";
 
     // Override any existing cookie headers to ensure HttpOnly is set
     response.setHeader("Set-Cookie", accessTokenHeader);
@@ -51,8 +51,8 @@ public isolated function clearAuthCookies(http:Response response) {
     
     // Use only manual Set-Cookie headers to delete cookies
     // Ballerina doesn't allow empty string values in Cookie objects
-    string expiredAccessTokenHeader = "access_token=; Path=/; HttpOnly; Secure; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    string expiredUserIdHeader = "user_id=; Path=/; HttpOnly; Secure; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    string expiredAccessTokenHeader = "access_token=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    string expiredUserIdHeader = "user_id=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
     // Set the cookie headers to delete cookies
     response.setHeader("Set-Cookie", expiredAccessTokenHeader);
