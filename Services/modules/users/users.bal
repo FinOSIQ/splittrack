@@ -63,7 +63,7 @@ public function getUserService() returns http:Service {
 
             http:Response response = new;
 
-            response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+            response.setHeader("Access-Control-Allow-Origin", frontendUrl);
             response.setHeader("Access-Control-Allow-Credentials", "true");
             response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
             response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
