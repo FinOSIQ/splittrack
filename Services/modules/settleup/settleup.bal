@@ -9,6 +9,9 @@ import ballerina/sql;
 import ballerina/time;
 import ballerina/uuid;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 final db:Client dbClient = check new ();
 
 public function hello(string? name) returns string {
@@ -22,7 +25,7 @@ public function hello(string? name) returns string {
 public function getSettleUpService() returns http:Service {
     return @http:ServiceConfig {
         cors: {
-            allowOrigins: ["http://localhost:5173"],
+            allowOrigins: [frontendUrl],
             allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,

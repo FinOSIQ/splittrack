@@ -7,6 +7,9 @@ import ballerina/sql;
 import ballerina/time;
 import ballerina/uuid;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 final db:Client dbClient = check new;
 
 type FriendRequestOptionalized record {
@@ -18,7 +21,7 @@ public function getFriendService() returns http:Service {
     return @http:ServiceConfig {
         basePath: "/api_friend/v1",
         cors: {
-            allowOrigins: ["http://localhost:5173"],
+            allowOrigins: [frontendUrl],
             allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,

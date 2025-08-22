@@ -18,7 +18,7 @@ export default function QrCodeScanner({ selectedItems, setSelectedItems }) {
       if (response.ok) {
         const data = await response.json();
         if (data.guestUsers && Array.isArray(data.guestUsers)) {
-          console.log("Guest users:", data.guestUsers);
+          // console.log("Guest users:", data.guestUsers);
           
           // Add each guest user to selectedItems as they are discovered
           data.guestUsers.forEach(guestUser => {
@@ -76,7 +76,7 @@ export default function QrCodeScanner({ selectedItems, setSelectedItems }) {
     const res = await createSession();
     if (res && res.status == 201) {
       setSessionId(res.data.sessionId);
-      setqrText(`http://localhost:5173/guest/${res.data.sessionId}`);
+      setqrText(`${import.meta.env.VITE_FRONTEND_URL}/guest/${res.data.sessionId}`);
       console.log("Session created with ID:", res.data.sessionId);
     } else {
       toast.error("Failed to create session. Please try again.");

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+
 import { Input } from "@material-tailwind/react";
 import { createGroup } from "../utils/requests/Group";
 import { toast } from "sonner";
@@ -6,6 +7,8 @@ import { useUserData } from "../hooks/useUserData";
 import { fetchSearchData } from "../utils/requests/expense";
 import axios from "axios";
 import SearchResults from "./SearchResults";
+import cgroupImg from '../images/cgroup.png';
+
 
 export default function CreateGroupModal() {
     const [isOpen, setIsOpen] = useState(false);
@@ -17,6 +20,7 @@ export default function CreateGroupModal() {
     
     // Get user data from hook
     const { user, loading: userLoading } = useUserData();
+
 
     const handleAddFriend = (e) => {
         e.preventDefault();
@@ -148,17 +152,16 @@ export default function CreateGroupModal() {
     };
 
     return (
-        <div>
-            <button
-                onClick={() => setIsOpen(true)}
-                className=""
-            >
-                <img 
-                    src="/create-group.svg" 
-                    alt="Create Group" 
-                    className="w-5 h-5"
-                />
-            </button>
+
+          <div className="flex items-center gap-4">
+  <div className="w-7 h-7 flex items-center justify-center">
+    <img
+      src={cgroupImg}
+      alt="Create Group"
+      className="w-7 h-7 cursor-pointer"
+      onClick={() => setIsOpen(true)}
+    />
+  </div>
 
             {isOpen && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-40">
@@ -284,6 +287,7 @@ export default function CreateGroupModal() {
                                         <SearchResults
                                             searchData={searchResults}
                                             onItemClick={handleSearchItemClick}
+                                            showAddFriendButton={false}
                                         />
                                     </div>
                                 )}

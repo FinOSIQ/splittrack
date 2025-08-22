@@ -272,6 +272,7 @@ export default function AddGroupMemberModal({ isOpen, onClose, groupId, groupNam
                                 <SearchResults
                                     searchData={searchResults}
                                     onItemClick={handleSearchItemClick}
+                                    showAddFriendButton={false}
                                 />
                             </div>
                         )}

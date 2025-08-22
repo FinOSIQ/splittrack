@@ -5,6 +5,9 @@ import ballerina/io;
 import ballerina/sql;
 import splittrack_backend.utils;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 
 
 
@@ -32,7 +35,7 @@ public function getSearchService() returns http:Service {
     
     return @http:ServiceConfig {
         cors: {
-            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowOrigins: [frontendUrl], // Frontend URL from config
             allowMethods: ["GET", "POST", "OPTIONS","PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,
@@ -106,6 +109,14 @@ function searchUsers(string value, string? userId) returns json|error {
                                     FROM user 
                                     WHERE email IS NOT NULL
                                     AND user_id != ${userId}
+                                    AND user_id NOT IN (
+                                        SELECT CASE 
+                                            WHEN f.user_id_1User_Id = ${userId} THEN f.user_id_2User_Id
+                                            WHEN f.user_id_2User_Id = ${userId} THEN f.user_id_1User_Id
+                                        END
+                                        FROM friend f
+                                        WHERE f.user_id_1User_Id = ${userId} OR f.user_id_2User_Id = ${userId}
+                                    )
                                     AND (first_name LIKE ${"%" + value + "%"} 
                                        OR email LIKE ${"%" + value + "%"})`;
     stream<utils:JsonRecord, error?> resultStream = utils:Client->query(query);
