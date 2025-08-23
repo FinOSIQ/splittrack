@@ -10,28 +10,6 @@ observabilityIncluded = true
 
 
 
-[[module]]
-name = "Module.interceptor"
-path = "Module.interceptor"
 
-[[platform.java21.dependency]]
-groupId = "io.ballerina.stdlib"
-artifactId = "persist.sql-native"
-version = "1.6.0"
-
-[dependencies]
-"ballerina/persist" = "1.6.0"
-"ballerinax/mysql" = "1.15.0"
-"ballerina/sql" = "1.16.0"
-"ballerina/email" = "2.12.0"
-"ballerinax/persist.sql" = "1.6.0"
-"ballerina/uuid" = "1.10.0"
-"ballerina/time" = "2.7.0"
-"ballerina/log" = "2.12.0"
-"ballerina/cache" = "3.10.0"
-"ballerina/http" = "2.14.2"
-"ballerina/io" = "1.8.0"
-"ballerina/cloud" = "3.2.0"
-"ballerinax/mysql.driver" = "1.8.0"
 
 
