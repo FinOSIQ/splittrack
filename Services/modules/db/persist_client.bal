@@ -411,7 +411,14 @@ public isolated client class Client {
     };
 
     public isolated function init() returns persist:Error? {
-        mysql:Client|error dbClient = new (host = host, user = user, password = password, database = database, port = port, options = connectionOptions);
+        mysql:Client|error dbClient = new (
+            host = host,
+            user = user,
+            password = password,
+            database = database,
+            port = port,
+            options = { ssl: { allowPublicKeyRetrieval: true, mode: mysql:SSL_DISABLED } }
+        );
         if dbClient is error {
             return <persist:Error>error(dbClient.message());
         }

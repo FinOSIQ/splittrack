@@ -15,6 +15,6 @@ public final mysql:Client Client = check new(
     password = password,
     port = port,
     database = database,
-    options = { ssl: { allowPublicKeyRetrieval: true, mode: mysql:SSL_PREFERRED } }
+    options = { ssl: { allowPublicKeyRetrieval: true, mode: mysql:SSL_DISABLED } }
 );
 
