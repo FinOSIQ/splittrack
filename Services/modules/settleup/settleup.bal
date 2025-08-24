@@ -61,12 +61,12 @@ public function getSettleUpService() returns http:Service {
             u.email,
             u.currency_pref,
             SUM(ep.owning_amount) as total_owing
-        FROM expenseparticipant ep
-        JOIN expense e ON ep.expenseExpense_Id = e.expense_Id
-        JOIN expenseparticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id 
+        FROM ExpenseParticipant ep
+        JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
+        JOIN ExpenseParticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id 
             AND creator_ep.participant_role = 'Creator' 
             AND creator_ep.userUser_Id = ${userId}
-        JOIN user u ON ep.userUser_Id = u.user_Id
+        JOIN User u ON ep.userUser_Id = u.user_Id
         WHERE ep.participant_role = 'Member' 
             AND ep.userUser_Id != ${userId}
             AND e.status = 1
@@ -139,11 +139,11 @@ public function getSettleUpService() returns http:Service {
             u.email,
             u.currency_pref,
             SUM(ep.owning_amount) as total_owing
-    FROM expenseparticipant ep
-    JOIN expense e ON ep.expenseExpense_Id = e.expense_Id
-    JOIN expenseparticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id 
+    FROM ExpenseParticipant ep
+    JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
+    JOIN ExpenseParticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id
             AND creator_ep.participant_role = 'Creator'
-    JOIN user u ON creator_ep.userUser_Id = u.user_Id
+        JOIN User u ON creator_ep.userUser_Id = u.user_Id
         WHERE ep.participant_role = 'Member' 
             AND ep.userUser_Id = ${userId}
             AND creator_ep.userUser_Id != ${userId}
@@ -233,12 +233,12 @@ public function getSettleUpService() returns http:Service {
             u.first_name,
             u.last_name,
             u.currency_pref
-        FROM expenseparticipant ep
-        JOIN expense e ON ep.expenseExpense_Id = e.expense_Id
-        JOIN expenseparticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id
+        FROM ExpenseParticipant ep
+        JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
+        JOIN ExpenseParticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id
             AND creator_ep.participant_role = 'Creator'
             AND creator_ep.userUser_Id = ${creatorId}
-        JOIN user u ON creator_ep.userUser_Id = u.user_Id
+    JOIN User u ON creator_ep.userUser_Id = u.user_Id
         WHERE ep.participant_role = 'Member'
             AND ep.userUser_Id = ${userId}
             AND ep.owning_amount > 0
@@ -328,12 +328,12 @@ public function getSettleUpService() returns http:Service {
             u.first_name,
             u.last_name,
             u.currency_pref
-        FROM expenseparticipant ep
-        JOIN expense e ON ep.expenseExpense_Id = e.expense_Id
-        JOIN expenseparticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id
+    FROM ExpenseParticipant ep
+    JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
+    JOIN ExpenseParticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id
             AND creator_ep.participant_role = 'Creator'
             AND creator_ep.userUser_Id = ${userId}
-        JOIN user u ON ep.userUser_Id = u.user_Id
+    JOIN User u ON ep.userUser_Id = u.user_Id
         WHERE ep.participant_role = 'Member'
             AND ep.userUser_Id = ${memberId}
             AND ep.owning_amount > 0
@@ -435,12 +435,12 @@ public function getSettleUpService() returns http:Service {
                     payer_user.first_name as payer_first_name,
                     payer_user.last_name as payer_last_name,
                     payer_user.currency_pref as currency
-                FROM expenseparticipant ep
-                JOIN expense e ON ep.expenseExpense_Id = e.expense_Id
-                JOIN expenseparticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id 
+                FROM ExpenseParticipant ep
+                JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
+                JOIN ExpenseParticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id 
                     AND creator_ep.participant_role = 'Creator'
-                JOIN user creator_user ON creator_ep.userUser_Id = creator_user.user_Id
-                JOIN user payer_user ON ep.userUser_Id = payer_user.user_Id
+                JOIN User creator_user ON creator_ep.userUser_Id = creator_user.user_Id
+                JOIN User payer_user ON ep.userUser_Id = payer_user.user_Id
                 WHERE ep.expenseExpense_Id = ${payment.expenseId}
                     AND ep.userUser_Id = ${userId}
                     AND ep.participant_role = 'Member'
@@ -485,7 +485,7 @@ public function getSettleUpService() returns http:Service {
 
                     // Update the expense participant record
                     sql:ParameterizedQuery updateQuery = `
-                UPDATE expenseparticipant 
+                    UPDATE ExpenseParticipant 
                 SET owning_amount = ${newOwingAmount},
                     updated_at = NOW()
                 WHERE participant_Id = ${participantId}
@@ -500,7 +500,7 @@ public function getSettleUpService() returns http:Service {
                     string transactionId = uuid:createRandomUuid().toString();
 
                     sql:ParameterizedQuery insertTransactionQuery = `
-                INSERT INTO transaction (
+                    INSERT INTO Transaction (
                     transaction_Id, 
                     payed_amount, 
                     expenseExpense_Id, 

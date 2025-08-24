@@ -147,7 +147,7 @@ public function getExpenseService() returns http:Service {
 
             string? usergroupId = payloadUsergroupId == "" ? null : payload.usergroupGroup_Id;
             // Use the calculated owe_amount instead of the one from payload
-            sql:ParameterizedQuery insertQuery = `INSERT INTO expense (expense_Id, name, expense_total_amount, expense_owe_amount, usergroupGroup_Id,status) 
+            sql:ParameterizedQuery insertQuery = `INSERT INTO Expense (expense_Id, name, expense_total_amount, expense_owe_amount, usergroupGroup_Id,status) 
                               VALUES (${expenseId}, ${payload.name}, ${payload.expense_total_amount}, ${calculatedOweAmount}, ${usergroupId}, 1)`;
             persist:Error|sql:ExecutionResult expenseResult = dbClient->executeNativeSQL(insertQuery);
             if expenseResult is persist:Error {
@@ -1027,7 +1027,7 @@ public function getExpenseService() returns http:Service {
                 string expenseId = participant.expenseExpense_Id;
 
                 // Step 3: Use pure SQL to fetch expense details, including timestamps and usergroupGroup_Id which can be NULL
-                sql:ParameterizedQuery expenseQuery = `SELECT expense_Id, name, usergroupGroup_Id, created_at, updated_at FROM expense WHERE expense_Id = ${expenseId}`;
+                sql:ParameterizedQuery expenseQuery = `SELECT expense_Id, name, usergroupGroup_Id, created_at, updated_at FROM Expense WHERE expense_Id = ${expenseId}`;
 
                 // Execute query with proper stream type
                 stream<record {|
@@ -1229,7 +1229,7 @@ public function getExpenseService() returns http:Service {
             }
 
             // Fetch user's name
-            sql:ParameterizedQuery userQuery = `SELECT first_name, last_name FROM user WHERE user_Id = ${userId}`;
+            sql:ParameterizedQuery userQuery = `SELECT first_name, last_name FROM User WHERE user_Id = ${userId}`;
             stream<record {|string first_name; string last_name;|}, sql:Error?> userStream = utils:Client->query(userQuery);
             record {|string first_name; string last_name;|}? userRecord = ();
             error? uErr = from var u in userStream
@@ -1253,7 +1253,7 @@ public function getExpenseService() returns http:Service {
             string userName = userRecord.first_name + " " + userRecord.last_name;
 
             // Fetch all expenses where the user is a participant
-            sql:ParameterizedQuery participantQuery = `SELECT expenseExpense_Id FROM expenseparticipant WHERE userUser_Id = ${userId}`;
+            sql:ParameterizedQuery participantQuery = `SELECT expenseExpense_Id FROM ExpenseParticipant WHERE userUser_Id = ${userId}`;
             stream<record {|string expenseExpense_Id;|}, sql:Error?> participantStream = utils:Client->query(participantQuery);
 
             string[] expenseIds = [];
@@ -1285,7 +1285,7 @@ public function getExpenseService() returns http:Service {
             decimal netAmount = 0d;
             foreach string expenseId in expenseIds {
                 // Fetch all participants for this expense
-                sql:ParameterizedQuery allParticipantsQuery = `SELECT userUser_Id, participant_role, owning_amount FROM expenseparticipant WHERE expenseExpense_Id = ${expenseId}`;
+                sql:ParameterizedQuery allParticipantsQuery = `SELECT userUser_Id, participant_role, owning_amount FROM ExpenseParticipant WHERE expenseExpense_Id = ${expenseId}`;
                 stream<record {|
                     string userUser_Id;
                     string participant_role;
@@ -1641,8 +1641,8 @@ public function getExpenseService() returns http:Service {
             e.name as expense_name,
             e.expense_total_amount,
             e.usergroupGroup_Id
-    FROM expenseparticipant ep
-    JOIN expense e ON ep.expenseExpense_Id = e.expense_Id
+    FROM ExpenseParticipant ep
+    JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
         WHERE ep.userUser_Id = ${userId}
         AND ep.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         ORDER BY ep.created_at DESC
@@ -1673,7 +1673,7 @@ public function getExpenseService() returns http:Service {
                         // Get all participants count
                         sql:ParameterizedQuery participantCountQuery = `
                     SELECT COUNT(*) as total_participants
-                    FROM expenseparticipant 
+                    FROM ExpenseParticipant 
                     WHERE expenseExpense_Id = ${expenseId}
                 `;
 
@@ -1687,7 +1687,7 @@ public function getExpenseService() returns http:Service {
 
                         if groupId is string {
                             // Get group name
-                            sql:ParameterizedQuery groupQuery = `SELECT name FROM usergroup WHERE group_Id = ${groupId}`;
+                            sql:ParameterizedQuery groupQuery = `SELECT name FROM UserGroup WHERE group_Id = ${groupId}`;
                             stream<record {}, persist:Error?> groupStream = dbClient->queryNativeSQL(groupQuery);
 
                             string groupName = "Unknown Group";
@@ -1699,8 +1699,8 @@ public function getExpenseService() returns http:Service {
                             // Check if there are non-group participants
                             sql:ParameterizedQuery nonGroupQuery = `
                         SELECT COUNT(*) as non_group_count
-                        FROM expenseparticipant ep
-                        LEFT JOIN usergroupmember ugm ON ep.userUser_Id = ugm.userUser_Id AND ugm.groupGroup_Id = ${groupId}
+                        FROM ExpenseParticipant ep
+                        LEFT JOIN UserGroupMember ugm ON ep.userUser_Id = ugm.userUser_Id AND ugm.groupGroup_Id = ${groupId}
                         WHERE ep.expenseExpense_Id = ${expenseId} 
                         AND ep.userUser_Id != ${userId}
                         AND ugm.userUser_Id IS NULL
@@ -1732,8 +1732,8 @@ public function getExpenseService() returns http:Service {
                         // Scenario 4: Someone added you - get creator name
                         sql:ParameterizedQuery creatorQuery = `
                     SELECT u.first_name
-                    FROM expenseparticipant ep
-                    JOIN user u ON ep.userUser_Id = u.user_Id
+                    FROM ExpenseParticipant ep
+                    JOIN User u ON ep.userUser_Id = u.user_Id
                     WHERE ep.expenseExpense_Id = ${expenseId}
                     AND (ep.participant_role = 'Creator' OR ep.participant_role = 'creator')
                 `;
@@ -1779,12 +1779,12 @@ public function getExpenseService() returns http:Service {
             payer.first_name as payer_name,
             creator.first_name as creator_name,
             creator.user_Id as creator_id
-    FROM transaction t
-    JOIN expense e ON t.expenseExpense_Id = e.expense_Id
-    JOIN user payer ON t.payee_idUser_Id = payer.user_Id
-    JOIN expenseparticipant ep_creator ON e.expense_Id = ep_creator.expenseExpense_Id 
+    FROM Transaction t
+    JOIN Expense e ON t.expenseExpense_Id = e.expense_Id
+    JOIN User payer ON t.payee_idUser_Id = payer.user_Id
+    JOIN ExpenseParticipant ep_creator ON e.expense_Id = ep_creator.expenseExpense_Id 
         AND (ep_creator.participant_role = 'Creator' OR ep_creator.participant_role = 'creator')
-    JOIN user creator ON ep_creator.userUser_Id = creator.user_Id
+    JOIN User creator ON ep_creator.userUser_Id = creator.user_Id
         WHERE (t.payee_idUser_Id = ${userId} OR ep_creator.userUser_Id = ${userId})
         AND t.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         ORDER BY t.created_at DESC
@@ -1852,7 +1852,7 @@ public function getExpenseService() returns http:Service {
             sql:ParameterizedQuery expenseCheckQuery = `
         SELECT expense_Id, name, expense_total_amount, expense_owe_amount, status, 
                created_at, updated_at, usergroupGroup_Id
-    FROM expense 
+    FROM Expense 
         WHERE expense_Id = ${expenseId}
     `;
 
@@ -1885,8 +1885,8 @@ public function getExpenseService() returns http:Service {
                ep.expenseExpense_Id, ep.userUser_Id, ep.status, 
                ep.created_at as p_created_at, ep.updated_at as p_updated_at,
                u.user_Id, u.first_name, u.last_name, u.email
-    FROM expenseparticipant ep
-    JOIN user u ON ep.userUser_Id = u.user_Id
+    FROM ExpenseParticipant ep
+    JOIN User u ON ep.userUser_Id = u.user_Id
         WHERE ep.expenseExpense_Id = ${expenseId}
     `;
 
@@ -1922,7 +1922,7 @@ public function getExpenseService() returns http:Service {
             sql:ParameterizedQuery transactionsQuery = `
         SELECT transaction_Id, payed_amount, payee_idUser_Id, status, 
                created_at, updated_at
-    FROM transaction 
+    FROM Transaction 
         WHERE expenseExpense_Id = ${expenseId}
     `;
 

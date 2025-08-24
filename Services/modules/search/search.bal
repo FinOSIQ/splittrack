@@ -106,7 +106,7 @@ function searchUsers(string value, string? userId) returns json|error {
     }
 
     sql:ParameterizedQuery query = `SELECT user_id, first_name, email 
-                                    FROM user 
+                                    FROM User 
                                     WHERE email IS NOT NULL
                                     AND user_id != ${userId}
                                     AND user_id NOT IN (
@@ -114,7 +114,7 @@ function searchUsers(string value, string? userId) returns json|error {
                                             WHEN f.user_id_1User_Id = ${userId} THEN f.user_id_2User_Id
                                             WHEN f.user_id_2User_Id = ${userId} THEN f.user_id_1User_Id
                                         END
-                                        FROM friend f
+                                        FROM Friend f
                                         WHERE f.user_id_1User_Id = ${userId} OR f.user_id_2User_Id = ${userId}
                                     )
                                     AND (first_name LIKE ${"%" + value + "%"} 
@@ -132,8 +132,8 @@ function searchFriends(string? userId, string value) returns json|error {
 
     string searchTerm = "%" + value + "%";
     sql:ParameterizedQuery query = `SELECT u.user_id, u.first_name, u.email
-                                    FROM friend f
-                                    JOIN user u ON u.user_id = 
+                                    FROM Friend f
+                                    JOIN User u ON u.user_id = 
                                         CASE 
                                             WHEN f.user_id_1User_Id = ${userId} THEN f.user_id_2User_Id
                                             WHEN f.user_id_2User_Id = ${userId} THEN f.user_id_1User_Id
@@ -155,8 +155,8 @@ function searchGroups(string value, string? userId) returns json|error {
     
     // Query to find groups where the user is a member and group name matches search term
     sql:ParameterizedQuery query = `SELECT DISTINCT ug.group_Id, ug.name 
-                                    FROM usergroup ug
-                                    INNER JOIN usergroupmember ugm ON ug.group_Id = ugm.groupGroup_Id
+                                    FROM UserGroup ug
+                                    INNER JOIN UserGroupMember ugm ON ug.group_Id = ugm.groupGroup_Id
                                     WHERE ugm.userUser_Id = ${userId} 
                                     AND ugm.status = 1
                                     AND ug.status = 1
