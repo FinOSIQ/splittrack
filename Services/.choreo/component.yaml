@@ -1,0 +1,74 @@
+# +required The configuration file schema version
+schemaVersion: 1.2
+
+# +optional Incoming connection details for the component
+endpoints:
+  # Users API endpoint
+  - name: users
+    displayName: User Management API
+    service:
+      basePath: /api_user/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Organization
+    
+  # Expense API endpoint  
+  - name: expense
+    displayName: Expense Management API
+    service:
+      basePath: /api_expense/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Organization
+    
+  # Friend API endpoint
+  - name: friend
+    displayName: Friend Management API
+    service:
+      basePath: /api_friend/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Organization
+    
+  # Groups API endpoint
+  - name: groups
+    displayName: Group Management API
+    service:
+      basePath: /api_group/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Organization
+    
+  # Search API endpoint
+  - name: search
+    displayName: Search API
+    service:
+      basePath: /api_search/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Organization
+    
+  # Bank Account API endpoint
+  - name: bank
+    displayName: Bank Account API
+    service:
+      basePath: /api_bank/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Organization
+    
+  # Settle Up API endpoint
+  - name: settleup
+    displayName: Settle Up API
+    service:
+      basePath: /api_settleup/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Organization
