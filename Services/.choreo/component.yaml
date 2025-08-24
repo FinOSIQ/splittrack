@@ -12,17 +12,7 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
-    security:
-      authentication:
-        enabled: false
-        optional: false
-        authTypes: []
-        oauth2:
-          enabled: false
-          passUserInfoToUpstream: false
-          scopes: []
-        apiKey:
-          enabled: false
+    passRequestPayloadToUpstream: true
     
   # Expense API endpoint  
   - name: expense
@@ -33,17 +23,7 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
-    security:
-      authentication:
-        enabled: false
-        optional: false
-        authTypes: []
-        oauth2:
-          enabled: false
-          passUserInfoToUpstream: false
-          scopes: []
-        apiKey:
-          enabled: false
+    passRequestPayloadToUpstream: true
     
   # Friend API endpoint
   - name: friend
@@ -54,17 +34,7 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
-    security:
-      authentication:
-        enabled: false
-        optional: false
-        authTypes: []
-        oauth2:
-          enabled: false
-          passUserInfoToUpstream: false
-          scopes: []
-        apiKey:
-          enabled: false
+    passRequestPayloadToUpstream: true
     
   # Groups API endpoint
   - name: groups
@@ -75,17 +45,7 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
-    security:
-      authentication:
-        enabled: false
-        optional: false
-        authTypes: []
-        oauth2:
-          enabled: false
-          passUserInfoToUpstream: false
-          scopes: []
-        apiKey:
-          enabled: false
+    passRequestPayloadToUpstream: true
     
   # Search API endpoint
   - name: search
@@ -96,17 +56,7 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
-    security:
-      authentication:
-        enabled: false
-        optional: false
-        authTypes: []
-        oauth2:
-          enabled: false
-          passUserInfoToUpstream: false
-          scopes: []
-        apiKey:
-          enabled: false
+    passRequestPayloadToUpstream: true
     
   # Bank Account API endpoint
   - name: bank
@@ -117,17 +67,7 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
-    security:
-      authentication:
-        enabled: false
-        optional: false
-        authTypes: []
-        oauth2:
-          enabled: false
-          passUserInfoToUpstream: false
-          scopes: []
-        apiKey:
-          enabled: false
+    passRequestPayloadToUpstream: true
     
   # Settle Up API endpoint
   - name: settleup
@@ -138,14 +78,4 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
-    security:
-      authentication:
-        enabled: false
-        optional: false
-        authTypes: []
-        oauth2:
-          enabled: false
-          passUserInfoToUpstream: false
-          scopes: []
-        apiKey:
-          enabled: false
+    passRequestPayloadToUpstream: true
