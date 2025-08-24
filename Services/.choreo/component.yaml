@@ -13,6 +13,17 @@ endpoints:
     networkVisibilities:
       - Public
     passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: true
+        optional: false
+        authTypes:
+          - oauth2
+        oauth2:
+          enabled: true
+          passUserInfoToUpstream: true
+        apiKey:
+          enabled: false
     
   # Expense API endpoint  
   - name: expense
@@ -24,6 +35,16 @@ endpoints:
     networkVisibilities:
       - Public
     passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
     
   # Friend API endpoint
   - name: friend
@@ -35,6 +56,16 @@ endpoints:
     networkVisibilities:
       - Public
     passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
     
   # Groups API endpoint
   - name: groups
@@ -46,6 +77,16 @@ endpoints:
     networkVisibilities:
       - Public
     passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
     
   # Search API endpoint
   - name: search
@@ -57,6 +98,16 @@ endpoints:
     networkVisibilities:
       - Public
     passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
     
   # Bank Account API endpoint
   - name: bank
@@ -68,6 +119,16 @@ endpoints:
     networkVisibilities:
       - Public
     passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
     
   # Settle Up API endpoint
   - name: settleup
@@ -79,3 +140,13 @@ endpoints:
     networkVisibilities:
       - Public
     passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
