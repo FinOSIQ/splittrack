@@ -11,7 +11,7 @@ endpoints:
       port: 9090
     type: REST
     networkVisibilities:
-      - Organization
+      - Public
     
   # Expense API endpoint  
   - name: expense
@@ -21,7 +21,7 @@ endpoints:
       port: 9090
     type: REST
     networkVisibilities:
-      - Organization
+      - Public
     
   # Friend API endpoint
   - name: friend
@@ -31,7 +31,7 @@ endpoints:
       port: 9090
     type: REST
     networkVisibilities:
-      - Organization
+      - Public
     
   # Groups API endpoint
   - name: groups
@@ -41,7 +41,7 @@ endpoints:
       port: 9090
     type: REST
     networkVisibilities:
-      - Organization
+      - Public
     
   # Search API endpoint
   - name: search
@@ -51,7 +51,7 @@ endpoints:
       port: 9090
     type: REST
     networkVisibilities:
-      - Organization
+      - Public
     
   # Bank Account API endpoint
   - name: bank
@@ -61,7 +61,7 @@ endpoints:
       port: 9090
     type: REST
     networkVisibilities:
-      - Organization
+      - Public
     
   # Settle Up API endpoint
   - name: settleup
@@ -71,4 +71,4 @@ endpoints:
       port: 9090
     type: REST
     networkVisibilities:
-      - Organization
+      - Public
