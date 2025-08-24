@@ -286,7 +286,7 @@ public function getFriendService() returns http:Service {
             string receiveUserId = friendRequest.receive_user_Id;
 
             // Update the FriendRequest status
-            sql:ParameterizedQuery updateQuery = `UPDATE FriendRequest SET status = ${status} WHERE friendReq_ID = ${requestId}`;
+            sql:ParameterizedQuery updateQuery = `UPDATE friendrequest SET status = ${status} WHERE friendReq_ID = ${requestId}`;
             var updateResult = dbClient->executeNativeSQL(updateQuery);
             if updateResult is error {
                 http:Response res = new;
@@ -300,7 +300,7 @@ public function getFriendService() returns http:Service {
                 string newFriendId = uuid:createType4AsString().toString();
                 string friend_Id = "fr-" + newFriendId.substring(0, 8);
 
-                sql:ParameterizedQuery insertFriendQuery = `INSERT INTO Friend 
+                sql:ParameterizedQuery insertFriendQuery = `INSERT INTO friend 
             (friend_Id, user_id_1User_Id, user_id_2User_Id, status) 
             VALUES (${friend_Id}, ${sendUserId}, ${receiveUserId}, 1)`;
 
@@ -333,7 +333,7 @@ public function getFriendService() returns http:Service {
             }
 
             // Check if the two users are friends (status = 1) - Use utils:Client instead of dbClient
-            sql:ParameterizedQuery friendCheckQuery = `SELECT friend_Id FROM Friend WHERE ((user_id_1User_Id = ${currentUserId} AND user_id_2User_Id = ${friendId}) OR (user_id_1User_Id = ${friendId} AND user_id_2User_Id = ${currentUserId})) AND status = 1`;
+            sql:ParameterizedQuery friendCheckQuery = `SELECT friend_Id FROM friend WHERE ((user_id_1User_Id = ${currentUserId} AND user_id_2User_Id = ${friendId}) OR (user_id_1User_Id = ${friendId} AND user_id_2User_Id = ${currentUserId})) AND status = 1`;
             stream<record {|string friend_Id;|}, sql:Error?> friendStream = utils:Client->query(friendCheckQuery);
             var friendResult = friendStream.next();
             check friendStream.close(); // Important: Close the stream
@@ -347,7 +347,7 @@ public function getFriendService() returns http:Service {
             }
 
             // Get friend's name - Use utils:Client for consistency
-            sql:ParameterizedQuery friendNameQuery = `SELECT first_name, last_name FROM User WHERE user_Id = ${friendId}`;
+            sql:ParameterizedQuery friendNameQuery = `SELECT first_name, last_name FROM user WHERE user_Id = ${friendId}`;
             stream<record {|string? first_name; string? last_name;|}, sql:Error?> friendNameStream = utils:Client->query(friendNameQuery);
             var friendNameResult = friendNameStream.next();
             check friendNameStream.close(); // Important: Close the stream
@@ -368,7 +368,7 @@ public function getFriendService() returns http:Service {
             }
 
             // Find all expenses where both users are participants
-            sql:ParameterizedQuery expenseIdsQuery = `SELECT DISTINCT ep1.expenseExpense_Id FROM ExpenseParticipant ep1 JOIN ExpenseParticipant ep2 ON ep1.expenseExpense_Id = ep2.expenseExpense_Id JOIN Expense e ON ep1.expenseExpense_Id = e.expense_Id WHERE ep1.userUser_Id = ${currentUserId} AND ep2.userUser_Id = ${friendId} AND ep1.status = 1 AND ep2.status = 1 AND e.status = 1`;
+            sql:ParameterizedQuery expenseIdsQuery = `SELECT DISTINCT ep1.expenseExpense_Id FROM expenseparticipant ep1 JOIN expenseparticipant ep2 ON ep1.expenseExpense_Id = ep2.expenseExpense_Id JOIN expense e ON ep1.expenseExpense_Id = e.expense_Id WHERE ep1.userUser_Id = ${currentUserId} AND ep2.userUser_Id = ${friendId} AND ep1.status = 1 AND ep2.status = 1 AND e.status = 1`;
             stream<record {|string expenseExpense_Id;|}, sql:Error?> expenseIdsStream = utils:Client->query(expenseIdsQuery);
 
             string[] expenseIds = [];
@@ -391,7 +391,7 @@ public function getFriendService() returns http:Service {
 
             foreach string expenseId in expenseIds {
                 // Get expense details including name, total amount, and creation date
-                sql:ParameterizedQuery expenseQuery = `SELECT name, expense_total_amount, created_at FROM Expense WHERE expense_Id = ${expenseId} AND status = 1`;
+                sql:ParameterizedQuery expenseQuery = `SELECT name, expense_total_amount, created_at FROM expense WHERE expense_Id = ${expenseId} AND status = 1`;
                 stream<record {|string name; decimal expense_total_amount; time:Utc? created_at;|}, sql:Error?> expenseStream = utils:Client->query(expenseQuery);
                 var expenseResult = expenseStream.next();
                 check expenseStream.close(); // Important: Close the stream
@@ -406,7 +406,7 @@ public function getFriendService() returns http:Service {
                 }
 
                 // Get all participants for this expense
-                sql:ParameterizedQuery participantsQuery = `SELECT userUser_Id, participant_role, owning_amount FROM ExpenseParticipant WHERE expenseExpense_Id = ${expenseId} AND status = 1`;
+                sql:ParameterizedQuery participantsQuery = `SELECT userUser_Id, participant_role, owning_amount FROM expenseparticipant WHERE expenseExpense_Id = ${expenseId} AND status = 1`;
                 stream<record {|string userUser_Id; string participant_role; decimal owning_amount;|}, sql:Error?> participantsStream = utils:Client->query(participantsQuery);
                 record {|string userUser_Id; string participant_role; decimal owning_amount;|}[] participants = [];
                 error? e2 = from var p in participantsStream
@@ -450,9 +450,9 @@ public function getFriendService() returns http:Service {
                         u.first_name,
                         u.last_name
                     FROM 
-                        Transaction t
+                        transaction t
                     JOIN 
-                        User u ON t.payee_IdUser_Id = u.user_Id
+                        user u ON t.payee_IdUser_Id = u.user_Id
                     WHERE 
                         t.expenseExpense_Id = ${expenseId} AND t.status = 1
                 `;

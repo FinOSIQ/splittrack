@@ -292,7 +292,7 @@ public function getGroupService() returns http:Service {
         // DELETE: Remove a group and its members (only if no expenses exist)
         resource function delete groups/[string groupId](http:Caller caller, http:Request req) returns error? {
             // First check if group exists
-            sql:ParameterizedQuery checkGroupQuery = `SELECT group_Id, name FROM UserGroup WHERE group_Id = ${groupId} AND status = 1`;
+            sql:ParameterizedQuery checkGroupQuery = `SELECT group_Id, name FROM usergroup WHERE group_Id = ${groupId} AND status = 1`;
             stream<record {| string group_Id; string name; |}, error?> groupStream = utils:Client->query(checkGroupQuery);
             
             boolean groupExists = false;
@@ -311,7 +311,7 @@ public function getGroupService() returns http:Service {
             }
 
             // Check if group has any related expenses
-            sql:ParameterizedQuery checkExpensesQuery = `SELECT COUNT(*) as expense_count FROM Expense WHERE usergroupGroup_Id = ${groupId} AND status = 1`;
+            sql:ParameterizedQuery checkExpensesQuery = `SELECT COUNT(*) as expense_count FROM expense WHERE usergroupGroup_Id = ${groupId} AND status = 1`;
             stream<record {| int expense_count; |}, error?> expenseStream = utils:Client->query(checkExpensesQuery);
             
             int expenseCount = 0;
@@ -340,7 +340,7 @@ public function getGroupService() returns http:Service {
             }
 
             // Check if current user is the group creator
-            sql:ParameterizedQuery checkCreatorQuery = `SELECT userUser_Id FROM UserGroupMember WHERE groupGroup_Id = ${groupId} AND member_role = 'creator' AND status = 1`;
+            sql:ParameterizedQuery checkCreatorQuery = `SELECT userUser_Id FROM usergroupmember WHERE groupGroup_Id = ${groupId} AND member_role = 'creator' AND status = 1`;
             stream<record {| string userUser_Id; |}, error?> creatorStream = utils:Client->query(checkCreatorQuery);
             
             boolean isCreator = false;
@@ -360,12 +360,12 @@ public function getGroupService() returns http:Service {
 
             transaction {
                 // Delete all group members first (due to foreign key constraints)
-                sql:ParameterizedQuery deleteMembersQuery = `DELETE FROM UserGroupMember WHERE groupGroup_Id = ${groupId}`;
+                sql:ParameterizedQuery deleteMembersQuery = `DELETE FROM usergroupmember WHERE groupGroup_Id = ${groupId}`;
                 sql:ExecutionResult deleteMembersResult = check dbClient->executeNativeSQL(deleteMembersQuery);
                 io:println("Deleted group members: ", deleteMembersResult.affectedRowCount);
 
                 // Delete the group using SQL (MariaDB compatible)
-                sql:ParameterizedQuery deleteGroupQuery = `DELETE FROM UserGroup WHERE group_Id = ${groupId}`;
+                sql:ParameterizedQuery deleteGroupQuery = `DELETE FROM usergroup WHERE group_Id = ${groupId}`;
                 sql:ExecutionResult deleteGroupResult = check dbClient->executeNativeSQL(deleteGroupQuery);
                 io:println("Deleted group: ", deleteGroupResult.affectedRowCount);
                 
@@ -419,7 +419,7 @@ public function getGroupService() returns http:Service {
             }
 
             // First check if group exists
-            sql:ParameterizedQuery checkGroupQuery = `SELECT group_Id, name FROM UserGroup WHERE group_Id = ${groupId} AND status = 1`;
+            sql:ParameterizedQuery checkGroupQuery = `SELECT group_Id, name FROM usergroup WHERE group_Id = ${groupId} AND status = 1`;
             stream<record {| string group_Id; string name; |}, error?> groupStream = utils:Client->query(checkGroupQuery);
             
             boolean groupExists = false;
@@ -438,7 +438,7 @@ public function getGroupService() returns http:Service {
             }
 
             // Check if current user is a member of the group
-            sql:ParameterizedQuery checkMembershipQuery = `SELECT userUser_Id, member_role FROM UserGroupMember WHERE groupGroup_Id = ${groupId} AND userUser_Id = ${currentUserId} AND status = 1`;
+            sql:ParameterizedQuery checkMembershipQuery = `SELECT userUser_Id, member_role FROM usergroupmember WHERE groupGroup_Id = ${groupId} AND userUser_Id = ${currentUserId} AND status = 1`;
             stream<record {| string userUser_Id; string member_role; |}, error?> membershipStream = utils:Client->query(checkMembershipQuery);
             
             boolean isMember = false;
@@ -461,7 +461,7 @@ public function getGroupService() returns http:Service {
             }
 
             // Check if user to be removed exists in the group
-            sql:ParameterizedQuery checkMemberQuery = `SELECT group_member_Id, member_role, userUser_Id FROM UserGroupMember WHERE groupGroup_Id = ${groupId} AND userUser_Id = ${userId} AND status = 1`;
+            sql:ParameterizedQuery checkMemberQuery = `SELECT group_member_Id, member_role, userUser_Id FROM usergroupmember WHERE groupGroup_Id = ${groupId} AND userUser_Id = ${userId} AND status = 1`;
             stream<record {| string group_member_Id; string member_role; string userUser_Id; |}, error?> memberStream = utils:Client->query(checkMemberQuery);
             
             boolean memberExists = false;
@@ -490,7 +490,7 @@ public function getGroupService() returns http:Service {
             }
 
             // Get user details for response
-            sql:ParameterizedQuery getUserQuery = `SELECT first_name, last_name FROM User WHERE user_Id = ${userId}`;
+            sql:ParameterizedQuery getUserQuery = `SELECT first_name, last_name FROM user WHERE user_Id = ${userId}`;
             stream<record {| string first_name; string last_name; |}, error?> userStream = utils:Client->query(getUserQuery);
             
             string userName = "Unknown User";
@@ -505,8 +505,8 @@ public function getGroupService() returns http:Service {
             // Check if user has any pending expenses in the group
             sql:ParameterizedQuery checkExpensesQuery = `
                 SELECT COUNT(*) as expense_count 
-                FROM Expense e 
-                JOIN ExpenseParticipant ep ON e.expense_Id = ep.expenseExpense_Id 
+                FROM expense e 
+                JOIN expenseparticipant ep ON e.expense_Id = ep.expenseExpense_Id 
                 WHERE e.usergroupGroup_Id = ${groupId} 
                 AND ep.userUser_Id = ${userId} 
                 AND e.status = 1 
@@ -531,7 +531,7 @@ public function getGroupService() returns http:Service {
 
             transaction {
                 // Remove the member from the group
-                sql:ParameterizedQuery removeMemberQuery = `DELETE FROM UserGroupMember WHERE groupGroup_Id = ${groupId} AND userUser_Id = ${userId}`;
+                sql:ParameterizedQuery removeMemberQuery = `DELETE FROM usergroupmember WHERE groupGroup_Id = ${groupId} AND userUser_Id = ${userId}`;
                 sql:ExecutionResult removeResult = check dbClient->executeNativeSQL(removeMemberQuery);
                 io:println("Removed member: ", removeResult.affectedRowCount);
                 
@@ -603,9 +603,9 @@ public function getGroupService() returns http:Service {
             u.first_name,
             u.last_name
         FROM 
-            UserGroupMember ugm
+            usergroupmember ugm
         JOIN 
-            User u ON ugm.userUser_Id = u.user_Id
+            user u ON ugm.userUser_Id = u.user_Id
         WHERE 
             ugm.groupGroup_Id = ${groupId} AND ugm.status = 1
     `;
@@ -653,7 +653,7 @@ public function getGroupService() returns http:Service {
             e.created_at,
             e.updated_at
         FROM 
-            Expense e
+            expense e
         WHERE 
             e.usergroupGroup_Id = ${groupId} AND e.status = 1
     `;

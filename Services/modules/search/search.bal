@@ -155,8 +155,8 @@ function searchGroups(string value, string? userId) returns json|error {
     
     // Query to find groups where the user is a member and group name matches search term
     sql:ParameterizedQuery query = `SELECT DISTINCT ug.group_Id, ug.name 
-                                    FROM UserGroup ug
-                                    INNER JOIN UserGroupMember ugm ON ug.group_Id = ugm.groupGroup_Id
+                                    FROM usergroup ug
+                                    INNER JOIN usergroupmember ugm ON ug.group_Id = ugm.groupGroup_Id
                                     WHERE ugm.userUser_Id = ${userId} 
                                     AND ugm.status = 1
                                     AND ug.status = 1
