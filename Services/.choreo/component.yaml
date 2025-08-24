@@ -12,6 +12,12 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
+    security:
+      oauth2:
+        enabled: false
+        passUserInfoToUpstream: true
+      apiKey:
+        enabled: false
     
   # Expense API endpoint  
   - name: expense
@@ -22,6 +28,12 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
+    security:
+      oauth2:
+        enabled: false
+        passUserInfoToUpstream: true
+      apiKey:
+        enabled: false
     
   # Friend API endpoint
   - name: friend
@@ -32,6 +44,12 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
+    security:
+      oauth2:
+        enabled: false
+        passUserInfoToUpstream: true
+      apiKey:
+        enabled: false
     
   # Groups API endpoint
   - name: groups
@@ -42,6 +60,12 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
+    security:
+      oauth2:
+        enabled: false
+        passUserInfoToUpstream: true
+      apiKey:
+        enabled: false
     
   # Search API endpoint
   - name: search
@@ -52,6 +76,12 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
+    security:
+      oauth2:
+        enabled: false
+        passUserInfoToUpstream: true
+      apiKey:
+        enabled: false
     
   # Bank Account API endpoint
   - name: bank
@@ -62,6 +92,12 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
+    security:
+      oauth2:
+        enabled: false
+        passUserInfoToUpstream: true
+      apiKey:
+        enabled: false
     
   # Settle Up API endpoint
   - name: settleup
@@ -72,3 +108,9 @@ endpoints:
     type: REST
     networkVisibilities:
       - Public
+    security:
+      oauth2:
+        enabled: false
+        passUserInfoToUpstream: true
+      apiKey:
+        enabled: false
