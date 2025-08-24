@@ -10,5 +10,11 @@ configurable string host = ?;
 configurable string user = ?;
 configurable string database = ?;
 configurable string password = ?;
-configurable mysql:Options & readonly connectionOptions = { ssl: { allowPublicKeyRetrieval: true, mode: mysql:SSL_PREFERRED } };
+configurable mysql:Options & readonly connectionOptions = {
+	ssl: {
+		mode: mysql:SSL_VERIFY_CA,
+		cert: { path: "certs/ca-3986efd6-aafc-41ba-bdb4-aa70eafd1a3f.pem", password: "" },
+		allowPublicKeyRetrieval: true
+	}
+};
 
