@@ -116,3 +116,44 @@ export const fetchUserByCookie = async () => {
     };
   }
 };
+
+
+// Function to logout user and clear server-side cookies
+export const logoutUser = async () => {
+  try {
+    const url = `${apiBase('user')}/logout`;
+
+    // Make the POST request to logout endpoint
+    const response = await axios.post(url, {}, {
+      withCredentials: true, // Include cookies to be cleared
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Check if the response indicates success
+    if (response.data.status === 'success') {
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Logged out successfully'
+      };
+    } else {
+      return {
+        success: false,
+        error: response.data.message || 'Failed to logout',
+        data: null
+      };
+    }
+
+  } catch (error) {
+    console.error("Error during logout:", error);
+    
+    // Return a structured error response
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to logout',
+      data: null
+    };
+  }
+};
