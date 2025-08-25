@@ -3,7 +3,7 @@ import axios from 'axios';
 // Function to fetch friend expense details by friend ID
 export const getFriendExpense = async (friendId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_friend/v1/friendExpense/${friendId}`;
+  const url = `${apiBase('friend')}/friendExpense/${friendId}`;
     
     console.log('Fetching friend expense with:', { 
       friendId, 
@@ -42,7 +42,7 @@ export const getFriendExpense = async (friendId) => {
 // Function to fetch list of friends for a user
 export const getFriends = async (userId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_friend/v1/friends/${userId}`;
+  const url = `${apiBase('friend')}/friends/${userId}`;
     
     console.log('Fetching friends list with:', { 
       userId, 
@@ -76,7 +76,7 @@ export const getFriends = async (userId) => {
 // Function to send a friend request
 export const sendFriendRequest = async (sendUserId, receiveUserId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_friend/v1/friendrequests/send`;
+  const url = `${apiBase('friend')}/friendrequests/send`;
     
     const requestData = {
       send_user_idUser_Id: sendUserId,
@@ -112,7 +112,7 @@ export const sendFriendRequest = async (sendUserId, receiveUserId) => {
 // Function to get friend requests for a user
 export const getFriendRequests = async (userId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_friend/v1/friendrequests/${userId}`;
+  const url = `${apiBase('friend')}/friendrequests/${userId}`;
     
     console.log('Fetching friend requests with:', { 
       userId, 
@@ -146,7 +146,7 @@ export const getFriendRequests = async (userId) => {
 // Function to accept or decline a friend request
 export const respondToFriendRequest = async (requestId, status) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_friend/v1/friendRequests/${requestId}`;
+  const url = `${apiBase('friend')}/friendRequests/${requestId}`;
     
     const requestData = {
       status: status // "accepted" or "declined"

@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { apiBase } from '../apiBase';
 
 // Function to create a new group
 export const createGroup = async (groupData) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_group/v1/groups`;
+  const url = `${apiBase('group')}/groups`;
     
     console.log('Creating group with:', { 
       groupData, 
@@ -49,7 +50,7 @@ export const createGroup = async (groupData) => {
 // Function to fetch group details by ID
 export const getGroupDetails = async (groupId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_group/v1/groupDetails/${groupId}`;
+  const url = `${apiBase('group')}/groupDetails/${groupId}`;
     
     console.log('Fetching group details with:', { 
       groupId, 
@@ -86,7 +87,7 @@ export const getGroupDetails = async (groupId) => {
 // Function to fetch group member balance summary
 export const getGroupMemberBalanceSummary = async (groupId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_group/v1/groupMemberBalanceSummary/${groupId}`;
+  const url = `${apiBase('group')}/groupMemberBalanceSummary/${groupId}`;
     
     console.log('Fetching group member balance summary with:', { 
       groupId, 
@@ -122,7 +123,7 @@ export const getGroupMemberBalanceSummary = async (groupId) => {
 // Function to update group details (name and members)
 export const updateGroup = async (groupId, updateData) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_group/v1/groups/${groupId}`;
+  const url = `${apiBase('group')}/groups/${groupId}`;
     
     console.log('Updating group with:', { 
       groupId,
@@ -171,7 +172,7 @@ export const updateGroup = async (groupId, updateData) => {
 // Function to remove a member from a group (or leave group if removing self)
 export const removeMember = async (groupId, userId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_group/v1/removeMember`;
+  const url = `${apiBase('group')}/removeMember`;
     
     // Add validation to ensure parameters are not undefined
     if (!groupId || !userId) {
@@ -236,7 +237,7 @@ export const removeMember = async (groupId, userId) => {
 // Function to delete a group (creator only)
 export const deleteGroup = async (groupId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_group/v1/groups/${groupId}`;
+  const url = `${apiBase('group')}/groups/${groupId}`;
     
     // Add validation to ensure groupId is provided
     if (!groupId) {

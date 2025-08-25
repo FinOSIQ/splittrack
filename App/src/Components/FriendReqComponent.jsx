@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { apiBase } from '../utils/apiBase';
 import FriendReqCard from "../Components/FriendReqCard";
 import useUserData from '../hooks/useUserData';
 
@@ -16,7 +17,7 @@ export default function FriendReqComponent({ onFriendsUpdate }) {
 
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api_friend/v1/friendrequests/${user.user_Id}`, {
+  const response = await fetch(`${apiBase('friend')}/friendrequests/${user.user_Id}`, {
         credentials: 'include'
       });
       
@@ -41,7 +42,7 @@ export default function FriendReqComponent({ onFriendsUpdate }) {
     setProcessingRequests(prev => new Set([...prev, requestId]));
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api_friend/v1/friendRequests/${requestId}`, {
+  const response = await fetch(`${apiBase('friend')}/friendRequests/${requestId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',

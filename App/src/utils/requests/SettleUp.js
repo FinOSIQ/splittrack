@@ -1,7 +1,8 @@
 // src/utils/requests/SettleUp.js
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:9090';
+import { apiBase } from '../apiBase';
+const API_BASE_URL = apiBase('settleup');
 
 /**
  * Get users who owe money to the current user (To Be Paid tab)
@@ -9,7 +10,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:9090';
  */
 export const getOwesToMe = async () => {
   try {
-    const url = `${API_BASE_URL}/api_settleup/v1/owesToMe`;
+  const url = `${API_BASE_URL}/owesToMe`;
     console.log('Fetching owesToMe with URL:', url);
     
     const response = await axios.get(url, {
@@ -35,7 +36,7 @@ export const getOwesToMe = async () => {
  */
 export const getIOwe = async () => {
   try {
-    const url = `${API_BASE_URL}/api_settleup/v1/iOwe`;
+  const url = `${API_BASE_URL}/iOwe`;
     console.log('Fetching iOwe with URL:', url);
     
     const response = await axios.get(url, {
@@ -62,7 +63,7 @@ export const getIOwe = async () => {
  */
 export const getExpenseDetails = async (creatorId) => {
   try {
-    const url = `${API_BASE_URL}/api_settleup/v1/expenseDetails/${creatorId}`;
+  const url = `${API_BASE_URL}/expenseDetails/${creatorId}`;
     console.log('Fetching expense details with:', {
       creatorId,
       url
@@ -92,7 +93,7 @@ export const getExpenseDetails = async (creatorId) => {
  */
 export const getOwesToMeDetails = async (memberId) => {
   try {
-    const url = `${API_BASE_URL}/api_settleup/v1/owesToMeDetails/${memberId}`;
+  const url = `${API_BASE_URL}/owesToMeDetails/${memberId}`;
     console.log('Fetching owesToMeDetails with:', {
       memberId,
       url
@@ -122,7 +123,7 @@ export const getOwesToMeDetails = async (memberId) => {
  */
 export const settleUpPayments = async (payments) => {
   try {
-    const url = `${API_BASE_URL}/api_settleup/v1/settleUp`;
+  const url = `${API_BASE_URL}/settleUp`;
     console.log('Processing settle up with:', {
       payments,
       url
