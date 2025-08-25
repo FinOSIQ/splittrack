@@ -63,10 +63,10 @@ public function getUserService() returns http:Service {
 
             http:Response response = new;
 
-            // response.setHeader("Access-Control-Allow-Origin", frontendUrl);
-            // response.setHeader("Access-Control-Allow-Credentials", "true");
-            // response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-            // response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+            response.setHeader("Access-Control-Allow-Origin", frontendUrl);
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+            response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+            response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
 
             // string? accessTokenn = cookie_utils:getCookieValue(req, "access_token");
 
