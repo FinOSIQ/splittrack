@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { apiBase } from '../apiBase';
 
 // Function to fetch friend expense details by friend ID
 export const getFriendExpense = async (friendId) => {
