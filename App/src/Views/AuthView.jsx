@@ -17,6 +17,8 @@ export default function AuthView () {
                     
                     if (res.status >= 200 && res.status < 300) {
                         window.location.href = "/home";
+                        // console.log(res);
+                        
                     } else {
                         console.log(res);
                         window.location.href = "/";

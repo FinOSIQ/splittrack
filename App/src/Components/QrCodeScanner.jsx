@@ -1,6 +1,7 @@
 import { useState, useEffect,useCallback } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { createSession, deleteSession } from "../utils/requests/expense";
+import { apiBase } from '../utils/apiBase';
 import { toast } from "sonner";
 
 export default function QrCodeScanner({ selectedItems, setSelectedItems }) {
@@ -14,11 +15,11 @@ export default function QrCodeScanner({ selectedItems, setSelectedItems }) {
     if (!showQr) return; // Don't poll if QR is not shown
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api_expense/v1/joinExpense/${sessionId}`);
+  const response = await fetch(`${apiBase('expense')}/joinExpense/${sessionId}`);
       if (response.ok) {
         const data = await response.json();
         if (data.guestUsers && Array.isArray(data.guestUsers)) {
-          console.log("Guest users:", data.guestUsers);
+          // console.log("Guest users:", data.guestUsers);
           
           // Add each guest user to selectedItems as they are discovered
           data.guestUsers.forEach(guestUser => {
@@ -76,7 +77,7 @@ export default function QrCodeScanner({ selectedItems, setSelectedItems }) {
     const res = await createSession();
     if (res && res.status == 201) {
       setSessionId(res.data.sessionId);
-      setqrText(`http://localhost:5173/guest/${res.data.sessionId}`);
+      setqrText(`${import.meta.env.VITE_FRONTEND_URL}/guest/${res.data.sessionId}`);
       console.log("Session created with ID:", res.data.sessionId);
     } else {
       toast.error("Failed to create session. Please try again.");

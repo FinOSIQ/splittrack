@@ -361,8 +361,8 @@ SELECT
     COUNT(ugm2.group_member_Id) as member_count,
     ug.created_at
 FROM UserGroup ug
-JOIN UserGroupMember ugm ON ug.group_Id = ugm.group_Id
-LEFT JOIN UserGroupMember ugm2 ON ug.group_Id = ugm2.group_Id
+JOIN usergroupmember ugm ON ug.group_Id = ugm.group_Id
+LEFT JOIN usergroupmember ugm2 ON ug.group_Id = ugm2.group_Id
 WHERE ugm.user_Id = '30e02b55-c249-4cdd-b0a5-a3cf8a372570'
     AND ugm.member_role = 'admin'
 GROUP BY ug.group_Id, ug.name, ugm.member_role, ug.created_at
@@ -378,10 +378,10 @@ SELECT
     u2.first_name + ' ' + u2.last_name as payee_name,
     e.name as expense_name,
     t.created_at
-FROM Transaction t
-JOIN User u1 ON t.payer_user_Id = u1.user_Id
-JOIN User u2 ON t.payee_user_Id = u2.user_Id
-JOIN Expense e ON t.expense_Id = e.expense_Id
+FROM transaction t
+JOIN user u1 ON t.payer_user_Id = u1.user_Id
+JOIN user u2 ON t.payee_user_Id = u2.user_Id
+JOIN expense e ON t.expense_Id = e.expense_Id
 WHERE t.expense_Id = 'exp001-30e0-2b55-hotel-booking123'
 ORDER BY t.created_at DESC;
 */
@@ -396,9 +396,9 @@ SELECT
     u.first_name + ' ' + u.last_name as participant_name,
     ep.participant_role,
     ep.owning_amount
-FROM Expense e
-JOIN ExpenseParticipant ep ON e.expense_Id = ep.expense_Id
-JOIN User u ON ep.user_Id = u.user_Id
+FROM expense e
+JOIN expenseparticipant ep ON e.expense_Id = ep.expense_Id
+JOIN user u ON ep.user_Id = u.user_Id
 WHERE e.expense_Id = 'exp001-30e0-2b55-hotel-booking123'
 
 UNION ALL
@@ -411,8 +411,8 @@ SELECT
     gu.guest_name as participant_name,
     'participant' as participant_role,
     gu.owning_amount
-FROM Expense e
-JOIN GuestUser gu ON e.expense_Id = gu.expense_Id
+FROM expense e
+JOIN guestuser gu ON e.expense_Id = gu.expense_Id
 WHERE e.expense_Id = 'exp001-30e0-2b55-hotel-booking123'
 
 ORDER BY participant_type, participant_role DESC;
@@ -426,71 +426,71 @@ ORDER BY participant_type, participant_role DESC;
 /*
 -- Verify all foreign keys exist
 SELECT 'FriendRequest send_user_Id issues' as check_type, COUNT(*) as issue_count
-FROM FriendRequest fr LEFT JOIN User u ON fr.send_user_Id = u.user_Id WHERE u.user_Id IS NULL
+FROM friendrequest fr LEFT JOIN user u ON fr.send_user_Id = u.user_Id WHERE u.user_Id IS NULL
 UNION ALL
 SELECT 'FriendRequest receive_user_Id issues', COUNT(*)
-FROM FriendRequest fr LEFT JOIN User u ON fr.receive_user_Id = u.user_Id WHERE u.user_Id IS NULL
+FROM friendrequest fr LEFT JOIN user u ON fr.receive_user_Id = u.user_Id WHERE u.user_Id IS NULL
 UNION ALL
 SELECT 'Friend user_Id_1 issues', COUNT(*)
-FROM Friend f LEFT JOIN User u ON f.user_Id_1 = u.user_Id WHERE u.user_Id IS NULL
+FROM friend f LEFT JOIN user u ON f.user_Id_1 = u.user_Id WHERE u.user_Id IS NULL
 UNION ALL
 SELECT 'Friend user_Id_2 issues', COUNT(*)
-FROM Friend f LEFT JOIN User u ON f.user_Id_2 = u.user_Id WHERE u.user_Id IS NULL
+FROM friend f LEFT JOIN user u ON f.user_Id_2 = u.user_Id WHERE u.user_Id IS NULL
 UNION ALL
 SELECT 'UserGroupMember group_Id issues', COUNT(*)
-FROM UserGroupMember ugm LEFT JOIN UserGroup ug ON ugm.group_Id = ug.group_Id WHERE ug.group_Id IS NULL
+FROM usergroupmember ugm LEFT JOIN usergroup ug ON ugm.group_Id = ug.group_Id WHERE ug.group_Id IS NULL
 UNION ALL
 SELECT 'UserGroupMember user_Id issues', COUNT(*)
-FROM UserGroupMember ugm LEFT JOIN User u ON ugm.user_Id = u.user_Id WHERE u.user_Id IS NULL
+FROM usergroupmember ugm LEFT JOIN user u ON ugm.user_Id = u.user_Id WHERE u.user_Id IS NULL
 UNION ALL
 SELECT 'Expense group_Id issues', COUNT(*)
-FROM Expense e LEFT JOIN UserGroup ug ON e.group_Id = ug.group_Id WHERE ug.group_Id IS NULL
+FROM expense e LEFT JOIN usergroup ug ON e.group_Id = ug.group_Id WHERE ug.group_Id IS NULL
 UNION ALL
 SELECT 'ExpenseParticipant expense_Id issues', COUNT(*)
-FROM ExpenseParticipant ep LEFT JOIN Expense e ON ep.expense_Id = e.expense_Id WHERE e.expense_Id IS NULL
+FROM expenseparticipant ep LEFT JOIN expense e ON ep.expense_Id = e.expense_Id WHERE e.expense_Id IS NULL
 UNION ALL
 SELECT 'ExpenseParticipant user_Id issues', COUNT(*)
-FROM ExpenseParticipant ep LEFT JOIN User u ON ep.user_Id = u.user_Id WHERE u.user_Id IS NULL
+FROM expenseparticipant ep LEFT JOIN user u ON ep.user_Id = u.user_Id WHERE u.user_Id IS NULL
 UNION ALL
 SELECT 'Transaction expense_Id issues', COUNT(*)
-FROM Transaction t LEFT JOIN Expense e ON t.expense_Id = e.expense_Id WHERE e.expense_Id IS NULL
+FROM transaction t LEFT JOIN expense e ON t.expense_Id = e.expense_Id WHERE e.expense_Id IS NULL
 UNION ALL
 SELECT 'Transaction payer_user_Id issues', COUNT(*)
-FROM Transaction t LEFT JOIN User u ON t.payer_user_Id = u.user_Id WHERE u.user_Id IS NULL
+FROM transaction t LEFT JOIN user u ON t.payer_user_Id = u.user_Id WHERE u.user_Id IS NULL
 UNION ALL
 SELECT 'Transaction payee_user_Id issues', COUNT(*)
-FROM Transaction t LEFT JOIN User u ON t.payee_user_Id = u.user_Id WHERE u.user_Id IS NULL
+FROM transaction t LEFT JOIN user u ON t.payee_user_Id = u.user_Id WHERE u.user_Id IS NULL
 UNION ALL
 SELECT 'BankAccount user_Id issues', COUNT(*)
-FROM BankAccount ba LEFT JOIN User u ON ba.user_Id = u.user_Id WHERE u.user_Id IS NULL
+FROM bankaccount ba LEFT JOIN user u ON ba.user_Id = u.user_Id WHERE u.user_Id IS NULL
 UNION ALL
 SELECT 'Card account_Id issues', COUNT(*)
-FROM Card c LEFT JOIN BankAccount ba ON c.account_Id = ba.account_Id WHERE ba.account_Id IS NULL
+FROM card c LEFT JOIN bankaccount ba ON c.account_Id = ba.account_Id WHERE ba.account_Id IS NULL
 UNION ALL
 SELECT 'GuestUser expense_Id issues', COUNT(*)
-FROM GuestUser gu LEFT JOIN Expense e ON gu.expense_Id = e.expense_Id WHERE e.expense_Id IS NULL;
+FROM guestuser gu LEFT JOIN expense e ON gu.expense_Id = e.expense_Id WHERE e.expense_Id IS NULL;
 */
 
 -- Summary Statistics
 /*
 SELECT 
-    'Users' as entity, COUNT(*) as total_count FROM User
+    'Users' as entity, COUNT(*) as total_count FROM user
 UNION ALL
-SELECT 'Active Friendships', COUNT(*) FROM Friend WHERE status = 1
+SELECT 'Active Friendships', COUNT(*) FROM friend WHERE status = 1
 UNION ALL
-SELECT 'Pending Friend Requests', COUNT(*) FROM FriendRequest WHERE status = 'pending'
+SELECT 'Pending Friend Requests', COUNT(*) FROM friendrequest WHERE status = 'pending'
 UNION ALL
-SELECT 'Active Groups', COUNT(*) FROM UserGroup WHERE status = 1
+SELECT 'Active Groups', COUNT(*) FROM usergroup WHERE status = 1
 UNION ALL
-SELECT 'Total Expenses', COUNT(*) FROM Expense WHERE status = 1
+SELECT 'Total Expenses', COUNT(*) FROM expense WHERE status = 1
 UNION ALL
-SELECT 'Total Transactions', COUNT(*) FROM Transaction WHERE status = 1
+SELECT 'Total Transactions', COUNT(*) FROM transaction WHERE status = 1
 UNION ALL
-SELECT 'Bank Accounts', COUNT(*) FROM BankAccount WHERE status = 1
+SELECT 'Bank Accounts', COUNT(*) FROM bankaccount WHERE status = 1
 UNION ALL
-SELECT 'Cards', COUNT(*) FROM Card WHERE status = 1
+SELECT 'Cards', COUNT(*) FROM card WHERE status = 1
 UNION ALL
-SELECT 'Guest Users', COUNT(*) FROM GuestUser WHERE status = 1;
+SELECT 'Guest Users', COUNT(*) FROM guestuser WHERE status = 1;
 */
 
 -- =====================================================

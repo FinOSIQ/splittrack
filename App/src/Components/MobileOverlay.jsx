@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
 import axios from "axios";
-import { PlusIcon, CurrencyDollarIcon, UserGroupIcon } from "@heroicons/react/24/solid";
+import { PlusIcon, CurrencyDollarIcon, UserGroupIcon,UserPlusIcon } from "@heroicons/react/24/solid";
 import { Card } from "@material-tailwind/react";
 import SearchResults from "./SearchResults";
 import { fetchSearchData } from "../utils/requests/expense";
@@ -209,7 +209,7 @@ export default function MobileOverlay() {
             label: "Friends"
         },
         {
-            Icon: UserGroupIcon,
+            Icon: UserPlusIcon,
             path: "/home",
             label: "Home"
         }

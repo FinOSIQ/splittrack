@@ -1,0 +1,152 @@
+# +required The configuration file schema version
+schemaVersion: 1.2
+
+# +optional Incoming connection details for the component
+endpoints:
+  # Users API endpoint
+  - name: users
+    displayName: User Management API
+    service:
+      basePath: /api_user/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Public
+    passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: true
+        optional: false
+        authTypes:
+          - oauth2
+        oauth2:
+          enabled: true
+          passUserInfoToUpstream: true
+        apiKey:
+          enabled: false
+    
+  # Expense API endpoint  
+  - name: expense
+    displayName: Expense Management API
+    service:
+      basePath: /api_expense/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Public
+    passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
+    
+  # Friend API endpoint
+  - name: friend
+    displayName: Friend Management API
+    service:
+      basePath: /api_friend/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Public
+    passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
+    
+  # Groups API endpoint
+  - name: groups
+    displayName: Group Management API
+    service:
+      basePath: /api_group/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Public
+    passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
+    
+  # Search API endpoint
+  - name: search
+    displayName: Search API
+    service:
+      basePath: /api_search/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Public
+    passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
+    
+  # Bank Account API endpoint
+  - name: bank
+    displayName: Bank Account API
+    service:
+      basePath: /api_bank/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Public
+    passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false
+    
+  # Settle Up API endpoint
+  - name: settleup
+    displayName: Settle Up API
+    service:
+      basePath: /api_settleup/v1
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Public
+    passRequestPayloadToUpstream: true
+    security:
+      authentication:
+        enabled: false
+        optional: false
+        authTypes: []
+        oauth2:
+          enabled: false
+          passUserInfoToUpstream: false
+        apiKey:
+          enabled: false

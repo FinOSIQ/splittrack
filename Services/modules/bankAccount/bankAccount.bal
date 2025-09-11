@@ -11,13 +11,16 @@ import ballerina/uuid;
 
 import ballerina/log;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 final db:Client dbClient = check new ();
 
 public function getBankAccountService() returns http:Service {
 
     return @http:ServiceConfig {
         cors: {
-            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowOrigins: [frontendUrl], // Frontend URL from config
             allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: false,

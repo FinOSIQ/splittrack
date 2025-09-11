@@ -9,6 +9,9 @@ import ballerina/sql;
 import ballerina/time;
 import ballerina/uuid;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 final db:Client dbClient = check new ();
 
 public function hello(string? name) returns string {
@@ -22,7 +25,7 @@ public function hello(string? name) returns string {
 public function getSettleUpService() returns http:Service {
     return @http:ServiceConfig {
         cors: {
-            allowOrigins: ["http://localhost:5173"],
+            allowOrigins: [frontendUrl],
             allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,
@@ -136,9 +139,9 @@ public function getSettleUpService() returns http:Service {
             u.email,
             u.currency_pref,
             SUM(ep.owning_amount) as total_owing
-        FROM ExpenseParticipant ep
-        JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
-        JOIN ExpenseParticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id 
+    FROM ExpenseParticipant ep
+    JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
+    JOIN ExpenseParticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id
             AND creator_ep.participant_role = 'Creator'
         JOIN User u ON creator_ep.userUser_Id = u.user_Id
         WHERE ep.participant_role = 'Member' 
@@ -235,7 +238,7 @@ public function getSettleUpService() returns http:Service {
         JOIN ExpenseParticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id
             AND creator_ep.participant_role = 'Creator'
             AND creator_ep.userUser_Id = ${creatorId}
-        JOIN User u ON creator_ep.userUser_Id = u.user_Id
+    JOIN User u ON creator_ep.userUser_Id = u.user_Id
         WHERE ep.participant_role = 'Member'
             AND ep.userUser_Id = ${userId}
             AND ep.owning_amount > 0
@@ -325,12 +328,12 @@ public function getSettleUpService() returns http:Service {
             u.first_name,
             u.last_name,
             u.currency_pref
-        FROM ExpenseParticipant ep
-        JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
-        JOIN ExpenseParticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id
+    FROM ExpenseParticipant ep
+    JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
+    JOIN ExpenseParticipant creator_ep ON e.expense_Id = creator_ep.expenseExpense_Id
             AND creator_ep.participant_role = 'Creator'
             AND creator_ep.userUser_Id = ${userId}
-        JOIN User u ON ep.userUser_Id = u.user_Id
+    JOIN User u ON ep.userUser_Id = u.user_Id
         WHERE ep.participant_role = 'Member'
             AND ep.userUser_Id = ${memberId}
             AND ep.owning_amount > 0
@@ -482,7 +485,7 @@ public function getSettleUpService() returns http:Service {
 
                     // Update the expense participant record
                     sql:ParameterizedQuery updateQuery = `
-                UPDATE ExpenseParticipant 
+                    UPDATE ExpenseParticipant 
                 SET owning_amount = ${newOwingAmount},
                     updated_at = NOW()
                 WHERE participant_Id = ${participantId}
@@ -497,7 +500,7 @@ public function getSettleUpService() returns http:Service {
                     string transactionId = uuid:createRandomUuid().toString();
 
                     sql:ParameterizedQuery insertTransactionQuery = `
-                INSERT INTO Transaction (
+                    INSERT INTO Transaction (
                     transaction_Id, 
                     payed_amount, 
                     expenseExpense_Id, 

@@ -1,10 +1,11 @@
 import axios from "axios";
+import { apiBase } from "../apiBase";
 
 // Function to fetch data with dynamic parameters using GET request and cancellation token
 export const fetchSearchData = async (value, type, userId, cancelToken) => {
   try {
 
-    const url = `${import.meta.env.VITE_API_URL}/api_search/v1/search`;
+  const url = `${apiBase('search')}/search`;
 
     // Make the API request with the cancel token
     const response = await axios.get(url, {
@@ -33,7 +34,7 @@ export const fetchSearchData = async (value, type, userId, cancelToken) => {
 // Function to create expense with POST request
 export const createExpense = async (expenseData) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/expense`; // Test URL - adjust as needed
+  const url = `${apiBase('expense')}/expense`;
 
     // Make the POST request
     const response = await axios.post(url, expenseData, {
@@ -54,7 +55,7 @@ export const createExpense = async (expenseData) => {
 
 export const createSession = async () => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/expense/session`;
+  const url = `${apiBase('expense')}/expense/session`;
     
     const response = await axios.post(url, null, {
       withCredentials: true,
@@ -73,7 +74,7 @@ export const createSession = async () => {
 
 export const deleteSession = async (sessionId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/session/${sessionId}`;
+  const url = `${apiBase('expense')}/session/${sessionId}`;
     
     const response = await axios.delete(url, {
       withCredentials: true,
@@ -92,7 +93,7 @@ export const deleteSession = async (sessionId) => {
 
 export const joinExpense = async (guestData) => {
  try {
-   const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/joinExpense`;
+  const url = `${apiBase('expense')}/joinExpense`;
    
    const response = await axios.post(url, guestData, {
      withCredentials: true,
@@ -111,7 +112,7 @@ export const joinExpense = async (guestData) => {
 // Function to fetch expense details by ID
 export const getExpenseById = async (expenseId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/expense/${expenseId}`;
+  const url = `${apiBase('expense')}/expense/${expenseId}`;
     
     console.log('Fetching expense with ID:', expenseId);
     
@@ -145,7 +146,7 @@ export const getExpenseById = async (expenseId) => {
 // Function to fetch recent activity
 export const fetchRecentActivity = async () => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/recentActivity`;
+  const url = `${apiBase('expense')}/recentActivity`;
     
     const response = await axios.get(url, {
       withCredentials: true,
@@ -173,7 +174,7 @@ export const fetchRecentActivity = async () => {
 // Function to fetch user expense summary (balance)
 export const fetchUserExpenseSummary = async () => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/userExpenseSummary`;
+  const url = `${apiBase('expense')}/userExpenseSummary`;
     
     const response = await axios.get(url, {
       withCredentials: true,
@@ -201,7 +202,7 @@ export const fetchUserExpenseSummary = async () => {
 // Function to fetch group expenses
 export const fetchGroupExpenses = async () => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/groupExpenses`;
+  const url = `${apiBase('expense')}/groupExpenses`;
     
     const response = await axios.get(url, {
       withCredentials: true,
@@ -229,7 +230,7 @@ export const fetchGroupExpenses = async () => {
 // Function to fetch non-group expenses
 export const fetchNonGroupExpenses = async () => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/nonGroupExpenses`;
+  const url = `${apiBase('expense')}/nonGroupExpenses`;
     
     console.log('Fetching non-group expenses from:', url);
     
@@ -280,7 +281,7 @@ export const fetchNonGroupExpenses = async () => {
 // Function to fetch non-group expense details by ID
 export const getNonGroupExpenseById = async (expenseId) => {
   try {
-    const url = `${import.meta.env.VITE_API_URL}/api_expense/v1/nonGroupExpenseDetails/${expenseId}`;
+  const url = `${apiBase('expense')}/nonGroupExpenseDetails/${expenseId}`;
     
     console.log('Fetching non-group expense with ID:', expenseId);
     

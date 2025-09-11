@@ -13,6 +13,9 @@ import ballerina/uuid;
 // import ballerina/io; 
 // import ballerina/sql;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 type GroupResponse record {|
     json|error group?;
     json|error members?;
@@ -33,7 +36,7 @@ public function getGroupService() returns http:Service {
 
     return @http:ServiceConfig {
         cors: {
-            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowOrigins: [frontendUrl], // Frontend URL from config
             allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,
@@ -199,7 +202,7 @@ public function getGroupService() returns http:Service {
                 if members is json[] {
 
                     // Get current creator before deleting members
-                    sql:ParameterizedQuery getCurrentCreatorQuery = `SELECT userUser_Id FROM usergroupmember WHERE groupGroup_Id = ${groupId} AND member_role = 'creator'`;
+                    sql:ParameterizedQuery getCurrentCreatorQuery = `SELECT userUser_Id FROM UserGroupMember WHERE groupGroup_Id = ${groupId} AND member_role = 'creator'`;
                     stream<record {| string userUser_Id; |}, error?> creatorStream = utils:Client->query(getCurrentCreatorQuery);
                     string? currentCreatorId = ();
                     
@@ -212,7 +215,7 @@ public function getGroupService() returns http:Service {
                     }
 
                     // Delete all existing members except creator
-                    sql:ParameterizedQuery deleteMembersQuery = `DELETE FROM usergroupmember WHERE groupGroup_Id = ${groupId} AND member_role != 'creator'`;
+                    sql:ParameterizedQuery deleteMembersQuery = `DELETE FROM UserGroupMember WHERE groupGroup_Id = ${groupId} AND member_role != 'creator'`;
                   
                     _= check dbClient->executeNativeSQL(deleteMembersQuery);
                     
@@ -706,11 +709,9 @@ public function getGroupService() returns http:Service {
                             decimal owning_amount;
                             string userUser_Id;
                         |} part) {
-                    // Check if this participant is the current user
+                   
                     string role = part.participant_role;
-                    if (part.userUser_Id == currentUserId) {
-                        role = "self"; // Mark the current user
-                    }
+                  
 
                     expParticipants.push({
                         "participant_role": role,

@@ -11,7 +11,9 @@ import splittrack_backend.bankAccount;
 import splittrack_backend.settleup;
 
 // Configure the main listener
-listener http:Listener httpListener = new (9090);
+listener http:Listener httpListener = new (9090, {
+    host: "0.0.0.0"
+});
 
 public function main() returns error? {
     check httpListener.attach(users:getUserService(), "api_user/v1");
@@ -21,7 +23,7 @@ public function main() returns error? {
     check httpListener.attach(search:getSearchService(), "api_search/v1");
     check httpListener.attach(bankAccount:getBankAccountService(), "api_bank/v1");
     check httpListener.attach(settleup:getSettleUpService(), "api_settleup/v1");
-    check executeSqlScript();
+
 
     check httpListener.start();
 }

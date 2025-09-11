@@ -157,11 +157,11 @@ export default function ProfileView() {
     // Format member since date
     const formatMemberSince = (dateInput) => {
         if (!dateInput) return 'N/A';
-        
+
         console.log('formatMemberSince input:', dateInput, 'type:', typeof dateInput);
-        
+
         let timestamp;
-        
+
         // Handle array format [seconds, nanoseconds]
         if (Array.isArray(dateInput)) {
             timestamp = dateInput[0]; // Take the first element (seconds)
@@ -182,24 +182,24 @@ export default function ProfileView() {
             }
             return 'N/A';
         }
-        
+
         // Convert timestamp to Date object
         // If timestamp is in seconds (10 digits), convert to milliseconds
         const date = timestamp < 10000000000 ? new Date(timestamp * 1000) : new Date(timestamp);
-        
+
         console.log('Final date object:', date, 'isValid:', !isNaN(date.getTime()));
-        
+
         // Check if date is valid
         if (isNaN(date.getTime())) {
             return 'N/A';
         }
-        
+
         const formatted = date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
         });
-        
+
         console.log('Formatted result:', formatted);
         return formatted;
     };
@@ -231,7 +231,10 @@ export default function ProfileView() {
 
     return (
         <>
-            <HeaderProfile />
+            <div className='lg:ml-14 z-50'>
+                <HeaderProfile />
+                
+            </div>
             <NavBar />
 
             <div className="h-screen bg-white rounded-md mx-5 px-0 mt-5 w-10/12 ml-28">
@@ -293,8 +296,8 @@ export default function ProfileView() {
                                 onClick={handleCurrencyUpdate}
                                 disabled={isCurrencyUpdating || selectedCurrency === userData?.currency_pref}
                                 className={`px-3 py-1.5 font-medium font-['Poppins'] text-xs transition-all ${selectedCurrency === userData?.currency_pref
-                                        ? 'opacity-50 cursor-not-allowed border-gray-300 text-gray-500'
-                                        : 'bg-black text-white hover:bg-gray-800 border-black'
+                                    ? 'opacity-50 cursor-not-allowed border-gray-300 text-gray-500'
+                                    : 'bg-black text-white hover:bg-gray-800 border-black'
                                     }`}
                             >
                                 {isCurrencyUpdating ? (
@@ -464,8 +467,8 @@ export default function ProfileView() {
                                                 console.log("Form touched:", touched);
                                             }}
                                             className={`flex items-center gap-2 px-6 py-2 font-medium font-['Poppins'] leading-[24.94px] transition-all ${isSubmitting
-                                                    ? 'border-gray-300 text-gray-400 cursor-not-allowed'
-                                                    : 'border-[#4182f9] text-[#4182f9] hover:bg-[#4182f9] hover:text-white'
+                                                ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                                                : 'border-[#4182f9] text-[#4182f9] hover:bg-[#4182f9] hover:text-white'
                                                 }`}
                                         >
                                             {isSubmitting ? (
@@ -536,13 +539,13 @@ export default function ProfileView() {
 
                     </div>
                 </section>
-                
+
                 {/* Stylish Developer Credit with Divider */}
                 <div className="flex items-center justify-center py-6 mt-2 ">
                     <div className="flex-grow h-px bg-gray-200"></div>
                     <div className="px-6">
                         <p className="text-xs text-gray-400 font-light tracking-wide whitespace-nowrap">
-                            Developed by <span className="font-medium text-gray-500">SparkZ Softwares</span>
+                            Developed by <span className="font-medium text-gray-500">SparkZ </span>
                         </p>
                     </div>
                     <div className="flex-grow h-px bg-gray-200"></div>

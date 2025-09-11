@@ -5,7 +5,7 @@ import ballerina/log;
 configurable string smtpHost = "smtp.gmail.com";
 configurable string smtpUsername = "lasinthaattanayake@gmail.com";
 configurable string smtpPassword = "qvdeuetwecoskseg";
-configurable int smtpPort = 465;
+configurable int smtpPort = 587;
 
 // Define parameters for user registration email
 public type UserRegistrationEmailParams record {|

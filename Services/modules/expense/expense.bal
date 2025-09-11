@@ -10,6 +10,9 @@ import ballerina/sql;
 import ballerina/time;
 import ballerina/uuid;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 final db:Client dbClient = check new ();
 
 public function hello(string? name) returns string {
@@ -25,7 +28,7 @@ public function hello(string? name) returns string {
 public function getExpenseService() returns http:Service {
     return @http:ServiceConfig {
         cors: {
-            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowOrigins: [frontendUrl], // Frontend URL from config
             allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,
@@ -1611,7 +1614,7 @@ public function getExpenseService() returns http:Service {
         }
 
         // recent activity endpoint
-        resource function get recentActivity(http:Caller caller, http:Request req) returns error? {
+       resource function get recentActivity(http:Caller caller, http:Request req) returns error? {
             http:Response response = new;
 
             // Get user ID from cookie
@@ -1638,8 +1641,8 @@ public function getExpenseService() returns http:Service {
             e.name as expense_name,
             e.expense_total_amount,
             e.usergroupGroup_Id
-        FROM ExpenseParticipant ep
-        JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
+    FROM ExpenseParticipant ep
+    JOIN Expense e ON ep.expenseExpense_Id = e.expense_Id
         WHERE ep.userUser_Id = ${userId}
         AND ep.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         ORDER BY ep.created_at DESC
@@ -1715,14 +1718,14 @@ public function getExpenseService() returns http:Service {
 
                             if nonGroupCount > 0 {
                                 // Scenario 2: Group + non-group users
-                                description = string `You created ${expenseName} for $${totalAmount} with ${groupMemberCount} people from ${groupName} and ${nonGroupCount} others`;
+                                description = string `You created ${expenseName} for LKR ${totalAmount} with ${groupMemberCount} people from ${groupName} and ${nonGroupCount} others`;
                             } else {
                                 // Scenario 1: Group expense only  
-                                description = string `You created ${expenseName} for $${totalAmount} with ${totalParticipants} people in ${groupName}`;
+                                description = string `You created ${expenseName} for LKR ${totalAmount} with ${totalParticipants} people in ${groupName}`;
                             }
                         } else {
                             // Scenario 3: Just users, no group
-                            description = string `You created ${expenseName} for $${totalAmount} with ${totalParticipants} people`;
+                            description = string `You created ${expenseName} for LKR ${totalAmount} with ${totalParticipants} people`;
                         }
 
                     } else {
@@ -1743,7 +1746,7 @@ public function getExpenseService() returns http:Service {
                                 creatorName = <string>creatorRow["first_name"];
                             };
 
-                        description = string `You were added to ${expenseName} by ${creatorName} - you owe $${owingAmount}`;
+                        description = string `You were added to ${expenseName} by ${creatorName} - you owe LKR ${owingAmount}`;
                     }
 
                     json activity = {
@@ -1776,12 +1779,12 @@ public function getExpenseService() returns http:Service {
             payer.first_name as payer_name,
             creator.first_name as creator_name,
             creator.user_Id as creator_id
-        FROM Transaction t
-        JOIN Expense e ON t.expenseExpense_Id = e.expense_Id
-        JOIN User payer ON t.payee_idUser_Id = payer.user_Id
-        JOIN ExpenseParticipant ep_creator ON e.expense_Id = ep_creator.expenseExpense_Id 
-            AND (ep_creator.participant_role = 'Creator' OR ep_creator.participant_role = 'creator')
-        JOIN User creator ON ep_creator.userUser_Id = creator.user_Id
+    FROM Transaction t
+    JOIN Expense e ON t.expenseExpense_Id = e.expense_Id
+    JOIN User payer ON t.payee_idUser_Id = payer.user_Id
+    JOIN ExpenseParticipant ep_creator ON e.expense_Id = ep_creator.expenseExpense_Id 
+        AND (ep_creator.participant_role = 'Creator' OR ep_creator.participant_role = 'creator')
+    JOIN User creator ON ep_creator.userUser_Id = creator.user_Id
         WHERE (t.payee_idUser_Id = ${userId} OR ep_creator.userUser_Id = ${userId})
         AND t.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         ORDER BY t.created_at DESC
@@ -1804,10 +1807,10 @@ public function getExpenseService() returns http:Service {
 
                     if payerId == userId {
                         // Scenario 5: You made the payment (you are the payer)
-                        description = string `You paid ${creatorName} $${payedAmount} for ${expenseName}`;
+                        description = string `You paid ${creatorName} LKR ${payedAmount} for ${expenseName}`;
                     } else if creatorId == userId {
                         // Scenario 6: Someone paid you (you are the creator who received payment)
-                        description = string `${payerName} paid you $${payedAmount} for ${expenseName}`;
+                        description = string `${payerName} paid you LKR ${payedAmount} for ${expenseName}`;
                     }
 
                     // Only add if description was set (user is involved in this transaction)
@@ -1841,7 +1844,6 @@ public function getExpenseService() returns http:Service {
             check caller->respond(response);
             return;
         }
-
         // Dedicated API for non-group expense details
         resource function get nonGroupExpenseDetails/[string expenseId](http:Caller caller, http:Request req) returns error? {
             http:Response res = new;
@@ -1850,7 +1852,7 @@ public function getExpenseService() returns http:Service {
             sql:ParameterizedQuery expenseCheckQuery = `
         SELECT expense_Id, name, expense_total_amount, expense_owe_amount, status, 
                created_at, updated_at, usergroupGroup_Id
-        FROM Expense 
+    FROM Expense 
         WHERE expense_Id = ${expenseId}
     `;
 
@@ -1883,8 +1885,8 @@ public function getExpenseService() returns http:Service {
                ep.expenseExpense_Id, ep.userUser_Id, ep.status, 
                ep.created_at as p_created_at, ep.updated_at as p_updated_at,
                u.user_Id, u.first_name, u.last_name, u.email
-        FROM ExpenseParticipant ep
-        JOIN User u ON ep.userUser_Id = u.user_Id
+    FROM ExpenseParticipant ep
+    JOIN User u ON ep.userUser_Id = u.user_Id
         WHERE ep.expenseExpense_Id = ${expenseId}
     `;
 
@@ -1920,7 +1922,7 @@ public function getExpenseService() returns http:Service {
             sql:ParameterizedQuery transactionsQuery = `
         SELECT transaction_Id, payed_amount, payee_idUser_Id, status, 
                created_at, updated_at
-        FROM Transaction 
+    FROM Transaction 
         WHERE expenseExpense_Id = ${expenseId}
     `;
 

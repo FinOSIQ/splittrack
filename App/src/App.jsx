@@ -8,6 +8,7 @@ import Home from './Views/Home'
 import ExpenseView from './Views/ExpenseView';
 import AllFriends from './Views/AllFriends';
 import OCRscanner from './Components/OCRscanner';
+
 import FriendView from './Views/FriendView';
 import GroupView from './Views/GroupView';
 import { authConfig } from "./authConfig"; // Import Asgardeo configuration

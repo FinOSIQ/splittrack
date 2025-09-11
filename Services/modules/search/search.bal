@@ -5,6 +5,9 @@ import ballerina/io;
 import ballerina/sql;
 import splittrack_backend.utils;
 
+// Get frontend URL from config
+configurable string frontendUrl = ?;
+
 
 
 
@@ -32,7 +35,7 @@ public function getSearchService() returns http:Service {
     
     return @http:ServiceConfig {
         cors: {
-            allowOrigins: ["http://localhost:5173"], // Your frontend origin
+            allowOrigins: [frontendUrl], // Frontend URL from config
             allowMethods: ["GET", "POST", "OPTIONS","PUT", "DELETE"],
             allowHeaders: ["Content-Type", "Authorization"],
             allowCredentials: true,
@@ -103,9 +106,17 @@ function searchUsers(string value, string? userId) returns json|error {
     }
 
     sql:ParameterizedQuery query = `SELECT user_id, first_name, email 
-                                    FROM user 
+                                    FROM User 
                                     WHERE email IS NOT NULL
                                     AND user_id != ${userId}
+                                    AND user_id NOT IN (
+                                        SELECT CASE 
+                                            WHEN f.user_id_1User_Id = ${userId} THEN f.user_id_2User_Id
+                                            WHEN f.user_id_2User_Id = ${userId} THEN f.user_id_1User_Id
+                                        END
+                                        FROM Friend f
+                                        WHERE f.user_id_1User_Id = ${userId} OR f.user_id_2User_Id = ${userId}
+                                    )
                                     AND (first_name LIKE ${"%" + value + "%"} 
                                        OR email LIKE ${"%" + value + "%"})`;
     stream<utils:JsonRecord, error?> resultStream = utils:Client->query(query);
@@ -121,8 +132,8 @@ function searchFriends(string? userId, string value) returns json|error {
 
     string searchTerm = "%" + value + "%";
     sql:ParameterizedQuery query = `SELECT u.user_id, u.first_name, u.email
-                                    FROM friend f
-                                    JOIN user u ON u.user_id = 
+                                    FROM Friend f
+                                    JOIN User u ON u.user_id = 
                                         CASE 
                                             WHEN f.user_id_1User_Id = ${userId} THEN f.user_id_2User_Id
                                             WHEN f.user_id_2User_Id = ${userId} THEN f.user_id_1User_Id
